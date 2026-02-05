@@ -2368,6 +2368,7 @@ void send_buoy_soanr_route_information(unsigned int plan,int task){ // i ÎªÎÞÈË»
 void send_blk_ccc_ofp_024_single(unsigned int plan,unsigned int single_index)
 {
 	BLK_CCC_OFP_024 temp;
+	memset(&temp, 0, sizeof(BLK_CCC_OFP_024));
 	//È¡³öº½ÏßÐÅÏ¢·Ö°ü·¢ËÍ
 	for(unsigned char j = 0 ;j < blk_ccc_ofp_024_cunchu[plan][single_index].individual_drone_routing_programs.planning_informations.total_packet;j++)
 	{
@@ -2406,6 +2407,7 @@ void send_blk_ccc_ofp_024(unsigned int plan)
 	for(int i = 0 ; i < 4 ; i ++)
 	{
 		BLK_CCC_OFP_024 temp;
+		memset(&temp, 0, sizeof(BLK_CCC_OFP_024));
 		//È¡³öº½ÏßÐÅÏ¢·Ö°ü·¢ËÍ
 		for(unsigned char j = 0 ;j < blk_ccc_ofp_024_cunchu[plan][i].individual_drone_routing_programs.planning_informations.total_packet;j++)
 		{
