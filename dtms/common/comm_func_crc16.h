@@ -35,4 +35,15 @@ void formationIdResetCount(int uavIndex);
 
 int target_estimation_test();
 
+//机场点赋值函数20260201
+static inline double get_airport_lon(int uav_idx)
+{
+    return (uav_idx == 1) ? LON_A_UAV2 : LON_A;
+}
+
+static inline double get_airport_lat(int uav_idx)
+{
+    return (uav_idx == 1) ? LAT_A_UAV2 : LAT_A;
+}
+
 #endif

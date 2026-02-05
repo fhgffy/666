@@ -1805,163 +1805,6 @@ void UAVRouteGeneration(){
 			}
 
 			// 盘旋任务处理 (sequence_type == 14)
-//			// 盘旋任务处理 (sequence_type == 14)
-//			else if(information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1].task_sequence_informations[j].sequence_type == 14)
-//			{
-//				// --- 1. 变量初始化 ---
-//				double droneLat = 0.0;
-//				double droneLon = 0.0;
-//				Geo points[8]; // 存8个备选等待点
-//
-//				// 用于记录原始区域的极值
-//				double rawMinLat = 0.0, rawMaxLat = 0.0;
-//				double rawMinLon = 0.0, rawMaxLon = 0.0;
-//
-//				// 用于记录外扩后的最终极值
-//				double finalMinLat, finalMaxLat, finalMinLon, finalMaxLon;
-//
-//				double minDistance = -1.0;
-//				double closestLat = 0.0, closestLon = 0.0;
-//				int idx;
-//
-//				// --- 2. 获取无人机当前位置 (数据接力逻辑) ---
-//
-//				// 优先从上一个子任务的终点获取位置，保证距离计算连贯性
-//				if (j > 0 && CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j-1].waypoints_number > 0)
-//				{
-//					unsigned int last_idx = CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j-1].waypoints_number - 1;
-//					droneLat = CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j-1].planning_information_waypoint_informations[last_idx].latitude;
-//					droneLon = CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j-1].planning_information_waypoint_informations[last_idx].longitude;
-//				}
-//				else
-//				{
-//					// 兜底：如果是第一个任务，使用无人机初始位置
-//					droneLat = UAV_position.latitude;
-//					droneLon = UAV_position.longitude;
-//				}
-//
-//				// --- 3. 解析原始区域边界 (圆/多边形 -> 最小外接矩形) ---
-//
-//				if(area.area_shape == 1)
-//				{
-//					// 圆形处理：计算外切正方形
-//					double radius = (double)(area.cycles.radius);
-//
-//					// 米转经纬度估算 (1度 ≈ 111320米)
-//					double delta_lat = radius / 111320.0;
-//
-//					// 计算纬度范围
-//					rawMinLat = area.cycles.latitude - delta_lat;
-//					rawMaxLat = area.cycles.latitude + delta_lat;
-//
-//					// 计算经度范围 (需根据纬度进行修正)
-//					double center_lat_rad = area.cycles.latitude * (3.14159265358979323846 / 180.0);
-//					double delta_lon = delta_lat / cos(center_lat_rad);
-//
-//					rawMinLon = area.cycles.longitude - delta_lon;
-//					rawMaxLon = area.cycles.longitude + delta_lon;
-//				}
-//				else if(area.area_shape == 2)
-//				{
-//					// 多边形处理：遍历所有点找极值
-//					if (area.polygonals.point_coordinates == NULL || area.polygonals.point_number <= 0) {
-//						// 数据异常保护：保持为0，后续逻辑不会崩
-//					} else {
-//						// 初始化
-//						rawMinLat = area.polygonals.point_coordinates[0].latitude;
-//						rawMaxLat = rawMinLat;
-//						rawMinLon = area.polygonals.point_coordinates[0].longitude;
-//						rawMaxLon = rawMinLon;
-//
-//						// 遍历查找最大最小经纬度
-//						for (int k = 1; k < area.polygonals.point_number; k++) {
-//							double tmpLat = area.polygonals.point_coordinates[k].latitude;
-//							double tmpLon = area.polygonals.point_coordinates[k].longitude;
-//
-//							if (tmpLat < rawMinLat) rawMinLat = tmpLat;
-//							if (tmpLat > rawMaxLat) rawMaxLat = tmpLat;
-//							if (tmpLon < rawMinLon) rawMinLon = tmpLon;
-//							if (tmpLon > rawMaxLon) rawMaxLon = tmpLon;
-//						}
-//					}
-//				}
-//
-//				// --- 4. 执行外扩逻辑 (5公里) ---
-//				// 修复说明：弃用不稳定转换函数，直接在经纬度数值上进行物理外扩
-//
-//				double expand_dist_meters = 5000.0;
-//
-//				// 纬度方向外扩：直接加减度数
-//				double expand_deg_lat = expand_dist_meters / 111320.0;
-//				finalMaxLat = rawMaxLat + expand_deg_lat; // 向北扩
-//				finalMinLat = rawMinLat - expand_deg_lat; // 向南扩
-//
-//				// 经度方向外扩：需考虑纬度收敛
-//				double avg_lat_rad = (rawMinLat + rawMaxLat) / 2.0 * (3.14159265358979323846 / 180.0);
-//				double expand_deg_lon = expand_dist_meters / (111320.0 * cos(avg_lat_rad));
-//
-//				finalMaxLon = rawMaxLon + expand_deg_lon; // 向东扩
-//				finalMinLon = rawMinLon - expand_deg_lon; // 向西扩
-//
-//				// --- 5. 生成8个备选等待点 ---
-//
-//				// 4个角点 (左下、右下、左上、右上)
-//				points[0].latitude = finalMinLat; points[0].longitude = finalMinLon;
-//				points[1].latitude = finalMinLat; points[1].longitude = finalMaxLon;
-//				points[2].latitude = finalMaxLat; points[2].longitude = finalMinLon;
-//				points[3].latitude = finalMaxLat; points[3].longitude = finalMaxLon;
-//
-//				// 4个边线中点
-//				points[4].latitude = (finalMinLat + finalMaxLat) / 2.0; points[4].longitude = finalMinLon; // 左
-//				points[5].latitude = (finalMinLat + finalMaxLat) / 2.0; points[5].longitude = finalMaxLon; // 右
-//				points[6].latitude = finalMinLat; points[6].longitude = (finalMinLon + finalMaxLon) / 2.0; // 下
-//				points[7].latitude = finalMaxLat; points[7].longitude = (finalMinLon + finalMaxLon) / 2.0; // 上
-//
-//				// --- 6. 筛选最近点 ---
-//
-//				closestLat = points[0].latitude;
-//				closestLon = points[0].longitude;
-//
-//				for (idx = 0; idx < 8; idx++) {
-//					double d = calculate_distances(droneLat, droneLon, points[idx].latitude, points[idx].longitude);
-//					if (minDistance < 0 || d < minDistance) {
-//						minDistance = d;
-//						closestLat = points[idx].latitude;
-//						closestLon = points[idx].longitude;
-//					}
-//				}
-//
-//				// --- 7. 结果打包赋值 ---
-//
-//				// 写入坐标
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].longitude = closestLon;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].latitude = closestLat;
-//
-//				// 写入有效位
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].validity_of_longitude = 1;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].latitude_validity = 1;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].height_validity = 1;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].speed_validity = 1;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].direction_validity = 0;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].time_validity = 0;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].payloads_validity = 1;
-//
-//				// 写入业务参数
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].height = blk_dtms_ctas_010[i].PX;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].speed = 35;
-//
-//				// 写入盘旋特定指令
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].standby_time_lapsNumber_cycleNumber = PX_CIRCLE;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].standby_radius = PX_RAD;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].standby_radius_valid_bit = 1;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].causality = 3;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].planning_information_waypoint_informations[0].standby_type = 2;
-//
-//				// 标记包头
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].waypoints_number = 1;
-//				CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].total_packet = 1;
-//			}
-			// 盘旋任务处理 (sequence_type == 14)
 			// 功能：基于任务区域外扩5公里生成8个候选点，并选取离参考点最近的等待点
 			else if (information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1]
 			             .task_sequence_informations[j].sequence_type == 14)
@@ -2753,7 +2596,7 @@ void fourthStrategy_missionDistributeInformation(){
 		//平台任务时---待定
 		//平台子任务个数---任务区/应召点个数 ＋ 返航
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].number_of_subtasks
-		= global_mission_planning_commandss.area_point_num;
+			= global_mission_planning_commandss.area_point_num + 1;//保持无人机与有人机阶段数一致20260201
 		uav_task_num[i-1] = information_on_the_results_of_taskings.formation_synergy_mission_programs[i].number_of_subtasks;
 
 		//为任务基础数据进行赋值
@@ -3030,6 +2873,44 @@ void fourthStrategy_missionDistributeInformation(){
 		}
 		//        information_on_the_results_of_taskings.formation_synergy_mission_programs[2].task_sequence_informations[0].sequence_type = 12;
 		//        information_on_the_results_of_taskings.formation_synergy_mission_programs[1].task_sequence_informations[0].sequence_type = 12;
+	}
+
+	//方案4：如果无人机上一阶段任务为浮标监听，则增加一个监听任务（保持与有人机任务阶段数一致）260201
+	for(int i = 1;i <= drone_state_informations.drone_number;i++){
+		int last = information_on_the_results_of_taskings.formation_synergy_mission_programs[i].number_of_subtasks - 1;//新加的末尾阶段
+		int prev = last - 1;//之前的最后一个阶段，现在的倒数第二个阶段
+		if(prev >= 0 && information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].sequence_type == 1){
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].subtask_ID_number = (unsigned)(last + 1);
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].modify = 0;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].sequence_type = 1;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].type_of_mission_point_area
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].type_of_mission_point_area;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].target_number
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].target_number;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].completion_time_valid_Bits
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].completion_time_valid_Bits;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].task_height_effective_position
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].task_height_effective_position;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].task_completion_time
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].task_completion_time;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].mission_height
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].mission_height;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].availability_of_routes
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].availability_of_routes;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].presence_of_buoy_array
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].presence_of_buoy_array;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].presence_of_fixed_point_arrays
+					= information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[prev].presence_of_fixed_point_arrays;
+		}else{
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].subtask_ID_number = (unsigned)(last + 1);
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].modify = 0;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].sequence_type = 14;//20260201
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].type_of_mission_point_area = 3;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].target_number = 0;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].availability_of_routes = 0;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].presence_of_buoy_array = 0;
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[last].presence_of_fixed_point_arrays = 0;
+		}
 	}
 	//载荷重规划
 	for(int i = 1 ; i <= drone_state_informations.drone_number ; i ++)
@@ -4490,6 +4371,7 @@ void formulate_moduel()
 	if(enRetCode == 0 )
 	{
 		//解析航线生成信息
+		
 		init_blk_dtms_ctas_005();
 		//当前阶段索引
 		int stage_index = blk_dtms_ctas_005.blk_ccc_ofp_038.stage_id - 1;
@@ -4676,6 +4558,7 @@ void signal_moduel()
 	static int plan_tpye = 0;
 	//单任务区/目标、单无人机规划，攻击规划
 	message_size = 4096;
+	memset(&blk_dtms_ctas_002,0,sizeof(blk_dtms_ctas_002));
 	Receive_Message(DDSTables.BLK_DTMS_CTAS_002.niConnectionId, 0, &transaction_id, &blk_dtms_ctas_002, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0 )
 	{
@@ -5937,7 +5820,8 @@ void BDFX_init(SGeo UAV_aircraft, SGeo goal_point ,unsigned int uav_index)
 	for(int i = 0;i < point_num;i++){
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].longitude = route_point[i].Lon;
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].latitude = route_point[i].Lat;
-		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].height = blk_dtms_ctas_010[uav_index].BDFX;
+		//CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].height = blk_dtms_ctas_010[uav_index].BDFX;
+		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].height = ((blk_dtms_ctas_002.lead_uav_id == drone_state_informations.drone_specific_informations[uav_index].platform_num) ? 460 : 660);
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].speed = 35;
 		//集结点
 		if(i == 0)
@@ -5996,8 +5880,8 @@ void BDFX_double_init(SGeo UAV_aircraft, SGeo goal_point1 ,SGeo goal_point2 ,uns
 	//第四个点 中点
 	route_point[3] = calculate_new_coordinate(goal_point1,distance/2, bearing);
 	point_num++;
-	//第五个点队形保持点第三个点
-	route_point[4] = calculate_new_coordinate(goal_point1,distance*3/4, bearing);
+	//第五个点队形保持点第三个点，后半段等分改31开20260201
+	route_point[4] = calculate_new_coordinate(goal_point1,distance*7/8, bearing);
 	point_num++;
 	//第六个点 集散点
 	route_point[5] = goal_point2;
@@ -6038,10 +5922,13 @@ void BDFX_double_init(SGeo UAV_aircraft, SGeo goal_point1 ,SGeo goal_point2 ,uns
 	CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].AtomicHighlyUpper = 1;
 	CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].total_packet = 1;
 
+	// 260201: 更改双机编队飞行高度，长机460，僚机660
+//	unsigned short bdfx_height = (blk_dtms_ctas_002.lead_uav_id == drone_state_informations.drone_specific_informations[uav_index].platform_num) ? 460 : 660;
 	for(int i = 0;i < point_num;i++){
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].longitude = route_point[i].Lon;
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].latitude = route_point[i].Lat;
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].height = blk_dtms_ctas_010[uav_index].BDFX;
+		//CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].height = bdfx_height; //260201
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].speed = 35;
 		//集结点
 		if(i == 0)
@@ -6354,6 +6241,19 @@ void double_uav_BDFX()
 		if(dist_start_to_assembly < 2)
 		{
 			int rtn = -7;
+			message_type_id = 0;
+			data_length = sizeof(int);
+			Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &rtn, &message_type_id, data_length, &enRetCode);
+			if(enRetCode == 0)
+			{
+				printf("BDFX erro\n");
+				return;
+			}
+		}
+		//无人机位置与集结点位置大于15km,260131
+		if(dist_start_to_assembly > 15)
+		{
+			int rtn = -8;
 			message_type_id = 0;
 			data_length = sizeof(int);
 			Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &rtn, &message_type_id, data_length, &enRetCode);

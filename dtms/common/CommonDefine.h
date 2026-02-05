@@ -37,8 +37,11 @@
 
 #define MANNED_ID 	0x9001//有人机ID
 #define HEIGHT		160		//机场高度 160m 默认加
-#define LON_A		124.261683//机场经度
-#define LAT_A		47.533579//机场纬度
+#define LON_A		108.772425//1005机场经度
+#define LAT_A		19.143772//1005机场纬度
+#define LON_A_UAV2  108.772173    // 1006机机场经度20260201
+#define LAT_A_UAV2  19.143703     // 1006机机场纬度20260201
+
 //塔哈空域中心
 #define	CENTER_LAT 47.533611
 #define	CENTER_LON 124.2644
