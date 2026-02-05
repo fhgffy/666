@@ -8274,7 +8274,12 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 //			blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[1] = dissolve_point;
 //		}
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[0] = uav_route[uav_index].route_number;
-		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[1] = dissolve_point;
+		unsigned char exit_point = dissolve_point;
+		if((uav_route[uav_index].route_number == 48 || uav_route[uav_index].route_number == 49) && exit_point == 7)
+		{
+			exit_point = 6;
+		}
+		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[1] = exit_point;
 
 		//·¢ËÍ5ÅÄ
 		tclh_send_cnt ++;
