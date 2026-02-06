@@ -9,6 +9,7 @@
 #include "DdsFunc.h"
 #include "../libSourceCode/commDas/area.h"
 #include "comm_func_crc16.h"//20260201
+
 #define CONTROLTEM 0
 /* flush all pending DDS samples on a topic (avoid using stale samples after failure) */
 static void dtms_flush_dds_topic(int conn_id)
@@ -19,6 +20,7 @@ static void dtms_flush_dds_topic(int conn_id)
 	int save_enRetCode = enRetCode;
 	static unsigned char buf[RECV_MAX_SIZE];
 	int guard = 0;
+
 	while(guard < 128)
 	{
 		message_size = RECV_MAX_SIZE;
@@ -29,6 +31,7 @@ static void dtms_flush_dds_topic(int conn_id)
 		}
 		guard++;
 	}
+
 	message_size = save_message_size;
 	message_type_id = save_message_type_id;
 	transaction_id = save_transaction_id;
@@ -38,6 +41,7 @@ static void dtms_flush_dds_topic(int conn_id)
 // Ä¿±êÈÚºÏÏà¹Øº¯Êı
 int sendSfsMsgToQuePort(unsigned char* msgA, long int const lenSend);// ÏòÈÚºÏ·¢ËÍÄ¿±êĞÅÏ¢
 extern int sendVoiceMsgToDtps(unsigned char* msgA, long int const lenSend);//×ª·¢¸øDTPS
+
 /********************************************** ·ÂÕæÍêÕû¹¦ÄÜ·â×°Ä£¿é ***********************************/
 // ÖÜÆÚ½ÓÊÕÓĞÈË»úµ¼º½ÊéÊı¾İ Ä£Äâ¼ì²â×ÛÏÔÉÏÏß
 void Main_Task()
@@ -53,7 +57,9 @@ void Main_Task()
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_NT.niConnectionId,DDSTables.DPU2_CCC_NT.niConnectionId,&ofp_nt_broadcast_msg,sizeof ofp_nt_broadcast_msg);
 	if(enRetCode == 0)
 	{
+
 	}
+
 	// 4.3 ÓĞÈË»úµ¼º½Êı¾İ
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_4.niConnectionId,DDSTables.DPU2_CCC_4.niConnectionId,&DPU_CCC_data_4,sizeof DPU_CCC_data_4);
 	if(enRetCode == 0){
@@ -75,12 +81,15 @@ void Main_Task()
 //			target_estimation_test();
 		}
 		DPU_online_flag = 1;
+
 		//·¢ËÍ¸øpad new20250620
 		if(Pad_heart_flag == 1)
 		{
 			Send_Message(DDSTables.CCC_PAD_777.niConnectionId,0,&transaction_id, &DPU_CCC_data_4, &message_type_id, sizeof (DPU_CCC_data_4), &enRetCode);
 		}
+
 	}
+
 	// TODO  ÓĞÈË»úµôÏßÂß¼­ ²»ÍêÉÆ ´æÔÚµôÏßºóÔÙ´Î³õÊ¼»¯
 	if(DPU_online_flag == 1 && online_flag == 0){
 		/**************** ·¢ËÍ³õÊ¼ĞÅÏ¢ ***************/
@@ -97,6 +106,7 @@ void Main_Task()
 		init_param();
 	}else if(DPU_online_flag == 1 && online_flag == 1){
 		/**************** ¸÷¸öÄ£¿éÔÚ×ÛÏÔÉÏÏßºóÖÜÆÚÔËĞĞ ******************/
+
 		recv_all_message();
 		/******½ÓÊÕPADÏûÏ¢****/
 		recv_blk_dpu_dlr_011();            // Ô¤¹æ»®¼ÓÔØ
@@ -131,8 +141,11 @@ void Main_Task()
 		// º½Ïß³åÍ»´¦Àí
 		avoidLineCrashProc();
 		payload_listen();					//¼àÌıÎŞÈË»úÔØºÉ
+
 	}
 }
+
+
 
 /*************************************Ïà¹Ø¸¨Öúº¯Êı*****************************************/
 //½ÓÊÕDPU1/DPU2Êı¾İ´¦Àí
@@ -174,7 +187,6 @@ void init_param()
 	//³õÊ¼»¯ÎŞÈË»ú±à¶ÓĞÅÏ¢
 	memset(&CCC_DPU_data_4,0,sizeof(formation_link_status_information));
 }
-
 //·¢ËÍĞÅÏ¢Êı¾İ¶ÔÆë
 void align_send_information(void *send_struct,int length,int startPos){
 	memcpy(send_array.dataA+ startPos, send_struct,length);
@@ -187,13 +199,11 @@ int get_bit(unsigned short data, int n) {
 	unsigned short mask = 1 << n; // ´´½¨ÑÚÂë
 	return (data & mask) >> n; // ÒÆÎ»²¢·µ»ØµÚnÎ»µÄÖµ
 }
-
 int get_int8_bit(char data, int n)
 {
 	char mask = 1 << n; // ´´½¨ÑÚÂë
 	return (data & mask) >> n; // ÒÆÎ»²¢·µ»ØµÚnÎ»µÄÖµ
 }
-
 // ¸øshortÀàĞÍ¾ßÌåÎ»¸³Öµ
 //
 int give_bit(unsigned short data, int n, int value){
@@ -212,7 +222,6 @@ unsigned short setBit(unsigned short data, int position, int value){
 	}
 	return data;
 }
-
 unsigned short combine_char2_short(unsigned char char1,unsigned char char2){
 	return (unsigned short)((char2<<8)|char1);
 }
@@ -223,6 +232,7 @@ unsigned short combine_char2_short(unsigned char char1,unsigned char char2){
 //      // //qDebug() ,"Í¼Æ¬´óĞ¡£º",img.size();
 //      ui.video_test.setPixmap(QPixmap::fromImage(img));
 //  }
+
 //°´Ê®Áù½øÖÆµ¥×Ö½Ú´òÓ¡ÊÕµ½µÄÊı¾İ£¬Ã¿ĞĞ16¸ö×Ö½Ú
 void printRawData(char* data, unsigned int lenth)
 {
@@ -277,11 +287,13 @@ void BDFX_double_rtn()
 	static unsigned char bdon_uav = 0;
 	static unsigned char bdon_done[2] = {0,0};
 	static unsigned char bdon_inited = 0;
+
 	// reset helper state when leaving BDON state
 	if(BDFX_double_status != 2)
 	{
 		bdon_inited = 0;
 	}
+
 	//×¢Èëº½Ïß0x30
 	if(BDFX_double_status == 1)
 	{
@@ -304,11 +316,13 @@ void BDFX_double_rtn()
 			send_cnt2[1] = 0;
 			bdon_inited = 1;
 		}
+
 		// pick a UAV that is not done
 		if(bdon_done[bdon_uav])
 		{
 			bdon_uav = (bdon_uav == 0) ? 1 : 0;
 		}
+
 		if(!bdon_done[bdon_uav])
 		{
 			int pre_cnt = send_cnt2[bdon_uav];
@@ -320,6 +334,7 @@ void BDFX_double_rtn()
 				bdon_uav = (bdon_uav == 0) ? 1 : 0;
 			}
 		}
+
 		if(bdon_done[0] && bdon_done[1])
 		{
 			// keep send_index for this cycle; do not clear here
@@ -331,8 +346,10 @@ void BDFX_double_rtn()
 	{
 		static int timeout_BDQH = 0;
 		timeout_BDQH ++ ;
+
 		if(s4D_frame_40[0] == 1 && s4D_frame_40[1] == 1)
 		{
+
 			//·¢²¼³É¹¦
 			s4D_frame_40[0] = 0;
 			s4D_frame_40[1] = 0;
@@ -346,6 +363,7 @@ void BDFX_double_rtn()
 //			if(blk_ccc_ofp_019.platform_num>=2){//Ë«»ú±à¶ÓÅĞ¶Ï
 			blk_ccc_ofp_017.plan_release_mode = 6;
 //			}
+
 			send_blk_ccc_ofp_017();
 			// ÔÙ´Î·¢ËÍÎŞÈË»úº½Ïß£¨ÔËĞĞ·½°¸£©
 			send_blk_ccc_ofp_024(plan);
@@ -372,6 +390,8 @@ void BDFX_double_rtn()
 			memset(CCC_DPU_data_0.failreason, 0, 200);
 		}
 	}
+
+
 }
 
 void BDFX_rtn()
@@ -391,15 +411,7 @@ void BDFX_rtn()
 		static int timeout_BDQH = 0;
 		timeout_BDQH ++ ;
 		int uav_index = DPU_CCC_data_11.drone_num -1;
-		//ĞŞ¸´Âß¼­: Ç¿ÖÆÌí¼Ó±à¶Ó×´Ì¬¼ì²é
-		if (s4D_frame.data[0] == 0x28)
-		{
-		    //½öÔÚË«»ú»òµ¥»ú±à¶ÓÇĞ»»µÈ´ı»Ø±¨½×¶Î¼ÇÂ¼
-		    if(BDFX_double_status == 3 || BDFX_status == 3)
-		    {
 		if(s4D_frame_40[uav_index] == 1)
-		    }
-		}
 		{
 			//·¢²¼³É¹¦
 			s4D_frame_40[uav_index] = 0;
@@ -440,7 +452,11 @@ void BDFX_rtn()
 			memset(CCC_DPU_data_0.failreason, 0, 200);
 		}
 	}
+
+
+
 }
+
 
 // ´æ´¢º½Â·ÎÄ¼şº¯Êı
 /***********************DLRÔ¤¹æ»®¼ÓÔØ*********************/
@@ -481,7 +497,9 @@ void recv_blk_dpu_dlr_011()
 			send_blk_ccc_dlr_000(3);
 		}
 	}
+
 #else//°ëÎïÀí
+
 	//½ÓÊÕÈÎÎñ·ÖÅä½á¹û
 	if(dlr_load_state == 1)
 	{
@@ -497,9 +515,9 @@ void recv_blk_dpu_dlr_011()
 		send_blk_ccc_dlr_000(5);
 		dlr_load_state = 0;
 	}
+
 #endif
 }
-
 //·¢ËÍ×´Ì¬·´À¡
 void send_blk_ccc_dlr_000(unsigned char states)
 {
@@ -523,6 +541,7 @@ void send_blk_ccc_dlr_000(unsigned char states)
 //·¢ËÍ¼ÓÔØÎÄ¼şÊı¾İ
 void send_load_file(unsigned int index)
 {
+
 	scheme_generation_state(1,1,0,0);// ·µ»Ø·½°¸±à¼­×´Ì¬µ½×ÛÏÔ
 	// ·¢×ÛÏÔÈÎÎñ·ÖÅä½á¹û
 	memcpy(&blk_ccc_ofp_019.plan_id,&load_file.blk_dlr_ccc_017[index],sizeof(BLK_DLR_CCC_017));
@@ -530,6 +549,7 @@ void send_load_file(unsigned int index)
 	//±£´æ·½°¸
 	unsigned int plan = blk_ccc_ofp_019.plan_id % 3;
 	memcpy(&CCC_DPU_data_6[plan],&blk_ccc_ofp_019,sizeof(BLK_CCC_OFP_019));
+
 	//½âËã±£´æ
 	for(int i = 0 ; i < 8 ; i ++)
 	{
@@ -544,17 +564,21 @@ void send_load_file(unsigned int index)
 			memcpy(&blk_ccc_ofp_403_save[plan][i],&load_file.blk_dlr_ccc_403[index][i],sizeof(BLK_CCC_OFP_403));
 		}
 	}
+
 	//·¢ËÍ¸¡±êºÍµõÉù½âËã
 	for(int i = 0 ; i < 8 ; i ++)
 	{
 		send_buoy_soanr_route_information(plan,i);//·¢ËÍ¸¡±ê¡¢µõÉùĞÅÏ¢µ½×ÛÏÔ
 	}
+
 	//±£´æÇøÓò»®·ÖĞÅÏ¢
 	memcpy(&blk_ccc_ofp_005[plan], &load_file.blk_dlr_ccc_005[index] ,sizeof(BLK_CCC_OFP_005));
 	data_length = sizeof(BLK_CCC_OFP_005);
 	// ×ª·¢¸ø×ÛÏÔÈÎÎñÇø»®·ÖĞÅÏ¢
 	Send_Message(DDSTables.CCC_DPU_30.niConnectionId,0,&transaction_id, &load_file.blk_dlr_ccc_005[index], &message_type_id, data_length, &enRetCode);
+
 	scheme_generation_state(1,2,0,0);// ·µ»Ø·½°¸±à¼­×´Ì¬µ½×ÛÏÔ
+
 }
 
 //·¢ËÍº½ÏßÉú³ÉĞÅÏ¢
@@ -572,6 +596,7 @@ void send_blk_dtms_ctas_005(unsigned int plan)
 	blk_dtms_ctas_005.solider_infos[0].speed = DPU_CCC_data_4.groundspeed;
 	blk_dtms_ctas_005.solider_infos[0].height = DPU_CCC_data_4.absolute_barometric_altitude;
 	blk_dtms_ctas_005.solider_infos[0].hangxiang = DPU_CCC_data_4.true_direction;
+
 	// ÒòÎªÎŞÈË»úĞÅÏ¢»á³öÏÖ·Ç½ôÃÜ´æ´¢£¬ËùÒÔĞèÒªÌø¹ıÎŞĞ§ÎŞÈË»úĞÅÏ¢´«µİÎŞÈË»úĞÅÏ¢
 	int temUavNum = 0;
 	for(int i = 0 ; i < 4 ; i ++ )
@@ -580,6 +605,7 @@ void send_blk_dtms_ctas_005(unsigned int plan)
 		{
 			continue;
 		}
+
 		blk_dtms_ctas_005.solider_infos[temUavNum + 1].solider_type = 2;
 		blk_dtms_ctas_005.solider_infos[temUavNum + 1].solider_id = CCC_DPU_data_3.drone_specific_informations[i].platform_num;
 		blk_dtms_ctas_005.solider_infos[temUavNum + 1].speed = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.ground_speed;
@@ -591,8 +617,10 @@ void send_blk_dtms_ctas_005(unsigned int plan)
 		blk_dtms_ctas_005.solider_infos[temUavNum + 1].lon_lat_info.longitude = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_longi;
 		temUavNum++;
 	}
+
 	//ÇøÓò»®·ÖĞÅÏ¢
 	memcpy(&blk_dtms_ctas_005.blk_ccc_ofp_005,&blk_ccc_ofp_005[plan],sizeof(BLK_CCC_OFP_005));
+
 	//·¢ËÍº½ÏßÉú³ÉĞÅÏ¢µ½¸¨Öú¾ö²ß
 	data_length = sizeof(BLK_DTMS_CTAS_005);
 	Send_Message(DDSTables.BLK_DTMS_CTAS_005.niConnectionId,0,&transaction_id, &blk_dtms_ctas_005 , &message_type_id, data_length, &enRetCode);
@@ -601,21 +629,18 @@ void send_blk_dtms_ctas_005(unsigned int plan)
 		printf("send blk_dtms_ctas_005 success\n");
 	}
 }
-
 void send_blk_dtms_ctas_010()
 {
 	data_length = sizeof(BLK_DTMS_CTAS_010) * 2;
 	// ×ª·¢¸ø×ÛÏÔÈÎÎñÇø»®·ÖĞÅÏ¢
 	Send_Message(DDSTables.BLK_DTMS_CTAS_010.niConnectionId,0,&transaction_id, &load_file.blk_dtms_ctas_010, &message_type_id, data_length, &enRetCode);
 }
-
 //½âËã·´À¡
 void recv_blk_ctas_dtms_009()
 {
 	message_size = RECV_MAX_SIZE;
 	Receive_Message(DDSTables.BLK_CTAS_DTMS_009.niConnectionId, 0, &transaction_id, &ctas_calc, &message_type_id, &message_size, &enRetCode);
 }
-
 void recv_blk_ctas_dtms_047()
 {
 	//½ÓÊÕ°²È«Çø
@@ -629,6 +654,7 @@ void recv_blk_ctas_dtms_047()
 		//×ª·¢µ½×ÛÏÔ
 		send_blk_ccc_ofp_047();
 	}
+
 }
 
 void send_blk_ccc_ofp_047()
@@ -678,6 +704,7 @@ void recv_blk_ctas_dtms_010()
 					{
 						blk_ctas_dtms_010.id[i] = 2;
 					}
+
 					//Æ½Ì¨ĞòºÅ
 					int index = blk_ctas_dtms_010.id[i];
 					//ÎŞÈË»ú¿ÕÓò
@@ -696,9 +723,9 @@ void recv_blk_ctas_dtms_010()
 				}
 			}
 		}
+
 	}
 }
-
 void init_blk_ctas_dtms_010()
 {
 	//¿ÕÓòÉú³É±êÖ¾
@@ -729,8 +756,8 @@ void init_blk_ctas_dtms_010()
 			area_flag[0] = 1;
 		}
 	}
-}
 
+}
 //´ÓdlrÎÄ¼şÖĞÈ¡³öµ±Ç°½×¶Îº½Ïß
 void dlr_cpy_airway(unsigned int stage,unsigned int plan)
 {
@@ -754,8 +781,8 @@ void dlr_cpy_airway(unsigned int stage,unsigned int plan)
 	{
 		memcpy(&blk_ccc_ofp_024_cunchu[plan_index][i],&load_file.blk_dlr_ccc_024[index][i][stage],sizeof(BLK_CCC_OFP_024_cunchu));
 	}
-}
 
+}
 //·Ö½×¶Î·¢ËÍº½Ïß
 void stage_send()
 {
@@ -768,7 +795,9 @@ void stage_send()
 		Receive_Message(DDSTables.PAD_CCC_038.niConnectionId, 0, &transaction_id, &blk_ofp_ccc_038, &message_type_id, &message_size, &enRetCode);
 	}
 	if(enRetCode == 0)	{
+
 		scheme_generation_state(1,2,0,1);// ·µ»Ø·½°¸±à¼­×´Ì¬µ½×ÛÏÔ£¬º½ÏßÉú³ÉÖĞ
+
 		//Èç¹ûÎ´¼ÓÔØ·µº½º½Ïß£¬ÔòÉú³ÉÊ§°Ü
 		int normal_cnt = 0;
 		for(int i = 0 ; i < 4 ; i ++)
@@ -786,6 +815,7 @@ void stage_send()
 			memset(&CCC_DPU_data_0.failreason,0,sizeof CCC_DPU_data_0.failreason);
 			return;
 		}
+
 		unsigned int plan = blk_ofp_ccc_038.Plan_ID % 3;
 		if(blk_ofp_ccc_038.Plan_ID == 0 || blk_ofp_ccc_038.Plan_ID < 0)
 		{
@@ -801,7 +831,9 @@ void stage_send()
 			send_blk_ccc_ofp_018(DDSTables.CCC_DPU_7.niConnectionId,plan,task); // ·¢ËÍÓĞÈË»úÍ¨º½µã Í¨ÓÃº½Â·µã·ÖÁ½´Î·¢ËÍ µÚ1°ü40¸öº½µã ºÍ µÚ2°ü35¸öº½µã
 			//			send_buoy_soanr_route_information(plan,task);//·¢ËÍ¸¡±ê¡¢µõÉùĞÅÏ¢µ½×ÛÏÔ
 			send_blk_ccc_ofp_024(plan); // ·¢ËÍÎŞÈË»úĞÅÏ¢£¬º½ÏßÉú³ÉÍê³É
+
 			scheme_generation_state(1,2,0,2);// ·µ»Ø·½°¸±à¼­×´Ì¬µ½×ÛÏÔ
+
 			//·¢ËÍÎŞÈË»úº½Ïßµ½¸¨Öú¾ö²ßÉú³É¿ÕÓò
 			for(int i = 0 ; i < 4 ;i ++)
 			{
@@ -809,9 +841,11 @@ void stage_send()
 			}
 			return;
 		}
+
 		//·¢ËÍº½ÏßÉú³ÉĞÅÏ¢¸ø¸¨Öú¾ö²ß
 		send_blk_dtms_ctas_005(plan);
 	}
+
 	// payload replan Ô¤Áô£¨Ô­Âß¼­±£Áô£©
 	//\tif(g_lineCrashState[0].PayloadReplan == 2)
 	//\t{
@@ -845,6 +879,7 @@ void stage_send()
 		{
 			receive_zhanfa_hl(); //Íê³É¶Ôº½Â·ĞÅÏ¢µÄÎÄ¼ş±£´æ
 		}
+
 		// ½ÓÊÕÎŞÈË»úº½Â·¹æ»®ĞÅÏ¢
 		for(int i = 0 ; i <  8; i ++)
 		{
@@ -855,14 +890,18 @@ void stage_send()
 		{
 			memcpy(&g_lineCrashUavBak[drone_index], &blk_ccc_ofp_024_cunchu[plan][drone_index], sizeof(g_lineCrashUavBak[drone_index]));
 		}
+
 		send_blk_ccc_ofp_018(DDSTables.CCC_DPU_7.niConnectionId,plan,task); // ·¢ËÍÓĞÈË»úÍ¨º½µã Í¨ÓÃº½Â·µã·ÖÁ½´Î·¢ËÍ µÚ1°ü40¸öº½µã ºÍ µÚ2°ü35¸öº½µã
+
 		//Éú³ÉÊ±ĞèÒª×ö³åÍ»¼ì²â
 		avoidLineCrashJudgeProc();
+
 		//»Ö¸´º½ÏßÉú³É
 		//Ò»¿Ø¶ş³¡¾°
 		int rtn = 0;
 		for(int drone_index = 0 ; drone_index < UAV_MAX_NUM; drone_index ++)
 		{
+
 			if (g_lineCrashState[drone_index].hasConflict == 1)
 			{
 				// »Ö¸´º½ÏßÔö¼Ó
@@ -874,12 +913,15 @@ void stage_send()
 				}
 			}
 		}
+
 		// Ã»³åÍ»£¬Õı³£·¢ËÍº½Ïß¼´¿É
 		send_blk_ccc_ofp_024(plan); // ·¢ËÍÎŞÈË»úĞÅÏ¢£¬º½ÏßÉú³ÉÍê³É
+
 		//ÔØºÉÖØ¹æ»®¼ì²â
 		payload_detection();
 		scheme_generation_state(1,2, 0, 2); // ·µ»Ø·½°¸±à¼­×´Ì¬µ½µ÷ÓÃ·½
 	}
+
 	// DPU_DTMS ¸¡±ê¡ªº½Â·µã½âËã
 	message_size = RECV_MAX_SIZE;
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_32.niConnectionId,DDSTables.DPU2_CCC_32.niConnectionId,&blk_ofp_ccc_302,sizeof blk_ofp_ccc_302);
@@ -898,6 +940,7 @@ void stage_send()
 			printf("send blk_ofp_ccc_302 success\n");
 		}
 	}
+
 	// DPU_DTMS µõÉù¡ªµõÉù¶¨²âµã¹æ»®
 	message_size = RECV_MAX_SIZE;
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_33.niConnectionId,DDSTables.DPU2_CCC_33.niConnectionId,&blk_ofp_ccc_402,sizeof blk_ofp_ccc_402);
@@ -917,13 +960,14 @@ void stage_send()
 		}
 	}
 }
-
 //******************************************** ½ÓÊÕ¸¨Öú¾ö²ß·µ»ØµÄÕ½·¨·½°¸ ***********************************************/
 void rev_zhanfa_plan(){
+
 	// CATS_DTMS Õ½ÊõÕ½·¨ÍÆ¼ö¹æ»®½á¹û
 	message_size = RECV_MAX_SIZE;
 	Receive_Message(DDSTables.BLK_CTAS_DTMS_001.niConnectionId, 0, &transaction_id, &blk_ccc_ofp_019, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
+
 		//±£´æÈı·½°¸Ã¿¸ö·½°¸µÄÈÎÎñ·ÖÅä½á¹û
 		unsigned int plan = blk_ccc_ofp_019.plan_id % 3;
 		memcpy(&CCC_DPU_data_6[plan],&blk_ccc_ofp_019,sizeof(BLK_CCC_OFP_019));
@@ -954,11 +998,13 @@ void rev_zhanfa_plan(){
 			data_length = sizeof(BLK_CCC_OFP_005);
 			// ×ª·¢¸ø×ÛÏÔÈÎÎñÇø»®·ÖĞÅÏ¢
 			Send_Message(DDSTables.CCC_DPU_30.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
+
 			//·¢ËÍ¸øpad new20250620
 			if(Pad_heart_flag == 1)
 			{
 				Send_Message(DDSTables.CCC_PAD_005.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
 			}
+
 		}
 		for(int i = 0 ; i < 8 ; i ++)
 		{
@@ -967,9 +1013,11 @@ void rev_zhanfa_plan(){
 			unsigned int plan = blk_ccc_ofp_019.plan_id % 3;
 			send_buoy_soanr_route_information(plan,i);//·¢ËÍ¸¡±ê¡¢µõÉùĞÅÏ¢µ½µ÷ÓÃ·½
 		}
+
 		zhanfa_result_receive_flag = 0;
 		plan_count++;
 	}
+
 	if(plan_count == 3)
 	{
 		scheme_generation_state(1,2,0,0);// ·µ»Ø·½°¸±à¼­×´Ì¬µ½µ÷ÓÃ·½
@@ -991,6 +1039,7 @@ void receive_buoy_soanr()
 		//¸¡±ê²¼Õó¹æ»®±£´æ
 		memcpy(&blk_ccc_ofp_302_save[plan][task],&blk_ccc_ofp_302,sizeof(BLK_CCC_OFP_302));
 	}
+
 	// CATS_DTMS µõÉù¶¨²âµã¹æ»®
 	message_size = RECV_MAX_SIZE;
 	Receive_Message(DDSTables.BLK_CTAS_DTMS_006.niConnectionId, 0, &transaction_id, &blk_ccc_ofp_403, &message_type_id, &message_size, &enRetCode);
@@ -1033,6 +1082,7 @@ void receive_zhanfa_hl(){
 }
 
 /*************************************** Õ½·¨ÎŞÈË»úº½Ïß *******************************************/
+
 void receive_zhanfa_uav_hl()
 {
 	BLK_CCC_OFP_024 temp;
@@ -1052,6 +1102,7 @@ void receive_zhanfa_uav_hl()
 	}
 }
 
+
 /*******************  ĞŞ¸Ä½è¿Ú ********************/
 //  3.1 ³õÊ¼»¯ÈÎÎñ×´Ì¬ĞÅÏ¢£¬ÎªÈÎÎñ×´Ì¬ĞÅÏ¢¸³Öµ
 void init_task_status_information()
@@ -1059,8 +1110,8 @@ void init_task_status_information()
 	CCC_DPU_data_2.current_state = 2;
 	CCC_DPU_data_2.current_task_ID_of_the_panel = 1;
 	CCC_DPU_data_2.current_task_progress = 3;
-}
 
+}
 //ÈÎÎñ×´Ì¬ĞÅÏ¢·¢ËÍ
 void send_task_status_information(){
 	// drone_information *drone_informations = new drone_information;
@@ -1073,6 +1124,7 @@ void send_task_status_information(){
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_012.niConnectionId,0,&transaction_id, send_array.dataA+2,&message_type_id, data_length, &enRetCode);
 }
+
 
 // 3.2 ³õÊ¼»¯ÎŞÈË»ú×´Ì¬ĞÅÏ¢  uavºÚ°ü»ñÈ¡
 void init_drone_state_information(int i)
@@ -1089,6 +1141,7 @@ void init_drone_state_information(int i)
 	//CCC_DPU_data_3.drone_specific_informations[i].platform_num = 0x1000+(unsigned int)((s82_frame.uavCode & 0xf0)>>4);
 	CCC_DPU_data_3.drone_specific_informations[i].platform_num = formationId[i].planeId;
 #endif
+
 	//s4AÖ¡¸³ÖµÂß¼­
 	if(s4A_frame.frame_type != 0)
 	{
@@ -1116,14 +1169,19 @@ void init_drone_state_information(int i)
 				//20250804new ¼ÇÂ¼ÓĞĞ§¿ØÖÆÕ¾µØÖ·
 				formationId[i].station_address = s4A_frame.station_address;
 			}
+
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.air_height = (float)(s4A_frame.barom_height*0.2);//ÆøÑ¹¸ß¶È
 	}
+
 	//ÔØºÉÔÚÏßĞÅÏ¢ÔÙÈÎÎñÒ£²âÖĞÅĞ¶Ï
 	//	CCC_DPU_data_3.drone_specific_informations[i].platform_load = 0xffff;   //todo:update the fix data 0xffff
 	//	CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit = 0xffff;//Êı¾İÓĞĞ§Î»
+
 	CCC_DPU_data_3.drone_specific_informations[i].fault_level = 2;//Æ½Ì¨¹ÊÕÏ×´Ì¬
+
 	//ÈÎÎñ×´Ì¬ 20250702new
 	CCC_DPU_data_3.drone_specific_informations[i].subtask_type = uav_route[i].task_type;//Æ½Ì¨µ±Ç°Ö´ĞĞ×ÓÈÎÎñÀàĞÍ  (todo: ĞèÒª¸ù¾İ½ÓÊÕ·É·ÂµÄÊı¾İºÍĞ­Í¬Ö¸¿ØÉú³ÉµÄº½Ïß½øĞĞ¼ÆËã)
+
 	//¼ÆËãÈÎÎñÊ£ÓàÊ±¼ä
 	if(uav_route[i].tasking)
 	{
@@ -1142,6 +1200,9 @@ void init_drone_state_information(int i)
 				lon = ((double)s82_frame.lon) * 180.0 / (pow(2,31) - 1);
 				distance += calculate_distances(lat,lon,uav_route[i].waypoint[k].latitude,uav_route[i].waypoint[k].longitude);
 			}
+
+
+
 			distance += calculate_distances(uav_route[i].waypoint[k].latitude,
 					uav_route[i].waypoint[k].longitude,
 					uav_route[i].waypoint[k+1].latitude,
@@ -1156,6 +1217,7 @@ void init_drone_state_information(int i)
 			lon = ((double)s82_frame.lon) * 180.0 / (pow(2,31) - 1);
 			distance = calculate_distances(lat,lon,uav_route[i].waypoint[0].latitude,uav_route[i].waypoint[0].longitude);
 		}
+
 		//Ê£Óà¾àÀë³ıµØËÙ
 		float groud_speed = 0;
 		int time = 0;
@@ -1174,6 +1236,9 @@ void init_drone_state_information(int i)
 		//Ê£ÓàÊ±¼äÓĞĞ§Î»£¬ÎŞĞ§£¬Ã»ÓĞÈÎÎñ»òÕßÈÎÎñÒÑÍê³É
 		CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit = setBit(CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit,0,0);
 	}
+
+
+
 	//11.13²¹³ä²É¼¯µÄÊı¾İĞèÒªºË¶Ô¸ñÊ½×ª»»¹ØÏµ
 	if(s4c_flag == 1){
 		CCC_DPU_data_3.drone_specific_informations[i].residual_oil_volume = (unsigned int)(s4C_frame.oil_quantity * 0.5);//Æ½Ì¨Ê£ÓàÓÍÁ¿
@@ -1186,6 +1251,7 @@ void init_drone_state_information(int i)
 		CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit = setBit(CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit,4,1);
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.radio_height = (float)(s4C_frame.radio_height*0.1);//ÎŞÏßµç¸ß¶È* (height_scale) )* 0.2;
 	}
+
 	if(s3a_flag == 1)
 	{
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.sat_height = (float)(s3A_frame.satellite_altitude*0.2);//ÎÀĞÇ¸ß¶È* (height_scale) )* 0.2
@@ -1196,7 +1262,9 @@ void init_drone_state_information(int i)
 		CCC_DPU_data_3.drone_specific_informations[i].U_storage = (double)(s5D_frame.battery_2_current);//UĞî
 		CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit = setBit(CCC_DPU_data_3.drone_specific_informations[i].data_valid_bit,6,1);
 	}
+
 	CCC_DPU_data_3.drone_specific_informations[i].uav_zishu_feedback = 0;
+
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.station_lati = (double)(plane_lat + 0.3 * (i+1));//TODO:plane_latÎªÓĞÈË»ú¾­Î³¶È£¬µØÃæÕ¾¾­Î³¶È´ı¶¨				/*µØÃæÕ¾Î³¶È    µ¥Î»£º¡ã  ×îĞ¡Öµ£º-90  ×î´óÖµ£º90*/
 	if(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.station_lati >= -80 && CCC_DPU_data_3.drone_specific_informations[i].uav_infos.station_lati <= 80)
 	{
@@ -1208,6 +1276,7 @@ void init_drone_state_information(int i)
 	{
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = setBit(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,1,1);
 	}
+
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_lati = ((double)s82_frame.lat) * 90.0 / (pow(2,31) - 1);					/*ÎŞÈË»úÎ³¶È    µ¥Î»£º¡ã  ×îĞ¡Öµ£º-90  ×î´óÖµ£º90*/
 	if(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_lati >= -90 && CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_lati <= 90)
 	{
@@ -1228,6 +1297,9 @@ void init_drone_state_information(int i)
 			formationId[i].lon = ((double)s82_frame.lon) * 180.0 / (pow(2,31) - 1);
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = setBit(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,3,1);
 	}
+
+
+
 	current_uav_height=CCC_DPU_data_3.drone_specific_informations[i].uav_infos.air_height;
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = setBit(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,4,1);
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.air_speed = (float)(s81_frame.vacuum_velocity * 0.1 * 3.6);	/*ÎŞÈË»ú¿ÕËÙ¶È*/
@@ -1242,12 +1314,15 @@ void init_drone_state_information(int i)
 	//      CCC_DPU_data_3.drone_specific_informations[i].uav_infos.vectx_speed = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.vectx_speed*0.1;	/*ÎŞÈË»ú´¹Ö±ËÙ¶È*/
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_heading = (float)(s81_frame.course * 0.01);	/*ÎŞÈË»úº½Ïò*/
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = setBit(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,6,1);
+
+
 	//2024.11.13Ô­ÓĞµÄangle_scale¾«¶È´æÔÚÎÊÌâ£¬¸ÄÎªICDÖĞÉèÖÃµÄ0.01
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_pitch = (float)(s81_frame.pit * 0.01);	/*ÎŞÈË»ú¸©Ñö½Ç*/
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_roll = (float)(s81_frame.roll * 0.01);	/*ÎŞÈË»úºá¹ö½Ç*/
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = setBit(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,7,1);
 	CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = setBit(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,8,1);
 	/*ÍşĞ²ĞÅÏ¢*/
+
 	//CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_height_trend = 0;		//¼ÇÂ¼ÎŞÈË»úÉÏÒ»Õë¸ß¶Èair_height£¬×÷±È½Ï½øĞĞÅĞ¶Ï		/*ÎŞÈË»ú¸ß¶È±ä»¯Ç÷ÊÆ  0=ÎŞĞ§;1=ÏòÉÏ;2=ÏòÏÂ;*/
 	//Í¨¹ıÎŞÈË»ú´¹ËÙÅĞ¶ÏÎŞÈË»ú¸ß¶È±ä»¯Ç÷ÊÆ
 	cnt++;
@@ -1267,6 +1342,8 @@ void init_drone_state_information(int i)
 		}
 		histroy_uav_data.his_uav_height = current_uav_height;
 	}
+
+
 	//todo: ÑéÖ¤apiÊä³ö¾àÀëºÍ·½Î»½ÇµÄÕıÈ·ĞÔ
 	GeoLibDas uav_geolibdas={};
 	GeoLibDas manned_aircraft_geolibdas={};
@@ -1308,6 +1385,7 @@ void init_drone_state_information(int i)
 	}else if(fangWeiJiaoChaZhi>315 && fangWeiJiaoChaZhi <= 360){
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.Thread_UAV_Horizontal_Position_2 = 0x1;
 	}
+
 	if((cnt % 20)==0)//1Ãë±È½ÏÒ»´Î
 	{
 		double uav_angle_change=current_uav_angle - histroy_uav_data.his_uav_relative_azmuith;
@@ -1332,6 +1410,7 @@ void init_drone_state_information(int i)
 	if(current_uav_height<=DPU_CCC_data_4.absolute_barometric_altitude){
 		CCC_DPU_data_3.drone_specific_informations[i].uav_infos.Thread_UAV_Vertical_Position_2 = 1;	/*ÍşĞ²ÎŞÈË»ú´¹Ö±Ïà¶ÔÎ»ÖÃ0H-ÉÏ£¬1H-ÏÂ*/
 	}
+
 	if(s4a_flag == 1)
 	{
 		if(s4A_frame.control_1.status == 1)
@@ -1364,6 +1443,7 @@ void init_drone_state_information(int i)
 	{
 		CCC_DPU_data_3.drone_specific_informations[i].uav_mission_infos.mission_progress = 0;  /*todo¡£µ±Ç°ÈÎÎñ½ø¶È*/
 	}
+
 	//ĞÂÔö»úµç²ÎÊı 20250619new ĞÂÔöÖ¡ÊıÅĞ¶Ï 20250817new
 	if(s4c_flag == 1)
 	{
@@ -1412,6 +1492,7 @@ void init_drone_state_information(int i)
 		//¹©ÓÍ
 		CCC_DPU_data_3.drone_specific_informations[i].machine_sta.oil_supply_sta = s5E_frame.power_system_2.supply_status;
 	}
+
 	//ÊÕµ½·É¿Ø·µº½»Ø±¨·¢ËÍÈıÅÄµ½×ÛÏÔ 20250819new
 	static char FH_cnt = 0;
 	static char FH_rtn = 0;
@@ -1467,6 +1548,7 @@ void init_drone_state_information(int i)
 		//ÖØÖÃ
 		CCC_DPU_data_3.drone_specific_informations[i].loading_status.fh_sta = 0;
 	}
+
 	//º½Ïß×´Ì¬ 20250821new
 	if(uav_route[i].route_number == 1)
 	{
@@ -1493,8 +1575,10 @@ void init_drone_state_information(int i)
 		//NA
 		CCC_DPU_data_3.drone_specific_informations[i].loading_status.buoy_sta = 0;
 	}
+
 	//±à¶ÓÄÜÁ¦ 20251218new
 	CCC_DPU_data_3.drone_specific_informations[i].formation_ability = s7_redundancy[i];
+
 	//¿ÕµØÁ´Ïà¹ØĞÅÏ¢¸³Öµ
 	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[i].uav_id =(unsigned short)CCC_DPU_data_3.drone_specific_informations[i].platform_num;
 	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[i].control_attribution = (unsigned char)(CCC_DPU_data_3.drone_specific_informations[i].platform_control_status == 1) ? 2:1;
@@ -1522,6 +1606,9 @@ void init_drone_state_information(int i)
 	}
 	if(s4A_frame.frame_type != 0)
 		blk_ccc_kdl_000.unmanned_helicopter_flight_informations[i].flight_path = (unsigned short)(s4A_frame.fly_course*0.1);
+
+
+
 	//Ã¿ÅÄÇå¿Õ±êÖ¾Î»
 	s3a_flag = 0;
 	s4a_flag = 0;
@@ -1530,8 +1617,8 @@ void init_drone_state_information(int i)
 	s5b_flag = 0;
 	s5c_flag = 0;
 	s5e_flag = 0;
-}
 
+}
 void warnning_detection()
 {
 	//¿ÕÓò³åÍ»¼ì²â
@@ -1561,6 +1648,7 @@ void warnning_detection()
 				}
 				rtn = 0;
 			}
+
 		}
 	}
 	//ÓĞÈË»úÓëÎŞÈË»ú¿ÕÓò³åÍ»¼ì²â
@@ -1586,6 +1674,7 @@ void warnning_detection()
 			rtn = 0;
 		}
 	}
+
 	//·À×²¼ì²â,ÓĞÈË»úÎ»ÖÃÓëÎŞÈË»úÎ»ÖÃĞ¡ÓÚ2km¸æ¾¯
 	for(int j = 0 ; j < 4 ; j ++)
 	{
@@ -1636,8 +1725,8 @@ void warnning_detection()
 			}
 		}
 	}
-}
 
+}
 //¼ÆËã¾­Î³¶ÈÖ®¼äµÄ¾àÀë
 double calculate_distances(double lat1, double lon1,double lat2, double lon2)
 {
@@ -1647,12 +1736,13 @@ double calculate_distances(double lat1, double lon1,double lat2, double lon2)
 	double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 	return 6371.0 * c;
 }
-
 void send_drone_state_information()
 {
 	//¹ÊÕÏ¸æ¾¯¼ì²â
 	warnning_detection();
+
 	align_send_information(&(CCC_DPU_data_3),sizeof(drone_state_information),0);
+
 	//	CCC_DPU_data_3.drone_specific_informations[0].loading_status.bar_out_len = 666;
 	// ×ÛÏÔ·¢ËÍ---ÓÉÓÚ·¢ËÍÎŞĞè´øÍ·£¬Òò´Ë¿ªÊ¼Î»ÖÃ´ÓµÚÈıÎ»
 	Send_Message_Local(DDSTables.CCC_DPU_3.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
@@ -1669,11 +1759,14 @@ void send_drone_state_information()
 		//			printf("yc error %d\n",cnt);
 		//		}
 	}
+
 	//·¢ËÍ¸øpad new20250620
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_013.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
 	}
+
+
 #if 0
 	/*ÈÎÎñÏµÍ³²»Ôö¼ÓÎÀĞÇ¸ß¶È,ÁÙÊ±´¦Àí*/
 	char temChar[4096];
@@ -1694,9 +1787,11 @@ void send_drone_state_information()
 		data_length -= 4;
 	}
 #endif
+
 	// ¸øÈÎÎñÏµÍ³·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_0.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
+
 
 // 3.3 ±à¶ÓÁ´Â·×´Ì¬ĞÅÏ¢
 void init_formation_link_status_information()
@@ -1714,6 +1809,7 @@ void init_formation_link_status_information()
 	{
 //		printf("recv blk_kkl_ccc_006 erro \n");
 	}
+
 	//ÏÂĞĞËø¶¨ÊÇÎŞÈË»úµ½ÓĞÈË»ú 20250729
 	memset( &blk_kkl_ccc_007 , 0 , sizeof blk_kkl_ccc_007);
 	//±¾»úÁ´Â·×´Ì¬Êı¾İ£¬0xaa2c07
@@ -1727,6 +1823,7 @@ void init_formation_link_status_information()
 	{
 //		printf("recv blk_kkl_ccc_007 erro \n");
 	}
+
 	memset( &blk_ccc_ofp_199 , 0 , sizeof blk_ccc_ofp_199);
 	//U¶Ë±¾»úÁ´Â·×´Ì¬Êı¾İ£¬0xa222c7
 	message_size = RECV_MAX_SIZE;
@@ -1739,7 +1836,9 @@ void init_formation_link_status_information()
 		//		Send_Message(DDSTables.CCC_DPU_37.niConnectionId,0,&transaction_id, &blk_ccc_ofp_199, &message_type_id, data_length, &enRetCode);
 		//·¢ËÍ¸øpad new20250620
 		//		Send_Message(DDSTables.CCC_PAD_199.niConnectionId,0,&transaction_id, &blk_ccc_ofp_199,&message_type_id, data_length, &enRetCode);
+
 	}
+
 	memset( &CCC_DPU_MMM_200 , 0 , sizeof CCC_DPU_MMM_200);
 	//U¶ËÎŞÈË»úÁ´Â·×´Ì¬Êı¾İ£¬0xa222c8
 	message_size = RECV_MAX_SIZE;
@@ -1753,6 +1852,7 @@ void init_formation_link_status_information()
 		//·¢ËÍ¸øpad new20250620
 		//		Send_Message(DDSTables.CCC_PAD_200.niConnectionId,0,&transaction_id, &CCC_DPU_MMM_200,&message_type_id, data_length, &enRetCode);
 	}
+
 	//UÁ´ÔÚÍø³ÉÔ± 20250725new 0xa22210
 	static int cnt_197 = 0;
 	message_size = RECV_MAX_SIZE;
@@ -1778,12 +1878,16 @@ void init_formation_link_status_information()
 		cnt_197 = 0;
 		memset( &blk_kkl_ccc_197 , 0 , sizeof blk_kkl_ccc_197);
 	}
+
+
 #if 1
 	/************************************************ Ğ­Í¬Í¨ĞÅÎŞ·¨·ÂÕæÕâĞ©Êı¾İ ´Ë´¦Ê¹ÓÃ¼ÙÖµ²âÊÔ ***************************************************/
 	//³õÊ¼»¯
 	memset(&CCC_DPU_data_4,0,sizeof(formation_link_status_information));
+
 	CCC_DPU_data_4.drone_number = CCC_DPU_data_3.drone_number;  // ÎŞÈË»úÊıÁ¿
 	//	CCC_DPU_data_4.surface_station_num = blk_kdl_ccc_003.KDLCNumber;//tem  blk_kdl_ccc_003.KDLCNumber; // ½¢ÃæÕ¾ÊıÁ¿
+
 	//ÎŞÈË»úÁ´Â·×´Ì¬i
 	for(int i = 0; i < UAV_MAX_NUM; i++){
 		// ÎŞĞ§ÎŞÈË»úÌø¹ı
@@ -1808,12 +1912,14 @@ void init_formation_link_status_information()
 		CCC_DPU_data_4.drone_link_status_informations[i].handover_down_speed = blk_kkl_ccc_006.CR_uav_cl_status_info[i].DownRate;/*½»½ÓÏÂĞĞËÙÂÊ*/
 		CCC_DPU_data_4.drone_link_status_informations[i].time_remaing = CCC_DPU_data_3.drone_specific_informations[i].remaining_mission_time;//Ê£ÓàÊ±¼ä
 	}
+
 	// ½¢ÃæÕ¾Ö¸¿Ø×´Ì¬
 	//	for(int j = 0 ; j < 2 ; j++)
 	//	{
 	//		CCC_DPU_data_4.jiemianzhikong_info[j].station_id = blk_kdl_ccc_003.clcostatus[j].ShipID;			/*½¢ÃæÕ¾ID*/
 	//		CCC_DPU_data_4.jiemianzhikong_info[j].station_sn = j + 1 ;			/*½¢ÃæÕ¾ĞòºÅ 0:NA, 1:½¢ÃæÕ¾1 2:½¢ÃæÕ¾2*/
 	//	}
+
 	//ÔİÊ±Ğ´ËÀ 20250727
 	if(blk_kkl_ccc_197.jianmianzhan1_online == 1)
 	{
@@ -1826,8 +1932,11 @@ void init_formation_link_status_information()
 			CCC_DPU_data_4.jiemianzhikong_info[0].controll_uav_num = 1;
 		CCC_DPU_data_4.jiemianzhikong_info[0].ctrl_uav_code[0].uav_code = UAV1_ID;
 	}
+
 	//½¢ÃæÕ¾¿ØÖÆÎŞÈË»úÊı¾İ 20250727
 	//	if()
+
+
 	//UÁ´ÔÚÍø³ÉÔ±·¢ËÍ×ÛÏÔ¸³Öµ 20250725new
 	CCC_DPU_data_4.network_member.U_member.manned_aircraft_online = blk_kkl_ccc_197.manned_aircraft_online;
 	CCC_DPU_data_4.network_member.U_member.unmanned1_aircraft_online = blk_kkl_ccc_197.unmanned1_aircraft_online;
@@ -1876,6 +1985,8 @@ void init_formation_link_status_information()
 	//			CCC_DPU_data_4.network_member.U_member.jianmianzhan1_online = 1;
 	//		}
 	//	}
+
+
 	//ÎŞÈË»ú1CÁ´Á¬Í¨Çé¿ö£¬ÉÏĞĞÊÇ·ñËø¶¨,Ôö¼Ó¿ØÖÆÕ¾idÅĞ¶Ï 20250728new
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[0].IfNoHeliCon == 1) && (blk_kkl_ccc_006.CR_uav_cl_status_info[0].UAV_StationID == 0x9001))
 	{
@@ -1886,6 +1997,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.C_UAV_F.copter_C_uav1_down = 1;//CÁ´Á¬Í¨Çé¿ö(ÓĞÈË/ÎŞÈË)
 	}
+
 	//ÎŞÈË»ú2CÁ´Á¬Í¨Çé¿ö£¬ÉÏĞĞÊÇ·ñËø¶¨
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[1].IfNoHeliCon == 1) && (blk_kkl_ccc_006.CR_uav_cl_status_info[1].UAV_StationID == 0x9001))
 	{
@@ -1896,6 +2008,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.C_UAV_F.copter_C_uav2_down = 1;//CÁ´Á¬Í¨Çé¿ö(ÓĞÈË/ÎŞÈË)
 	}
+
 	//ÎŞÈË»ú3CÁ´Á¬Í¨Çé¿ö£¬ÉÏĞĞÊÇ·ñËø¶¨
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[2].IfNoHeliCon == 1) && (blk_kkl_ccc_006.CR_uav_cl_status_info[2].UAV_StationID == 0x9001))
 	{
@@ -1906,6 +2019,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.C_UAV_F.copter_C_uav3_down = 1;//CÁ´Á¬Í¨Çé¿ö(ÓĞÈË/ÎŞÈË)
 	}
+
 	//ÎŞÈË»ú4CÁ´Á¬Í¨Çé¿ö£¬ÉÏĞĞÊÇ·ñËø¶¨
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[3].IfNoHeliCon == 1) && (blk_kkl_ccc_006.CR_uav_cl_status_info[3].UAV_StationID == 0x9001))
 	{
@@ -1916,6 +2030,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.C_UAV_F.copter_C_uav4_down = 1;//CÁ´Á¬Í¨Çé¿ö(ÓĞÈË/ÎŞÈË)
 	}
+
 	//µØÃæ/ÎŞÈË»ú1ÉÏĞĞÁ¬Í¨Çé¿ö
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[0].IfNoHeliCon == 1) && (blk_kkl_ccc_006.CR_uav_cl_status_info[0].UAV_StationID == GCS_ID))
 	{
@@ -1926,6 +2041,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.stationUAV.station_C_uav1_down = 1;//CÁ´ÁªÍ¨Çé¿ö(µØÃæ/ÎŞÈË)
 	}
+
 	//µØÃæ/ÎŞÈË»ú2ÉÏĞĞÁ¬Í¨Çé¿ö
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[1].IfNoHeliCon == 1) && (blk_kkl_ccc_006.CR_uav_cl_status_info[1].UAV_StationID == GCS_ID))
 	{
@@ -1936,6 +2052,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.stationUAV.station_C_uav2_down = 1;//CÁ´ÁªÍ¨Çé¿ö(µØÃæ/ÎŞÈË)
 	}
+
 	//µØÃæ/ÎŞÈË»ú3ÉÏĞĞÁ¬Í¨Çé¿ö
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[2].IfNoHeliCon == 1) /*&& (blk_kkl_ccc_006.CR_uav_cl_status_info[2].UAV_StationID == GCS_ID)*/)
 	{
@@ -1946,6 +2063,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.stationUAV.station_C_uav3_down = 1;//CÁ´ÁªÍ¨Çé¿ö(µØÃæ/ÎŞÈË)
 	}
+
 	//µØÃæ/ÎŞÈË»ú4ÉÏĞĞÁ¬Í¨Çé¿ö
 	if((blk_kkl_ccc_006.CR_uav_cl_status_info[3].IfNoHeliCon == 1) /*&& (blk_kkl_ccc_006.CR_uav_cl_status_info[3].UAV_StationID == GCS_ID)*/)
 	{
@@ -1956,6 +2074,7 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.stationUAV.station_C_uav4_down = 1;//CÁ´ÁªÍ¨Çé¿ö(µØÃæ/ÎŞÈË)
 	}
+
 	if(blk_kdl_ccc_003.clcostatus[0].IFShipCon ==1  && blk_kdl_ccc_003.clcostatus[0].ShipID == MANNED_ID)
 	{
 		CCC_DPU_data_4.network_member.KDLLT_Up = 1;
@@ -1964,6 +2083,8 @@ void init_formation_link_status_information()
 	{
 		CCC_DPU_data_4.network_member.KDLLT_Down = 1;
 	}
+
+
 #else
 	//Ê¹ÓÃÒÔÏÂ´úÂë½øĞĞ±à¶ÓÁ´Â·µÄ·ÂÕæ²âÊÔ
 	//CCC½«ÈçÏÂËÄ¸öÊı¾İ×éºÏÎª CCC-DPU1/DPU2/MMM-014 0xa2220e ±à¶ÓÁ´Â·×´Ì¬ĞÅÏ¢
@@ -1977,6 +2098,7 @@ void init_formation_link_status_information()
 	}else{
 		CCC_DPU_data_4.surface_station_num = 1; // ½¢ÃæÕ¾ÊıÁ¿
 	}
+
 	//ÎŞÈË»úÁ´Â·×´Ì¬
 	for(int i = 0; i < CCC_DPU_data_4.drone_number; i++){
 		CCC_DPU_data_4.drone_link_status_informations[i].uav_model = CCC_DPU_data_3.drone_specific_informations[i].platform_model;				/*Æ½Ì¨1ĞÍºÅ  0=N/A;1=WZ2;*/
@@ -1992,8 +2114,11 @@ void init_formation_link_status_information()
 		CCC_DPU_data_4.drone_link_status_informations[i].handover_down_channel = 222;	/*½»½ÓÏÂĞĞÆµµÀ*/          //·ÂÕæÃ»ÓĞKKL£¬ÕâÀïÏÈ¸³ËÀÖµ
 		CCC_DPU_data_4.drone_link_status_informations[i].handover_down_speed = 2;		/*½»½ÓÏÂĞĞËÙÂÊ*/          //·ÂÕæÃ»ÓĞKKL£¬ÕâÀïÏÈ¸³ËÀÖµ
 	}
+
 	//UÁ´Éè±¸×´Ì¬ĞÅÏ¢
+
 	//KDL-CCC/DPU1/DPU2/PMD/SMD-003 0xa62003 ¿ÕµØÁ´Á´Â·×´Ì¬
+
 	// ½¢ÃæÕ¾Ö¸¿Ø×´Ì¬
 	for(int j = 0; j<CCC_DPU_data_4.surface_station_num; j++){
 		CCC_DPU_data_4.jiemianzhikong_info[j].station_id = j + 1;			/*½¢ÃæÕ¾ID*/
@@ -2013,14 +2138,18 @@ void init_formation_link_status_information()
 void send_formation_link_status_information()
 {
 	init_formation_link_status_information();
+
 	align_send_information(&(CCC_DPU_data_4),sizeof (formation_link_status_information),0);
+
 	//pad·¢ËÍ
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_014.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	}
+
 	// ·¢ËÍ¸ø×ÛÏÔ£º0xa2220e
 	Send_Message(DDSTables.CCC_DPU_4.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	// ¸øÈÎÎñÏµÍ³·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_1.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	memset(&CCC_DPU_data_4, 0 , sizeof(formation_link_status_information));
@@ -2083,7 +2212,6 @@ void send_blk_ccc_ofp_021()
 		//qDebug()<<"CCC_DPU_data_8_success!";
 	}
 }
-
 void send_blk_ccc_ofp_017()
 {
 	data_length = sizeof(BLK_CCC_OFP_017);
@@ -2092,11 +2220,13 @@ void send_blk_ccc_ofp_017()
 	if(enRetCode == 0){
 		//qDebug()<<"CCC_DPU_data_8_success!";
 	}
+
 	// ¸øpad·¢ËÍ
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_017.niConnectionId,0,&transaction_id,&(blk_ccc_ofp_017), &message_type_id, data_length, &enRetCode);
 	}
+
 	// Ïò¿ÕµØÁ´·¢ËÍÈÎÎñ·ÖÅä½á¹ûĞÅÏ¢
 	send_blk_ccc_kdl_017();
 }
@@ -2166,7 +2296,6 @@ void init_blk_ccc_ofp_026()
 		blk_ccc_ofp_026.temfly_status = 0;
 	}
 }
-
 void send_blk_ccc_ofp_026()
 {
 	init_blk_ccc_ofp_026();
@@ -2192,7 +2321,6 @@ void init_blk_ccc_ofp_027()
 	blk_ccc_ofp_027.conditon5 = s9_manned_lead.conditon7;
 	blk_ccc_ofp_027.conditon6 = s9_manned_lead.conditon8;
 }
-
 //ÓĞÈË»úÁìº½½øÈë
 void send_blk_ccc_ofp_027()
 {
@@ -2216,7 +2344,6 @@ void init_blk_ccc_ofp_028()
 	blk_ccc_ofp_028.conditon5 = s9_manned_exit.conditon5;
 	blk_ccc_ofp_028.conditon6 = s9_manned_exit.conditon6;
 }
-
 //ÓĞÈË»úÁìº½ÍË³ö
 void send_blk_ccc_ofp_028()
 {
@@ -2238,6 +2365,7 @@ void init_blk_ccc_ofp_029()
 	{
 		blk_ccc_ofp_029.display = 0;
 	}
+
 	for(int i = 0 ; i < 2 ; i ++)
 	{
 		blk_ccc_ofp_029.uav_avoid[i].uav_id = formationId[i].planeId;
@@ -2245,8 +2373,8 @@ void init_blk_ccc_ofp_029()
 		blk_ccc_ofp_029.uav_avoid[i].uav_uav = s9_uav_avoid_flag[i];
 		blk_ccc_ofp_029.uav_avoid[i].uav_manned = s9_man_avoid_flag[i];
 	}
-}
 
+}
 //ÎŞÈË»úÅö×²Æô¶¯ĞÅÏ¢
 void send_blk_ccc_ofp_029()
 {
@@ -2269,6 +2397,7 @@ void init_blk_ccc_ofp_030()
 	}
 	//ÎŞÈË»úÊıÁ¿ÓëÔ¤¼ÓÔØ½ô¼±º½ÏßÊıÁ¿Ò»ÖÂ
 	blk_ccc_ofp_030.uav_num = num_cnt;
+
 	for(int i = 0 ; i < 2 ; i ++)
 	{
 		blk_ccc_ofp_030.uav_emarea[i].uav_id = formationId[i].planeId;
@@ -2282,7 +2411,6 @@ void init_blk_ccc_ofp_030()
 		memcpy(&blk_ccc_ofp_030.uav_emarea[i].emergency_point[0],&load_file.blk_dlr_ccc_045[i].normal_point[0],sizeof(Avoid_POINT)*25);
 	}
 }
-
 //Ó¦¼±·µº½ÇøÓò
 void send_blk_ccc_ofp_030()
 {
@@ -2295,35 +2423,43 @@ void send_blk_ccc_ofp_030()
 void send_blk_ccc_ofp_019()
 {
 	data_length = sizeof(BLK_CCC_OFP_019);
+
 	// ×ÛÏÔ·¢ËÍÔ¤ÀÀ·½°¸ĞÅÏ¢
 	Send_Message(DDSTables.CCC_DPU_8.niConnectionId,0,&transaction_id,&blk_ccc_ofp_019, &message_type_id, data_length, &enRetCode);
 	if(enRetCode == 0){
 		//qDebug()<<"CCC_DPU_data_8_success!";
 	}
+
 	// ¸øpad·¢ËÍ
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_019.niConnectionId,0,&transaction_id,&blk_ccc_ofp_019, &message_type_id, data_length, &enRetCode);
 	}
+
 }
 
 void send_blk_ccc_ofp_019_special()
 {
 	BLK_CCC_OFP_019  tem_blk_ccc_ofp_019;
 	data_length = sizeof(BLK_CCC_OFP_019);
+
 	memcpy(&tem_blk_ccc_ofp_019, &blk_ccc_ofp_019, sizeof(blk_ccc_ofp_019));
+
 	// ÔÚ·Ç½ôÃÜÎŞÈË»ú±à¶ÓÏÂ£¬ĞèÒªÌØÊâ´¦Àí·¢¸øofpµÄĞÅÏ¢
 	castCtasToOfpPlan(&tem_blk_ccc_ofp_019);
+
 	// ×ÛÏÔ·¢ËÍÔ¤ÀÀ·½°¸ĞÅÏ¢
 	Send_Message(DDSTables.CCC_DPU_8.niConnectionId,0,&transaction_id,&tem_blk_ccc_ofp_019, &message_type_id, data_length, &enRetCode);
 	if(enRetCode == 0){
 		//qDebug()<<"CCC_DPU_data_8_success!";
 	}
+
 	// ¸øpad·¢ËÍ
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_019.niConnectionId,0,&transaction_id,&tem_blk_ccc_ofp_019, &message_type_id, data_length, &enRetCode);
 	}
+
 	//KDL·¢ËÍ
 	send_blk_ccc_kdl_017();
 }
@@ -2334,46 +2470,58 @@ void scheme_generation_state(char fanganType,char fanganGenStatus,char fanganSub
 	CCC_DPU_data_0.fanganGenStatus = fanganGenStatus;
 	CCC_DPU_data_0.fanganSubStatus = fanganSubStatus;
 	CCC_DPU_data_0.hangxianGenStatus = hangxianGenStatus;
+
 	if(fanganType == 2)
 	{
 		printf("fanganGenStatus %d\n",fanganGenStatus);
 	}
+
 	data_length = sizeof(CCC_DPU_data_0);
 	Send_Message(DDSTables.CCC_DPU_0.niConnectionId,0,&transaction_id, &CCC_DPU_data_0, &message_type_id, data_length, &enRetCode);
 	if(enRetCode == 0){
 		//        qDebug()<<"CCC_DPU_data_0_success!";
 	}
+
 	//·¢ËÍ¸øpad new20250620
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_001.niConnectionId,0,&transaction_id, &CCC_DPU_data_0, &message_type_id, data_length, &enRetCode);
 	}
+
 }
+
 
 //ÓĞÈË»úº½Â·ĞÅÏ¢·¢ËÍ
 void send_buoy_soanr_route_information(unsigned int plan,int task){ // i ÎªÎŞÈË»ú×ÔÈÎÎñ
+
 	//ÕÒµ½µ±Ç°·½°¸µÄ±£´æÏÂ±ê
 	if(blk_ccc_ofp_302_save[plan][task].Plan_ID != 0)
 	{
 		data_length = sizeof(BLK_CCC_OFP_302);
 		// ×ª·¢¸ø×ÛÏÔ¸¡±ê²¼Õó¹æ»®
 		Send_Message(DDSTables.CCC_DPU_26.niConnectionId,0,&transaction_id, &blk_ccc_ofp_302_save[plan][task], &message_type_id, data_length, &enRetCode);
+
 		//·¢ËÍ¸øpad new20250620
 		if(Pad_heart_flag == 1)
 		{
 			Send_Message(DDSTables.CCC_PAD_302.niConnectionId,0,&transaction_id, &blk_ccc_ofp_302_save[plan][task], &message_type_id, data_length, &enRetCode);
 		}
+
 	}
+
+
 	if(blk_ccc_ofp_403_save[plan][task].Plan_ID != 0)
 	{
 		data_length = sizeof(BLK_CCC_OFP_403);
 		// ×ª·¢¸ø×ÛÏÔµõÉù¶¨²âµã¹æ»®
 		Send_Message(DDSTables.CCC_DPU_27.niConnectionId,0,&transaction_id, &blk_ccc_ofp_403_save[plan][task], &message_type_id, data_length, &enRetCode);
+
 		//·¢ËÍ¸øpad new20250620
 		if(Pad_heart_flag == 1)
 		{
 			Send_Message(DDSTables.CCC_PAD_403.niConnectionId,0,&transaction_id, &blk_ccc_ofp_403_save[plan][task], &message_type_id, data_length, &enRetCode);
 		}
+
 	}
 }
 
@@ -2392,8 +2540,10 @@ void send_blk_ccc_ofp_024_single(unsigned int plan,unsigned int single_index)
 			 ,sizeof(planning_information_waypoint_information)*25);
 		//°üĞòºÅ¸³Öµ
 		temp.individual_drone_routing_programs.planning_informations.packet_id = j;
+
 		data_length = sizeof(BLK_CCC_OFP_024);
 		Send_Message(DDSTables.CCC_DPU_11.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
+
 		//·¢ËÍ¸øpad new20250620
 		if(Pad_heart_flag == 1)
 		{
@@ -2401,12 +2551,12 @@ void send_blk_ccc_ofp_024_single(unsigned int plan,unsigned int single_index)
 		}
 		//·¢ËÍÈÎÎñÏµÍ³
 		Send_Message(DDSTables.CCC_DPM_7.niConnectionId,0,&transaction_id, &temp,&message_type_id, data_length, &enRetCode);
+
 		// ¿ÕµØÁ´·¢ËÍ
 		memcpy(&blk_ccc_ofp_024,&blk_ccc_ofp_024_cunchu[plan][single_index],sizeof(BLK_CCC_OFP_024));
 		send_blk_ccc_kdl_024();
 	}
 }
-
 // ÎŞÈË»úÍ¨º½ º½Â·µãĞÅÏ¢
 void send_blk_ccc_ofp_024(unsigned int plan)
 {
@@ -2431,27 +2581,30 @@ void send_blk_ccc_ofp_024(unsigned int plan)
 			                                                                                                                                                                                                                                                     ,sizeof(planning_information_waypoint_information)*25);
 			//°üĞòºÅ¸³Öµ
 			temp.individual_drone_routing_programs.planning_informations.packet_id = j;
+
 			data_length = sizeof(BLK_CCC_OFP_024);
 			Send_Message(DDSTables.CCC_DPU_11.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
+
 			//·¢ËÍ¸øpad new20250620
 			if(Pad_heart_flag == 1)
 			{
 				Send_Message(DDSTables.CCC_PAD_024.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
 			}
+
 			//·¢ËÍÈÎÎñÏµÍ³£¨ÄÚ²¿Á´Â·£¬±£³Ö¾ÉÂß¼­£©
 			Send_Message(DDSTables.CCC_DPM_7.niConnectionId,0,&transaction_id, &temp,&message_type_id, data_length, &enRetCode);
+
 			// ¿ÕµØÁ´·¢ËÍ
 			memcpy(&blk_ccc_ofp_024,&blk_ccc_ofp_024_cunchu[plan][i],sizeof(BLK_CCC_OFP_024));
 			send_blk_ccc_kdl_024();
 		}
 	}
-}
 
+}
 void init_blk_ccc_ofp_025()
 {
 	blk_ccc_ofp_025.signal_CCC_now = global_stage;
 }
-
 //·¢ËÍµ±Ç°½×¶Î·´À¡
 void send_blk_ccc_ofp_025()
 {
@@ -2463,6 +2616,7 @@ void send_blk_ccc_ofp_025()
 // ×ÛÏÔÉÏÏßºó ¼ì²â ½«ÈÎÎñÇøÈÎÎñµãĞÅÏ¢·¢ËÍ¸ø×ÛÏÔ 3.10 / 11
 // 3.10 ³õÊ¼»¯ÈÎÎñÇø/¿ÕÓòĞÅÏ¢
 void init_blk_ccc_ofp_033(){
+
 	//³õÊ¼»¯ÈÎÎñÇøÊı¾İ
 	memset(&blk_ccc_ofp_033,0,sizeof(BLK_CCC_OFP_033) * 2);
 	//    unsigned int i;
@@ -2502,22 +2656,31 @@ void init_blk_ccc_ofp_033(){
 	blk_ccc_ofp_033[1].curBagNo = 1;
 	blk_ccc_ofp_033[1].bagTatal = 2;
 	blk_ccc_ofp_033[1].area_number = 0;
+
+
 	//³õÊ¼»¯¿ÕÓò
 	memset(&air_area,0,sizeof(BLK_CCC_OFP_033));
+
 }
 
 void send_blk_ccc_ofp_033(){
 	// send_array.clear();
 	//µÚÒ»°ü
+
+
 	// ×ÛÏÔ·¢ËÍ
 	data_length = sizeof(BLK_CCC_OFP_033);
 	Send_Message(DDSTables.CCC_DPU_13.niConnectionId,0,&transaction_id, &(blk_ccc_ofp_033[0].curBagNo), &message_type_id, data_length, &enRetCode);
+
 	//·¢ËÍ¸øpad new20250620
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_033.niConnectionId,0,&transaction_id, &(blk_ccc_ofp_033[0]), &message_type_id, data_length, &enRetCode);
 	}
+
+
 	//µÚ¶ş°ü
+
 	//¿ÕÓòÓĞĞ§ĞÔÅĞ¶Ï
 	for(int i = 0 ; i < 4 ; i ++)
 	{
@@ -2530,20 +2693,25 @@ void send_blk_ccc_ofp_033(){
 			blk_ccc_ofp_033[1].area_informations[i].upper_height_limit_valid_bit = 1;
 		}
 	}
+
 	// ×ÛÏÔ·¢ËÍ
 	data_length = sizeof(BLK_CCC_OFP_033);
 	Send_Message(DDSTables.CCC_DPU_13.niConnectionId,0,&transaction_id, &(blk_ccc_ofp_033[1].curBagNo), &message_type_id, data_length, &enRetCode);
+
 	//·¢ËÍ¸øpad new20250620
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_033.niConnectionId,0,&transaction_id, &(blk_ccc_ofp_033[1]), &message_type_id, data_length, &enRetCode);
 	}
+
 	// ¸økdl·¢ËÍ
 	send_blk_ccc_kdl_033();
+
 }
 
 // 3.11 ÈÎÎñµãĞÅÏ¢
 void init_blk_ccc_ofp_034(){
+
 	//    blk_ccc_ofp_034.point_number = 7;
 	//    unsigned int i;
 	//    for(i = 0; i < blk_ccc_ofp_034.point_number; i++){
@@ -2558,13 +2726,16 @@ void init_blk_ccc_ofp_034(){
 }
 
 void send_blk_ccc_ofp_034(){
+
 	data_length = sizeof(BLK_CCC_OFP_034);
 	Send_Message(DDSTables.CCC_DPU_14.niConnectionId,0,&transaction_id, &blk_ccc_ofp_034.point_number, &message_type_id, data_length, &enRetCode);
+
 	//·¢ËÍ¸øpad new20250620
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message(DDSTables.CCC_PAD_034.niConnectionId,0,&transaction_id, &blk_ccc_ofp_034.point_number,&message_type_id, data_length, &enRetCode);
 	}
+
 	// ¸økdl·¢ËÍ
 	send_blk_ccc_kdl_034();
 }
@@ -2582,7 +2753,6 @@ void init_blk_ccc_ofp_035(){
 		}
 	}
 }
-
 void send_blk_ccc_ofp_035(){
 	// send_array.clear();
 	init_blk_ccc_ofp_035();
@@ -2597,7 +2767,9 @@ void send_blk_ccc_ofp_035(){
 	Send_Message(DDSTables.CCC_DPU_15.niConnectionId,0,&transaction_id, &blk_ccc_ofp_035.line_number , &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_035.niConnectionId,0,&transaction_id, &blk_ccc_ofp_035.line_number,&message_type_id, data_length, &enRetCode);
+
 	send_blk_ccc_kdl_035();
+
 }
 
 // 3.13 Ğ­Í¬Ö¸¿ØÖ¸ÁîĞÅÏ¢
@@ -2621,7 +2793,6 @@ void init_blk_ccc_ofp_036(unsigned short command_type,unsigned short state,unsig
 	printf("code enqueue success \n");
 	code_id++;
 }
-
 void send_blk_ccc_ofp_036()
 {
 	//·¢ËÍ
@@ -2629,6 +2800,7 @@ void send_blk_ccc_ofp_036()
 	Send_Message(DDSTables.CCC_DPU_16.niConnectionId,0,&transaction_id, &blk_ccc_ofp_036, &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//    Send_Message(DDSTables.CCC_PAD_036.niConnectionId,0,&transaction_id, &blk_ccc_ofp_036,&message_type_id, data_length, &enRetCode);
+
 }
 
 // ½ÓÊÕÖØ¹æ»®ÏûÏ¢
@@ -2649,11 +2821,13 @@ void recv_blk_ofp_ccc_154() {
 					g_lineCrashState[i].ofpLineCode = 1;
 				}
 			}
+
 			// ·¢²¼ÖĞÌáÊ¾
 			memset(&blk_ccc_ofp_032, 0, sizeof(blk_ccc_ofp_032));
 			blk_ccc_ofp_032.tips_type = 21;
 			send_blk_ccc_ofp_032();
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 2) {
 			for(int i=0;i<4;i++)
 			{
@@ -2664,11 +2838,13 @@ void recv_blk_ofp_ccc_154() {
 					g_lineCrashState[i].ofpLineCode = 2;
 				}
 			}
+
 			// µ¯¿òÏûÒş
 			memset(&blk_ccc_ofp_032, 0, sizeof(blk_ccc_ofp_032));
 			blk_ccc_ofp_032.tips_type = 0;
 			send_blk_ccc_ofp_032();
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 3) {
 			for(int i=0;i<4;i++)
 			{
@@ -2683,16 +2859,19 @@ void recv_blk_ofp_ccc_154() {
 			blk_ccc_ofp_032.tips_type = 21;
 			send_blk_ccc_ofp_032();
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 4) {
 			for(int i=0;i<4;i++)
 			{
 				memset(&g_lineCrashState[i], 0, sizeof(g_lineCrashState[i]));
 			}
+
 			// µ¯¿òÏûÒş
 			memset(&blk_ccc_ofp_032, 0, sizeof(blk_ccc_ofp_032));
 			blk_ccc_ofp_032.tips_type = 0;
 			send_blk_ccc_ofp_032();
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 5) {
 			for(int i=0;i<4;i++)
 			{
@@ -2711,6 +2890,7 @@ void recv_blk_ofp_ccc_154() {
 			blk_ccc_ofp_032.tips_type = 0;
 			send_blk_ccc_ofp_032();
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 6) {
 			for(int i=0;i<4;i++)
 			{
@@ -2721,6 +2901,7 @@ void recv_blk_ofp_ccc_154() {
 			blk_ccc_ofp_032.tips_type = 0;
 			send_blk_ccc_ofp_032();
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 11)
 		{
 			//Ö´ĞĞÔØºÉÖØ¹æ»®
@@ -2741,6 +2922,7 @@ void recv_blk_ofp_ccc_154() {
 				}
 			}
 		}
+
 		if (blk_ofp_ccc_154.plan_query == 12)
 		{
 			//ºöÂÔÔØºÉÖØ¹æ»®
@@ -2757,6 +2939,7 @@ void recv_blk_ofp_ccc_154() {
 			send_blk_ccc_ofp_032();
 		}
 	}
+
 	return;
 }
 
@@ -2789,11 +2972,11 @@ void recv_blk_ofp_ccc_037()
 }
 
 // 3.14 Ô¤¹æ»®¼ÓÔØ½á¹ûÈ·ÈÏ    sg_sttaConDirTopicId[32]
+
 // 3.15 Ô¤¹æ»®¼ÓÔØ½á¹ûÈ·ÈÏ
 void init_confirmation_of_preplanning_loading_results(){
 	//³õÊ¼»¯confirmation_of_preplanning_loading_results
 }
-
 void send_confirmation_of_preplanning_loading_results(){
 	// send_array.clear();
 	align_send_information(&CCC_DPU_data_17,sizeof(CCC_DPU_data_17),0);
@@ -2801,13 +2984,13 @@ void send_confirmation_of_preplanning_loading_results(){
 	Send_Message(DDSTables.CCC_DPU_17.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_037.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
 }
 
 // 3.16 Ô¤¹æ»®·½°¸
 void init_pre_planning_program(){
 	//³õÊ¼»¯pre_planning_program
 }
-
 void send_pre_planning_program(){
 	// send_array.clear();
 	align_send_information(&CCC_DPU_data_18,sizeof(CCC_DPU_data_18),0);
@@ -2815,13 +2998,13 @@ void send_pre_planning_program(){
 	Send_Message(DDSTables.CCC_DPU_18.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_038.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
 }
 
 // 3.17 ¸¨Öú¾ö²ß´íÎóÌáÊ¾
 void init_assisted_decision_making_error_alerts(){
 	//³õÊ¼»¯assisted_decision_making_error_alerts
 }
-
 void send_assisted_decision_making_error_alerts(){
 	// // send_array.clear();
 	align_send_information(&CCC_DPU_data_19,sizeof(CCC_DPU_data_19),0);
@@ -2829,13 +3012,13 @@ void send_assisted_decision_making_error_alerts(){
 	Send_Message(DDSTables.CCC_DPU_19.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_039.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
 }
 
 //3.18 Ğ­Í¬Ö¸¿ØÏµÍ³×Ô¼ì²â¹ÊÕÏÇåµ¥
 void init_default_orders(){
 	//³õÊ¼»¯assisted_decision_making_error_alerts
 }
-
 void send_default_orders(){
 	// // send_array.clear();
 	align_send_information(&CCC_DPU_data_20,sizeof(CCC_DPU_data_20),0);
@@ -2843,6 +3026,7 @@ void send_default_orders(){
 	Send_Message(DDSTables.CCC_DPU_20.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_040.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
 }
 
 // ĞÂÔöĞÅÏ¢
@@ -2850,7 +3034,6 @@ void send_default_orders(){
 void init_guangdian_kongzhi_feedback(){
 	//³õÊ¼»¯assisted_decision_making_error_alerts
 }
-
 void send_guangdian_kongzhi_feedback(){
 	// // send_array.clear();
 	align_send_information(&CCC_DPU_data_21,sizeof(CCC_DPU_data_21),0);
@@ -2858,13 +3041,14 @@ void send_guangdian_kongzhi_feedback(){
 	Send_Message(DDSTables.CCC_DPU_21.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_041.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
+
 }
 
 // ¿ØÖÆÈ¨ÏŞ½»½Ó
 void init_kongzhiquan_jiaojie(){
 	//³õÊ¼»¯assisted_decision_making_error_alerts
 }
-
 void send_kongzhiquan_jiaojie(){
 	// // send_array.clear();
 	align_send_information(&(CCC_DPU_data_1),sizeof(CCC_DPU_data_1),0);
@@ -2874,12 +3058,15 @@ void send_kongzhiquan_jiaojie(){
 	//	Send_Message(DDSTables.CCC_PAD_002.niConnectionId,0,&transaction_id, &send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
 
+
 /****************************************ÄÚ²¿Í¨ĞÅ·¢ËÍ½Ó¿Ú(Õ½·¨¹æ»®²âÊÔÍê³É)**********************************/
 // ·¢ DTMS_CTAS Ïà¹Ø¸¨Öúº¯Êı
 // Õ½ÊõÕ½·¨ÍÆ¼ö¹æ»®Ö¸Áî
 void init_zhanshutuijian(){
+
 	//³õÊ¼»¯
 	memset(&blk_dtms_ctas_001, 0 , sizeof(BLK_DTMS_CTAS_001));
+
 	blk_dtms_ctas_001.solider_num = 1 + CCC_DPU_data_3.drone_number;   //todo£º°´ÓĞÈË»úºÍÎŞÈË»ú×ÜÊıÁ¿¸³Öµ
 	blk_dtms_ctas_001.solider_infos[0].solider_type = 1; // Àà±ğ  1 ÓĞÈË 2 ÎŞÈË
 	blk_dtms_ctas_001.solider_infos[0].solider_id = MANNED_ID;//todo:Ä¿Ç°ÓĞÈË»úidĞ´¹Ì¶¨Öµ£º9001
@@ -2888,6 +3075,7 @@ void init_zhanshutuijian(){
 	blk_dtms_ctas_001.solider_infos[0].speed = DPU_CCC_data_4.groundspeed;
 	blk_dtms_ctas_001.solider_infos[0].height = DPU_CCC_data_4.absolute_barometric_altitude;
 	blk_dtms_ctas_001.solider_infos[0].hangxiang = DPU_CCC_data_4.true_direction;
+
 	// ÒòÎªÎŞÈË»úĞÅÏ¢»á³öÏÖ·Ç½ôÃÜ´æ´¢£¬ËùÒÔĞèÒªÌø¹ıÎŞĞ§ÎŞÈË»úĞÅÏ¢´«µİÎŞÈË»úĞÅÏ¢
 	int temUavNum = 0;
 	for(int i = 0 ; i < 4 ; i ++ )
@@ -2896,6 +3084,7 @@ void init_zhanshutuijian(){
 		{
 			continue;
 		}
+
 		blk_dtms_ctas_001.solider_infos[temUavNum + 1].solider_type = 2;
 		blk_dtms_ctas_001.solider_infos[temUavNum + 1].solider_id = CCC_DPU_data_3.drone_specific_informations[i].platform_num;
 		blk_dtms_ctas_001.solider_infos[temUavNum + 1].speed = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.ground_speed;
@@ -2907,10 +3096,12 @@ void init_zhanshutuijian(){
 		blk_dtms_ctas_001.solider_infos[temUavNum + 1].lon_lat_info.longitude = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_longi;
 		temUavNum++;
 	}
+
 	blk_dtms_ctas_001.task_type = DPU_CCC_data_7.mission_type;//¹æ»®ÀàĞÍ
 	blk_dtms_ctas_001.target_type = DPU_CCC_data_7.target_category;
 	blk_dtms_ctas_001.zhanshu_sel = DPU_CCC_data_7.tactical_warfare_options;
 	blk_dtms_ctas_001.task_reg_num = DPU_CCC_data_7.area_point_num; // ÈÎÎñÇøÊıÁ¿
+
 	for(int i = 0;i < blk_dtms_ctas_001.task_reg_num ;i++)
 	{
 		//¼ì²é·´Ç±
@@ -2926,6 +3117,7 @@ void init_zhanshutuijian(){
 				blk_dtms_ctas_001.region_infos[i].reg_circle.radious = DPU_CCC_data_18_19.area_settings.area_informations[i].cycles.radius;
 				blk_dtms_ctas_001.region_infos[i].reg_circle.center_lon_lat.latitude = DPU_CCC_data_18_19.area_settings.area_informations[i].cycles.cycle_longitude_and_latitude_synt.latitude;
 				blk_dtms_ctas_001.region_infos[i].reg_circle.center_lon_lat.longitude = DPU_CCC_data_18_19.area_settings.area_informations[i].cycles.cycle_longitude_and_latitude_synt.longitude;
+
 			}break;
 			case 2 :{ // ¶à±ßĞÎ
 				blk_dtms_ctas_001.region_infos[i].reg_ploygen.point_num = DPU_CCC_data_18_19.area_settings.area_informations[i].polygonals.point_number;
@@ -2934,6 +3126,7 @@ void init_zhanshutuijian(){
 					blk_dtms_ctas_001.region_infos[i].reg_ploygen.points_lon_lat[j].longitude = DPU_CCC_data_18_19.area_settings.area_informations[i].polygonals.point_coordinates[j].longitude;
 				}
 			}break;
+
 			}
 			blk_dtms_ctas_001.region_infos[i].reg_top_of_hei_valid = DPU_CCC_data_18_19.area_settings.area_informations[i].upper_height_limit_valid_bit;
 			blk_dtms_ctas_001.region_infos[i].reg_down_of_hei_valid = DPU_CCC_data_18_19.area_settings.area_informations[i].lower_height_limit_valid_bit;
@@ -2971,8 +3164,8 @@ void init_zhanshutuijian(){
 			}
 		}
 	}
-}
 
+}
 void send_zhanshutuijian()
 {
 	//Ã»ÓĞÎŞÈË»ú·µ»ØÊ§°Ü
@@ -2994,6 +3187,7 @@ void send_zhanshutuijian()
 }
 
 void send_single_mission_zhanshutuijian(){
+
 	data_length = sizeof(blk_dtms_ctas_002);
 	Send_Message(DDSTables.BLK_DTMS_CTAS_002.niConnectionId,0,&transaction_id, &blk_dtms_ctas_002, &message_type_id, data_length, &enRetCode);
 	if(enRetCode == 0){
@@ -3029,6 +3223,8 @@ void send_forecast_target_hj_pad(){
 	align_send_information(&(forecast_target_hj_info),sizeof(forecast_target_hj_info),0);
 	// Send_Message(ĞèÔö¼Ó,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
+
+
 
 /********************************************** ¹æ»®Ä£¿é **************************************/
 /*
@@ -3086,14 +3282,18 @@ void formulate_moduel(){
 			//·¢ËÍ¼ÓÔØÎÄ¼şÊı¾İ
 			send_load_file(1);
 		}
+
 		// Çå¿ÕÖØ¹æ»®±êÖ¾Á¿£¬£¨±ÜÃâ·¢Éú³åÍ»£¬ÓÃ»§ÖØĞÂ¹æ»®ÎÊÌâ£©
 		memset(&g_lineCrashState, 0, sizeof(g_lineCrashState)*4);
+
 		//ÔØºÉÖØ¹æ»®±êÖ¾Î»ÖØÖÃ
 		for(int i = 0 ; i < 4 ; i ++)
 		{
 			g_payload_replan[i].Replan = 0;
 		}
+
 	}
+
 	message_size = 10000;
 	// 4.8.1 ÈÎÎñÇøÉèÖÃ
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_18.niConnectionId,DDSTables.DPU2_CCC_18.niConnectionId,&DPU_CCC_data_18_19.area_settings,sizeof(area_setting));
@@ -3136,6 +3336,8 @@ void formulate_moduel(){
 					}
 				}
 			}
+
+
 		}
 		//É¾³ıÈÎÎñÇø
 		else if(DPU_CCC_data_18_19.area_settings.number_of_areas_to_be_modified >= 1
@@ -3154,6 +3356,7 @@ void formulate_moduel(){
 			}
 		}
 	}
+
 	if(formulate_flag == 2 )
 	{   //Ó¦ÕÙ·´Ç±
 		message_size = 10000;
@@ -3172,6 +3375,7 @@ void formulate_moduel(){
 			formulate_flag = 0;
 		}
 	}
+
 }
 
 /************************************************* ÖØ¹æ»®Ä£¿é ***********************************************/
@@ -3189,13 +3393,14 @@ void send_blk_ccc_ofp_020(unsigned int Plan_ID,unsigned char ModifyType,unsigned
 	data_length = sizeof(BLK_CCC_OFP_020);
 	//·¢ËÍ±à¼­×´Ì¬
 	Send_Message( DDSTables.CCC_DPU_29.niConnectionId,0,&transaction_id, &blk_ccc_ofp_020 , &message_type_id, data_length, &enRetCode);
+
 	//·¢ËÍ¸øpad new20250620
 	if(Pad_heart_flag == 1)
 	{
 		Send_Message( DDSTables.CCC_PAD_020.niConnectionId,0,&transaction_id, &blk_ccc_ofp_020 , &message_type_id, data_length, &enRetCode);
 	}
-}
 
+}
 /*
  * ½ÓÊÕ×ÛÏÔ ÈÎÎñ·ÖÅä·½°¸È·ÈÏĞÅÏ¢  ¶ÔĞÅÏ¢½øĞĞ´¦Àí£¬²é¿´ÊÇ·ñ·¢Éú×ÓÈÎÎñÖØ¹æ»®»òº½ÏßÖØ¹æ»® ½øĞĞ²»Í¬´¦Àí
  */
@@ -3277,12 +3482,15 @@ void route_change(int i)
 			// ½«ºóËÄÊ®¸öµã±£´æ
 			memcpy( &(blk_ccc_ofp_018_cunchu[plan][task].waypoint_informations[40]) , &temp.waypoint_informations[0] ,temp.airway_point_num * sizeof(waypoint_information));
 		}
+
 		//»Ø¸´¸ø×ÛÏÔ£¬ĞŞ¸ÄµÄÓĞÈË»úº½Ïß
 		data_length = sizeof(BLK_CCC_OFP_018);
 		Send_Message(DDSTables.CCC_DPU_7.niConnectionId,0,&transaction_id, &temp.plan_code, &message_type_id, data_length, &enRetCode);
 		//·¢ËÍ¸øpad new20250620
 		//		Send_Message(DDSTables.CCC_PAD_018.niConnectionId,0,&transaction_id, &temp.plan_code,&message_type_id, data_length, &enRetCode);
+
 	}
+
 	BLK_CCC_OFP_024 uav;
 	static unsigned int plan = 0;
 	static unsigned int id = 0;
@@ -3299,6 +3507,7 @@ void route_change(int i)
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][id].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index]
 			,&uav.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0]
 			,sizeof(planning_information_waypoint_information)*25);
+
 		//»Ø¸´¸ø×ÛÏÔ£¬ĞŞ¸ÄµÄÎŞÈË»úº½Ïß
 		data_length = sizeof(BLK_CCC_OFP_024);
 		Send_Message(DDSTables.CCC_DPU_11.niConnectionId,0,&transaction_id, &uav, &message_type_id, data_length, &enRetCode);
@@ -3327,7 +3536,6 @@ void route_change(int i)
 		id = 0;
 	}
 }
-
 //·¢ËÍÎŞÈË»úµ¥ÈÎÎñµ½¸¨Öú¾ö²ß£¬Éú³É¿ÕÓò
 void send_uav_airway(unsigned int plan,unsigned int id)
 {
@@ -3362,6 +3570,9 @@ void send_uav_airway(unsigned int plan,unsigned int id)
 //			return;
 //		}
 //	}
+
+
+
 	//·¢ËÍÎŞÈË»úµ±Ç°ÈÎÎñµÄËùÓĞº½Ïßµ½CTAS
 	for(unsigned char j = 0 ;j < blk_ccc_ofp_024_cunchu[plan][id].individual_drone_routing_programs.planning_informations.total_packet ; j++)
 	{
@@ -3388,22 +3599,26 @@ static void update_lead_uav_id_by_yaoce(void)
 {
     unsigned int new_lead = 0;
     int lead_cnt = 0;
+
     /* Prefer CCC_DPU_data_3 control status (1: manned, 2: ground). */
     for(int i = 0; i < UAV_MAX_NUM; i++)
     {
         unsigned int pid = CCC_DPU_data_3.drone_specific_informations[i].platform_num;
         if(pid == 0) { continue; }
+
         if(CCC_DPU_data_3.drone_specific_informations[i].platform_control_status == 1)
         {
             new_lead = pid;
             lead_cnt++;
         }
     }
+
     if(lead_cnt == 1)
     {
         load_file.lead_uav_id = new_lead;
         return;
     }
+
     /* Fallback: use formationId station_address/isControl if control_status not filled. */
     new_lead = 0;
     lead_cnt = 0;
@@ -3416,21 +3631,24 @@ static void update_lead_uav_id_by_yaoce(void)
             lead_cnt++;
         }
     }
+
     if(lead_cnt == 1)
     {
         load_file.lead_uav_id = new_lead;
     }
 }
-
 void uav_status_handle(){
 	// ½ÓÊÕÎŞÈË»ú´«»Ø ¸÷¸öÖ¡Êı¾İ ÕûÀíÎªÎŞÈË»ú×´Ì¬ĞÅÏ¢ ·¢¸ø×ÛÏÔ
 	// // printf("************************* ÎŞÈË»ú×´Ì¬´¦Àí + Í¨ĞÅ Ä£¿é ****************************";
+
+
 	recv_blk_kkl_ccc_000_008_010_011(); // ÖÜÆÚ½ÓÊÕ uavÒ£²âÊı¾İÖ¡½Ó¿Ú
 	update_lead_uav_id_by_yaoce(); // update lead_uav_id by telemetry/control status
 	load_file.lead_uav_id = 0x1005;//²âÊÔ
 //	printf("lead:0x%X\n",load_file.lead_uav_id);
 	// 3.2 ÎŞÈË»ú×´Ì¬ĞÅÏ¢
 	send_drone_state_information();
+
 	//	if(CCC_DPU_data_3.drone_number > 1)
 	//	{
 	//		static int cnt = 0;
@@ -3464,30 +3682,38 @@ void decode_uav_frame(int uav_index)
 	// 1 2Ö¡²»Ñ­»·£¬ ¿ÉÖ±½ÓÈ¡³ö
 	memset(&(s81_frame),0,sizeof(s81_frame));
 	memset(&(s82_frame),0,sizeof(s82_frame));
+
 	memset(&(s3A_frame),0,sizeof(s3A_frame));
 	memset(&(s3B_frame),0,sizeof(s3B_frame));
+
 	memset(&(s4A_frame),0,sizeof(s4A_frame));
 	memset(&(s4B_frame),0,sizeof(s4B_frame));
 	memset(&(s4C_frame),0,sizeof(s4C_frame));
 	memset(&(s4D_frame),0,sizeof(s4D_frame));
+
 	memset(&(s5A_frame),0,sizeof(s5A_frame));
 	memset(&(s5B_frame),0,sizeof(s5B_frame));
 	memset(&(s5C_frame),0,sizeof(s5C_frame));
 	memset(&(s5D_frame),0,sizeof(s5D_frame));
 	memset(&(s5E_frame),0,sizeof(s5E_frame));
+
+
 	memset(&(s6_frame),0,sizeof(s6_frame));
 	memset(&(s7_frame),0,sizeof(s7_frame));
 	memset(&(s8_frame),0,sizeof(s8_frame));
 	memset(&(s9_frame),0,sizeof(s9_frame));
+
 	//ÅĞ¶ÏĞ£ÑéºÍ
 	if(checkSum(dds_data_rece.dataA+2,30) == 0)
 	{
 		memcpy(&(s81_frame),dds_data_rece.dataA,sizeof(s81_frame));// È¡³öµÚÒ»Ö¡
 	}
+
 #ifdef DEBUG
 	//// printf("s81_frame");
 	//printRawData((char*)&s81_frame,sizeof(s81_frame));
 #endif
+
 	//ÅĞ¶ÏĞ£ÑéºÍ
 	if(checkSum(dds_data_rece.dataA+2+32,30) == 0)
 	{
@@ -3516,6 +3742,7 @@ void decode_uav_frame(int uav_index)
 		//printRawData((char*)&s3A_frame,sizeof(s3A_frame));
 #endif
 		break;
+
 		case (char)0x3b:
 				memcpy(&(s3B_frame),dds_data_rece.dataA+len_1_2,sizeof(s3B_frame));
 #ifdef DEBUG
@@ -3523,6 +3750,7 @@ void decode_uav_frame(int uav_index)
 		//printRawData((char*)&s3B_frame,sizeof(s3B_frame));
 #endif
 		break;
+
 		default:
 			// // // printf("Î´Öª3Ö¡Àà±ğ";
 			break;
@@ -3548,6 +3776,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x4b:
 			{
 			s4b_flag = 1;
@@ -3558,6 +3787,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x4c:
 			{
 			s4c_flag = 1;
@@ -3568,9 +3798,11 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x4d:
 			{
 			memcpy(&(s4D_frame),dds_data_rece.dataA+len_1_2_3,sizeof(s4D_frame));
+
 			parseYaoCeZiZhen4D(uav_index);
 #ifdef DEBUG
 			//// printf("s4D_frame");
@@ -3578,11 +3810,13 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		default:
 			// // // printf("Î´Öª4Ö¡Àà±ğ";
 			break;
 		}
 	}
+
 	// ´¦ÀíµÚÎåÖ¡
 	//    int len_1_2_3_4 = len_1_2_3 + sizeof(*s4A_frame);
 	unsigned int len_1_2_3_4 = 128;
@@ -3603,6 +3837,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x5b:
 			{
 			s5b_flag = 1;
@@ -3613,6 +3848,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x5c:
 			{
 			s5c_flag = 1;
@@ -3623,6 +3859,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x5d:
 			{
 			memcpy(&(s5D_frame),dds_data_rece.dataA + len_1_2_3_4,sizeof(s5D_frame));
@@ -3632,6 +3869,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		case (char)0x5e:
 			{
 			s5e_flag = 1;
@@ -3642,6 +3880,7 @@ void decode_uav_frame(int uav_index)
 #endif
 			}
 		break;
+
 		default:
 			//// printf("unknow frame 5 \n");
 			break;
@@ -3673,6 +3912,7 @@ void decode_uav_frame(int uav_index)
 					//·Ç±à¶Ó
 					s6_bd_flag = 0;
 				}
+
 				s6_hold_flag = s6_frame.formStage;
 			}
 		}
@@ -3710,6 +3950,7 @@ void decode_uav_frame(int uav_index)
 				if((*moni_request) == 0x16)
 				{
 					//½ÓÊÜµ½16Ö¸Áî»Ø¸´
+
 					if(get_int8_bit(s20,6) == 0 && get_int8_bit(s20,7) == 0)
 					{
 						b2_frame_16[uav_index] = 1;
@@ -3779,17 +4020,20 @@ void decode_uav_frame(int uav_index)
 				s33 = *(dds_data_rece.dataA + len_1_2_3_4_5_6_7_8 + 33);
 				//ÓĞÈË»úÁìº½Ìõ¼ş
 				memcpy(&s9_manned_lead,&s33,sizeof(MannedLead));
+
 				//Áìº½ÍË³öÌõ¼ş
 				//±à¶ÓÒ£²â4BÖ¡34×Ö½Ú
 				char s34;
 				s34 = *(dds_data_rece.dataA + len_1_2_3_4_5_6_7_8 + 34);
 				//ÓĞÈË»úÁìº½ÍË³öÌõ¼ş
 				memcpy(&s9_manned_exit,&s34,sizeof(MannedExit));
+
 				//º½ÏßÍË³öº½µãºÅ
 				//±à¶ÓÒ£²â4BÖ¡35×Ö½Ú
 				unsigned char s35;
 				s35 = *(dds_data_rece.dataA + len_1_2_3_4_5_6_7_8 + 35);
 				memcpy(&dissolve_point,&s35,sizeof(unsigned char));
+
 			}
 			//±à¶ÓÒ£²â4BÖ¡22×Ö½Ú
 			char s22;
@@ -3798,6 +4042,7 @@ void decode_uav_frame(int uav_index)
 			//ÎŞÈË»úÅö×²ĞÅÏ¢
 			s9_uav_avoid_flag[uav_index] = s9_avoidinfo.uav_uav;
 			s9_man_avoid_flag[uav_index] = s9_avoidinfo.uav_manned;
+
 			//±à¶ÓÒ£²â4BÖ¡3~6×Ö½Ú
 			int s3_6;
 			memcpy(&s3_6,dds_data_rece.dataA + len_1_2_3_4_5_6_7_8 + 3,sizeof(int));
@@ -3818,8 +4063,10 @@ void decode_uav_frame(int uav_index)
 			s9_emergence_area[uav_index].Angle = (float)s11_12* ((double)180 / (((long long )2 << 14)-1));
 			s9_emergence_area[uav_index].Long = s13_14;
 			s9_emergence_area[uav_index].Wide = s15_16;
+
 		}
 	}
+
 	static int display_jr_cnt = 0;
 	//±à¶Ó×´Ì¬ ±à¶Ó±£³Ö °´º½Ïß·ÉĞĞ
 	if(blk_ccc_ofp_027.display == 0 && s6_bd_flag == 1 && s6_hold_flag == 2 && s7_hx_flag == 0)
@@ -3852,6 +4099,7 @@ void decode_uav_frame(int uav_index)
 		//´Ë´ÎÁìº½½áÊø
 		s7_manned_lh = 0;
 	}
+
 }
 
 void fault_message_init(int i)
@@ -4022,6 +4270,7 @@ void fault_message_init(int i)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.w_message.spzzdcx = 1;
 	else if(s5b_flag == 1)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.w_message.spzzdcx = 0;
+
 	/******************* attention_message *******************/
 	//Ö÷¼õ»¬ÓÍÎÂ¶È¸ß 4B12
 	if(get_int8_bit(s4B_frame.rotor_system.rotor_system_status,2))
@@ -4243,7 +4492,10 @@ void fault_message_init(int i)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.a_message.cjyjcjsjgz = 1;
 	else if(s5b_flag == 1)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.a_message.cjyjcjsjgz = 0;
+
+
 	//ÆäÓàÎªÈÎÎñÒ£²â
+
 	unsigned short temp;
 	//Ö÷¹ßµ¼²¿¼ş¹ÊÕÏ 1C20~21 bit0
 	memcpy(&temp,&KKL_CCC_data_21_1[i].data[20],2);
@@ -4322,6 +4574,7 @@ void fault_message_init(int i)
 	else if(t3b2_flag[i] == 1)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.a_message.ctgscgz = 0;
 	/******************* prompt_message *******************/
+
 	//À×´ïÕì²é¹ÊÕÏ 5Ö¡6~7 bit4
 	memcpy(&temp,&KKL_CCC_data_21_5[i].data[6],2);
 	if(get_bit(temp,4) && t5_flag[i] == 1)
@@ -4403,6 +4656,8 @@ void fault_message_init(int i)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.p_message.xjgz = 1;
 	else if(t2_flag[i] == 1)
 		CCC_DPU_data_3.drone_specific_informations[i].fault_list.p_message.xjgz = 0;
+
+
 //	//½ÚÅÄ¼ÓÒ»
 //	if(s6_hold_flag == 1)
 //	{
@@ -4473,6 +4728,7 @@ void fault_message_init(int i)
 //		blk_ccc_ofp_026.uav_sn = blk_ofp_ccc_053.uavSn;
 //		send_blk_ccc_ofp_026();
 //	}
+
 	//ÔØºÉÒ£²â±êÖ¾
 	t1c_flag[i] = 0;
 	t2_flag[i] = 0;
@@ -4481,10 +4737,12 @@ void fault_message_init(int i)
 	t5_flag[i] = 0;
 }
 
+
 // ½ÓÊÕ uavÊı¾İÖ¡½Ó¿Ú
 void recv_blk_kkl_ccc_000_008_010_011()
 {
 #if SIMTESTFLAG
+
 	static int timeoutFlag[UAV_MAX_NUM] = {0,0,0,0};
 	int drone_number = 0;
 	/******************* uav 1 *******************/
@@ -4513,6 +4771,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			timeoutFlag[0]  = 0;
 		}
 	}
+
 	/******************* uav 2 *******************/
 	message_size = 2048;
 	Receive_Message(DDSTables.KKL_CCC_6.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
@@ -4537,6 +4796,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			timeoutFlag[1]  = 0;
 		}
 	}
+
 	/******************* uav 3 *******************/
 	message_size = 2048;
 	Receive_Message(DDSTables.KKL_CCC_8.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
@@ -4561,6 +4821,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			timeoutFlag[2]  = 0;
 		}
 	}
+
 	/******************* uav 4 *******************/
 	message_size = 2048;
 	Receive_Message(DDSTables.KKL_CCC_9.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
@@ -4585,6 +4846,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			timeoutFlag[3]  = 0;
 		}
 	}
+
 	// ·ÂÕæ»·¾³³¬Ê±ÅĞ¶Ï
 	const int TIMEOUTCOUNT = 5;// ÅĞ¶¨³¬Ê±´ÎÊı
 	CCC_DPU_data_3.drone_number = 0; // ÊıÁ¿ÇåÁãÖØĞÂ¼ÆÊı
@@ -4592,6 +4854,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 	{
 		// ³¬Ê±¼ÆÊı×ÔÔö
 		timeoutFlag[i]++;
+
 		// ³¬Ê±ÅĞ¶Ï
 		if(timeoutFlag[i]>TIMEOUTCOUNT)
 		{
@@ -4603,8 +4866,12 @@ void recv_blk_kkl_ccc_000_008_010_011()
 		{
 			CCC_DPU_data_3.drone_number++;
 		}
+
 	}
+
+
 #else
+
 	/*******************ÏÈÊÕuµÄÒ£²âÊı¾İ*******************/
 	for(int i=0; i<UAV_MAX_NUM; i++)
 	{
@@ -4626,7 +4893,10 @@ void recv_blk_kkl_ccc_000_008_010_011()
 		default:
 			break;
 		}
+
+
 		// ÖÜÆÚÏûÏ¢£¬Ñ­»·½ÓÊÕ£¬Ñ­»·´¦Àí
+
 		Receive_Message(niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 		if(enRetCode == 0)
 		{
@@ -4637,6 +4907,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			}
 			//´ÓÒ£²âµÄ82Ö¡(Ò£²âµÚ47¸ö×Ö½Úºó4Î»)È¡³ö·É»úid£¨Î²ºÅ£¬Ğè¼Ó0x1000£©(ÒÑÔ¼¶¨)
 			int id = 0x1000+(int)((dds_data_rece.dataA[46] & 0xf0)>>4);
+
 			//			//ÔİÊ±Ğ´ËÀ 20250729
 			//			int id = UAV1_ID;
 			//20250925 int index = formationIdManage(id);
@@ -4654,12 +4925,15 @@ void recv_blk_kkl_ccc_000_008_010_011()
 				index = 1;
 				formationId[index].planeId = 0x1006;
 			}
+
 			if(index != -1)
 			{
 				// ÖØÖÃ¸Ã·É»úµÄ³¬Ê±¼ÆÊı
 				formationIdResetCount(index);
+
 				//¸üĞÂÁ´À´Ô´£¬U
 				formationId[index].C_U = 2;
+
 				// Èç¹ûu¶Ë»ú±¾»úÁ´Â·×´Ì¬Êı¾İÖĞµÄ¸Ã·É»úµÄuÁ´ÉÏĞĞ´«ÊäËÙÂÊÊÇ51.2kbps£¬ÄÇÃ´¾ÍÊÕ320×Ö½ÚÍêÕû°ü¡£Èç¹û²»ÊÇ£¬ÔòÖ»ÊÕÇ°160×Ö½Ú
 				if(blk_ccc_ofp_199.ULparSet_1[i].UpRate_3 == 2) // ?ºóĞøĞèÒªÓÃuavid£¬±éÀúblk_ccc_ofp_199.ULparSetµÄËùÓĞid£¬ÕÒµ½Æ¥ÅäµÄ²Å¿ÉÒÔ
 				{
@@ -4672,6 +4946,8 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			}
 		}
 	}
+
+
 	/*******************ÔÙÊÕcµÄ£¬cµÄÊÕµ½ÏàÍ¬µÄÔòÖ±½Ó¸²¸ÇuµÄÏàÍ¬id¼´¿É*******************/
 	for(int i=0; i<UAV_MAX_NUM; i++)
 	{
@@ -4732,8 +5008,10 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			}
 		}
 	}
+
 	// ±à¶Ó½ÓÊÕ¼ÆÊı×ÔÔö
 	formationIdCountIncrease();
+
 	/*****note:CCC_DPU_data_3ÏûÏ¢µÄ±à¶ÓĞòºÅ¸ù¾İformationIdµÄ±à¶ÓĞòºÅ¾ö¶¨******/
 	// ¸ù¾İ±à¶ÓÇé¿ö£¬½«³ö±à¶ÓµÄÎŞÈË»úĞÅÏ¢Çå¿Õ
 	CCC_DPU_data_3.drone_number = 0;
@@ -4750,8 +5028,15 @@ void recv_blk_kkl_ccc_000_008_010_011()
 			CCC_DPU_data_3.drone_number++;
 		}
 	}
+
+
+
 #endif
+
+
 }
+
+
 
 /************************ µ¥ÎŞÈË»ú¹æ»®Ä£¿é ************************/
 /*
@@ -4792,6 +5077,7 @@ void single_uav_plan()
 			single_uav_flag = 0;
 			return;
 		}
+
 		if(DPU_CCC_data_11.mission_type == 11)
 		{
 			//·µº½±êÖ¾Î»
@@ -4876,6 +5162,7 @@ void single_uav_plan()
 							22);
 					if(i != plan_uav)
 						memset(&blk_ccc_ofp_019.formation_synergy_mission_programs[i],0,22);
+
 					//ÕûÀíÔ¤ÀÀ·½°¸£¬°ÑÈÎÎñ·Åµ½µ±Ç°½×¶ÎµÄÎ»ÖÃ
 					memcpy(&blk_ccc_ofp_019.formation_synergy_mission_programs[plan_uav].task_sequence_informations[num],
 							&blk_ccc_ofp_019.formation_synergy_mission_programs[i].task_sequence_informations[0],
@@ -4901,12 +5188,15 @@ void single_uav_plan()
 			{
 				unsigned int id = (temp.individual_drone_routing_programs.drone_serial_number - 1);
 				unsigned int index = temp.individual_drone_routing_programs.planning_informations.packet_id *25;
+				
+
 				// ·Ç½ôÃÜ±à¶ÓÊ±£¬idÎª0£¬Ôò°ÑĞòºÅ¼Ó1£¨¼°ctasµÄĞòºÅ0£¨ÎŞÈË»ú1£©ÆğÊ¼ÊÇofp±à¶ÓÄÚµÄ1£¨ÎŞÈË»ú2£©£©
 				if(castCtasToOfpIsNeeded() && id == 0)
 				{
 					temp.individual_drone_routing_programs.drone_serial_number+=1;
 					id+=1;
 				}
+
 				//ÎŞÈË»úÈÎÎñĞòºÅÎª0
 				temp.individual_drone_routing_programs.subtask_index = 0;
 				// ±£´æÍ·ĞÅÏ¢
@@ -4926,6 +5216,7 @@ void single_uav_plan()
 				//				Send_Message(DDSTables.CCC_PAD_024.niConnectionId,0,&transaction_id, &blk_ccc_ofp_024,&message_type_id, data_length, &enRetCode);
 			}
 		}
+
 		single_uav_flag = 0;
 		scheme_generation_state(0,2,0,2);// ·µ»Ø·½°¸±à¼­×´Ì¬µ½×ÛÏÔ£¬º½Ïß·¢²¼Íê³É
 	}
@@ -4968,6 +5259,7 @@ void single_uav_plan()
 		else
 		{
 			//ÆäËûÀàĞÍ×¢Èë
+
 			//¸²¸Ç
 			if(uav_insert_cover == 2)
 			{
@@ -4977,6 +5269,7 @@ void single_uav_plan()
 				cover_inject(DPU_CCC_data_11.drone_num - 1);
 			}
 		}
+
 	}
 	//µ¥ÎŞÈË»ú±à¼­
 	if(single_uav_flag == 22)
@@ -4994,7 +5287,6 @@ void single_uav_plan()
 		single_uav_flag = 0;
 	}
 }
-
 void edit_uav_route(int i)
 {
 	BLK_CCC_OFP_024 uav;
@@ -5013,6 +5305,7 @@ void edit_uav_route(int i)
 		memcpy(&blk_ccc_ofp_024_single[id].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index]
 		                                                                                                                                      ,&uav.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0]
 		                                                                                                                                                                                                                                               ,sizeof(planning_information_waypoint_information)*25);
+
 		//º½Ïß×îºóÒ»¸öµãµÄ´ı»ú²ÎÊı·µ»ØÄ¬ÈÏ65535 20250823new
 		if(uav.individual_drone_routing_programs.planning_informations.total_packet - 1 == uav.individual_drone_routing_programs.planning_informations.packet_id)
 		{
@@ -5047,7 +5340,6 @@ void edit_uav_route(int i)
 		uav_id = 0;
 	}
 }
-
 //¸²¸Ç×¢Èëº½Ïß
 void cover_inject(int uav_index)
 {
@@ -5104,7 +5396,6 @@ void cover_inject(int uav_index)
 	send_count = 0;
 	single_uav_flag = 33;
 }
-
 void single_uav_BDFX()
 {
 	//ÎŞÈË»ú±à¶ÓÖ¸ÁîÖ¡ÁÙÊ±¶¨Òå 100~143 Êı¾İ¿â¹ÜÀíÖ¡
@@ -5124,6 +5415,7 @@ void single_uav_BDFX()
 		scheme_generation_state(0,2, 3, 2);
 		memset(CCC_DPU_data_0.failreason, 0, 200);
 	}
+
 	//º½Â·µã»ù´¡ĞÅÏ¢¸³Öµ
 	//±à¶Óº½µã×°¶©
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order[0] = 0x30;
@@ -5138,6 +5430,7 @@ void single_uav_BDFX()
 	{
 		temp.hx++;
 	}
+
 	//»ú³¡µã¸³Öµ
 	if(hx_point == 0 || hx_point == 6)
 	{
@@ -5157,9 +5450,11 @@ void single_uav_BDFX()
 		//¸ß¶ÈËÙ¶È
 		temp.height = 360 / gaodu_scale;
 		temp.speed = 25/ speed_scale;
+
 		//µ¹ÊıµÚ¶ş¸ö¼ÆËãµã£¬µÚÁù¸öµã
 		temp.hd = hx_point+1;
 		temp.tezhenzi[0] = 0;
+
 		//¼ÆËãµ¹ÊıµÚ¶ş¸öµã
 		unsigned int id = DPU_CCC_data_11.drone_num - 1;
 		Point last_second;
@@ -5245,6 +5540,7 @@ void single_uav_BDFX()
 	}
 	//¸³Öµºó¿½±´½øÊı¾İ¿âÖ¡ÖĞ
 	memcpy(&blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data,&temp ,sizeof(tail_0x30));
+
 }
 
 void single_uav_BDON()
@@ -5267,6 +5563,7 @@ void single_uav_BDON()
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_chage_orders),sizeof(order_data_frames.track_point_chage_orders));
 		send_index = uav_index;
+
 		send_cnt2[uav_index]++;
 	}
 	if(send_cnt2[uav_index] >= 3)
@@ -5279,6 +5576,7 @@ void single_uav_BDON()
 
 void double_uav_BDFX(int uav_index)
 {
+
 	//·¢ËÍ¾Å¸öº½µã(ĞÂÔöµ¹ÊıµÚ¶ş¸ö¼ÆËãµã 20251019new£¬ÖĞµãÓë½âÉ¢µãÖ®¼äĞÂÔöÒ»¸öµã)£¬Ã¿¸öº½µã·¢ËÍËÄ´Î
 	static char hx_point = 0;
 	static int cnt_0x30 = 4;
@@ -5294,6 +5592,7 @@ void double_uav_BDFX(int uav_index)
 		scheme_generation_state(0,2, 3, 2);
 		memset(CCC_DPU_data_0.failreason, 0, 200);
 	}
+
 	//º½Â·µã»ù´¡ĞÅÏ¢¸³Öµ
 	//±à¶Óº½µã×°¶©
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order[0] = 0x30;
@@ -5308,6 +5607,7 @@ void double_uav_BDFX(int uav_index)
 	{
 		temp.hx++;
 	}
+
 	//»ú³¡µã¸³Öµ
 	if(hx_point == 0 || hx_point == 8)
 	{
@@ -5331,6 +5631,7 @@ void double_uav_BDFX(int uav_index)
 		else
 			temp.height = 425 / gaodu_scale;
 		temp.speed = 25/ speed_scale;
+
 		//µ¹ÊıµÚ¶ş¸ö¼ÆËãµã£¬µÚ°Ë¸öµã
 		temp.hd = hx_point+1;
 		temp.tezhenzi[0] = 0;
@@ -5425,6 +5726,7 @@ void double_uav_BDFX(int uav_index)
 	}
 	//¸³Öµºó¿½±´½øÊı¾İ¿âÖ¡ÖĞ
 	memcpy(&blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data,&temp ,sizeof(tail_0x30));
+
 }
 
 void double_uav_BDON(int uav_index)
@@ -5445,6 +5747,7 @@ void double_uav_BDON(int uav_index)
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_chage_orders),sizeof(order_data_frames.track_point_chage_orders));
 		send_index = uav_index;
+
 		send_cnt2[uav_index]++;
 	}
 	if(send_cnt2[uav_index] >= 3)
@@ -5453,7 +5756,6 @@ void double_uav_BDON(int uav_index)
 		send_index = uav_index;
 	}
 }
-
 void single_uav_pxlh(unsigned short uav_index)
 {
 	//ÎŞÈË»ú±à¶ÓÖ¸ÁîÖ¡ÁÙÊ±¶¨Òå 100~143 Êı¾İ¿â¹ÜÀíÖ¡
@@ -5465,6 +5767,7 @@ void single_uav_pxlh(unsigned short uav_index)
 		/* blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order[0] = 0x14;
 	  blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order[1] = 0x14;
 	  blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order[2] = 0x14;
+
 	  blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data[0] = 50;
 	  blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data[1] = 4;*/
 		send_cnt1[uav_index]++;
@@ -5488,6 +5791,7 @@ void single_uav_lhcs(unsigned short uav_index)
 	//
 	//        blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data[0] = 50;
 	//        blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data[1] = 2;
+
 	//0x16Ö¸ÁîÊı¾İ
 	/*tail_0x16 temp;
 	memset(&temp,0,sizeof(tail_0x16));
@@ -5502,6 +5806,7 @@ void single_uav_lhcs(unsigned short uav_index)
 	}
 	//¸³Öµºó¿½±´½øÊı¾İ¿âÖ¡ÖĞ
 	//memcpy(&blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data,&temp ,sizeof(tail_0x16));
+
 }
 
 //void single_uav_XT()
@@ -5548,6 +5853,7 @@ void single_uav_lhcs(unsigned short uav_index)
 //            //±£´æÔËĞĞ·½°¸id
 //            planning_id = blk_ofp_ccc_043.plan_id;
 //            //È¡³ö±£´æµÄ·½°¸£¬·¢ËÍÔËĞĞ·½°¸µ½×ÛÏÔ
+////            memcpy(&blk_ccc_ofp_017,&blk_ccc_ofp_019,sizeof(BLK_CCC_OFP_017));
 ////            send_blk_ccc_ofp_017();
 //            // ·¢ËÍµ¥ÎŞÈË»úÎñÔËĞĞ·ÖÅä½á¹û
 //            blk_ccc_ofp_019.plan_release_mode = 1;//ÒÑ·¢²¼
@@ -5586,9 +5892,11 @@ void single_uav_lhcs(unsigned short uav_index)
 //    }
 //}
 void single_mission_target_plan(){
+
 	/* µ¥ÈÎÎñÇø/Ä¿±ê¹æ»®ĞÅÏ¢ */
 	message_size = RECV_MAX_SIZE;
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_12.niConnectionId,DDSTables.DPU2_CCC_12.niConnectionId,&DPU_CCC_data_12,sizeof DPU_CCC_data_12);
+
 	//ÊÕ²»µ½¾ÍÊÕPAD new20250620
 	if(enRetCode != 0)
 	{
@@ -5606,6 +5914,7 @@ void single_mission_target_plan(){
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_004.niConnectionId);
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_008.niConnectionId);
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_009.niConnectionId);
+
 		if(DPU_CCC_data_12.mission_object_type == 2 || DPU_CCC_data_12.mission_object_type == 3)//Ä¿±ê/¹â±ê
 		{
 			printf("point1 lat:%lf\tpoint1 lon:%lf\n",DPU_CCC_data_12.waypoints_cursorSelection_longitude_and_latitude_synt[0].latitude,DPU_CCC_data_12.waypoints_cursorSelection_longitude_and_latitude_synt[0].longitude);
@@ -5652,10 +5961,12 @@ void single_mission_target_plan(){
 					return;
 				}
 			}
+
 			mission_insert_cover = DPU_CCC_data_12.mission_way;
 			init_single_mission_target_zhanfa();
 			send_single_mission_zhanshutuijian();  // ´¥·¢¹æ»®ºóÖ»·¢ËÍÒ»´ÎÕ½·¨¹æ»®Ö¸Áî¸ø CTAS
 			single_mission_target_flag = 2;
+
 		}
 		else if(DPU_CCC_data_12.mission_object_type == 1)//ÈÎÎñÇø
 		{
@@ -5681,6 +5992,7 @@ void single_mission_target_plan(){
 			init_single_mission_target_zhanfa();
 			send_single_mission_zhanshutuijian();  // ´¥·¢¹æ»®ºóÖ»·¢ËÍÒ»´ÎÕ½·¨¹æ»®Ö¸Áî¸ø CTAS
 			single_mission_target_flag = 2;
+
 		}
 	}
 	//½ÓÊÕ·ÖÅä½á¹û·¢ËÍ
@@ -5760,13 +6072,16 @@ void single_mission_target_plan(){
 					data_length = sizeof(BLK_CCC_OFP_005);
 					// ×ª·¢¸ø×ÛÏÔÈÎÎñÇø»®·ÖĞÅÏ¢
 					Send_Message(DDSTables.CCC_DPU_30.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
+
 					//·¢ËÍ¸øpad new20250620
 					if(Pad_heart_flag == 1)
 					{
 						Send_Message(DDSTables.CCC_PAD_005.niConnectionId,0,&transaction_id, &temp, &message_type_id, data_length, &enRetCode);
 					}
+
 				}
 			}
+
 			for(int i = 0 ; i < 3 ; i ++)
 			{
 				//ÊÕµ½µ¥ÈÎÎñÇø/Ä¿±êÈÎÎñ·ÖÅä½á¹ûCTAS->DTMS
@@ -5835,6 +6150,7 @@ void single_mission_target_plan(){
 //				}
 //				send_blk_ccc_ofp_018(DDSTables.CCC_DPU_7.niConnectionId,plan,0); // ·¢ËÍÓĞÈË»úÍ¨º½µã Í¨ÓÃº½Â·µã·ÖÁ½´Î·¢ËÍ µÚ1°ü40¸öº½µã ºÍ µÚ2°ü35¸öº½µã
 		}
+
 		single_mission_target_flag = 4;
 	}
 	else if(single_mission_target_flag == 4)
@@ -5854,6 +6170,7 @@ void single_mission_target_plan(){
 
 // ³õÊ¼»¯ µ¥¸öÎŞÈË»ú¹æ»®Ö¸Áî·¢¸øCATS
 void init_single_mission_target_zhanfa(){
+
 	memset(&blk_dtms_ctas_002,0,sizeof(BLK_DTMS_CTAS_002));
 	blk_dtms_ctas_002.planning_id = planning_id;//ÔËĞĞ·½°¸id
 	blk_dtms_ctas_002.uav_id = 0;//µ¥ÈÎÎñÇø/Ä¿±ê
@@ -5866,6 +6183,7 @@ void init_single_mission_target_zhanfa(){
 	blk_dtms_ctas_002.solider_infos[0].speed = DPU_CCC_data_4.groundspeed;
 	blk_dtms_ctas_002.solider_infos[0].height = DPU_CCC_data_4.absolute_barometric_altitude;
 	blk_dtms_ctas_002.solider_infos[0].hangxiang = DPU_CCC_data_4.true_direction;
+
 	for(int i = 0 ; i < 4 ; i ++ )
 	{
 		if(CCC_DPU_data_3.drone_specific_informations[i].platform_num == 0)
@@ -5880,6 +6198,8 @@ void init_single_mission_target_zhanfa(){
 		blk_dtms_ctas_002.solider_infos[i + 1].lon_lat_info.latitude = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_lati;
 		blk_dtms_ctas_002.solider_infos[i + 1].lon_lat_info.longitude = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_longi;
 	}
+
+
 	blk_dtms_ctas_002.task_type = DPU_CCC_data_12.mission_type; // ÈÎÎñÀàĞÍ
 	blk_dtms_ctas_002.target_type = DPU_CCC_data_12.mission_object_type; // Ä¿±êÀàĞÍ
 	blk_dtms_ctas_002.zhanshu_sel = 1;   // Õ½ÊõÕ½·¨Ñ¡Ôñ(·ÏÆú²»Ê¹ÓÃ)
@@ -5914,6 +6234,7 @@ void init_single_mission_target_zhanfa(){
 			blk_dtms_ctas_002.region_infos[0].reg_circle.radious = blk_ccc_ofp_033[packge].area_informations[index].cycles.radius;
 			blk_dtms_ctas_002.region_infos[0].reg_circle.center_lon_lat.latitude = blk_ccc_ofp_033[packge].area_informations[index].cycles.cycle_longitude_and_latitude.latitude;
 			blk_dtms_ctas_002.region_infos[0].reg_circle.center_lon_lat.longitude = blk_ccc_ofp_033[packge].area_informations[index].cycles.cycle_longitude_and_latitude.longitude;
+
 		}break;
 		case 2 :{ // ¶à±ßĞÎ
 			blk_dtms_ctas_002.region_infos[0].reg_ploygen.point_num = blk_ccc_ofp_033[packge].area_informations[index].polygonals.point_number;
@@ -5922,12 +6243,15 @@ void init_single_mission_target_zhanfa(){
 				blk_dtms_ctas_002.region_infos[0].reg_ploygen.points_lon_lat[j].longitude = blk_ccc_ofp_033[packge].area_informations[index].polygonals.point_coordinates[j].longitude;
 			}
 		}break;
+
 		}
+
 		blk_dtms_ctas_002.region_infos[0].reg_top_of_hei_valid = blk_ccc_ofp_033[packge].area_informations[index].upper_height_limit_valid_bit;
 		blk_dtms_ctas_002.region_infos[0].reg_down_of_hei_valid = blk_ccc_ofp_033[packge].area_informations[index].lower_height_limit_valid_bit;
 		blk_dtms_ctas_002.region_infos[0].kongyu_belong_to_uav_valid = 1;
 		blk_dtms_ctas_002.region_infos[0].top_of_hei = blk_ccc_ofp_033[packge].area_informations[index].upper_height_limit;
 		blk_dtms_ctas_002.region_infos[0].down_of_hei = blk_ccc_ofp_033[packge].area_informations[index].lower_height_limit;
+
 	}else if(DPU_CCC_data_12.mission_object_type == 2){//(Ä¿±êĞÅÏ¢)¹â±êÑ¡µã
 		memset(&(blk_dtms_ctas_002.region_infos),0,sizeof(blk_dtms_ctas_002.region_infos));
 		// ÈÎÎñµãĞÅÏ¢
@@ -5972,11 +6296,14 @@ void init_single_mission_target_zhanfa(){
 			blk_dtms_ctas_002.region_infos[0].point_infos[k].point_lon_lat.latitude = DPU_CCC_data_12.waypoints_cursorSelection_longitude_and_latitude_synt[k].latitude;
 			blk_dtms_ctas_002.region_infos[0].point_infos[k].point_lon_lat.longitude = DPU_CCC_data_12.waypoints_cursorSelection_longitude_and_latitude_synt[k].longitude;
 		}
+
 	}
+
 }
 
 // ³õÊ¼»¯ µ¥ÈÎÎñÇø/Ä¿±ê¹æ»®Ö¸Áî·¢¸øCATS
 void init_single_uav_zhanfa(){
+
 	memset(&blk_dtms_ctas_002,0,sizeof(BLK_DTMS_CTAS_002));
 	blk_dtms_ctas_002.planning_id = planning_id;//ÔËĞĞ·½°¸id
 	blk_dtms_ctas_002.uav_id = DPU_CCC_data_11.drone_id;//µ¥ÎŞÈË»ú±àºÅ
@@ -5988,6 +6315,7 @@ void init_single_uav_zhanfa(){
 	blk_dtms_ctas_002.solider_infos[0].speed = DPU_CCC_data_4.groundspeed;
 	blk_dtms_ctas_002.solider_infos[0].height = DPU_CCC_data_4.absolute_barometric_altitude;
 	blk_dtms_ctas_002.solider_infos[0].hangxiang = DPU_CCC_data_4.true_direction;
+
 	// ¿ÉÄÜ·Ç½ôÃÜÅÅÁĞ£¬Ôò¼ÆÊıÓĞĞ§ÎŞÈË»ú
 	int tem_uav_num = 0;
 	for(int i = 0 ; i < 4 ; i ++ )
@@ -6003,8 +6331,11 @@ void init_single_uav_zhanfa(){
 		blk_dtms_ctas_002.solider_infos[tem_uav_num + 1].hangxiang = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_heading;
 		blk_dtms_ctas_002.solider_infos[tem_uav_num + 1].lon_lat_info.latitude = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_lati;
 		blk_dtms_ctas_002.solider_infos[tem_uav_num + 1].lon_lat_info.longitude = CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_longi;
+
 		tem_uav_num++;
 	}
+
+
 	blk_dtms_ctas_002.task_type = DPU_CCC_data_11.mission_type; // ÈÎÎñÀàĞÍ
 	blk_dtms_ctas_002.target_type = DPU_CCC_data_11.mission_object_type; // Ä¿±êÀàĞÍ
 	blk_dtms_ctas_002.zhanshu_sel = 1;   // Õ½ÊõÕ½·¨Ñ¡Ôñ(·ÏÆú²»Ê¹ÓÃ)
@@ -6041,6 +6372,7 @@ void init_single_uav_zhanfa(){
 			blk_dtms_ctas_002.region_infos[0].reg_circle.radious = blk_ccc_ofp_033[packge].area_informations[index].cycles.radius;
 			blk_dtms_ctas_002.region_infos[0].reg_circle.center_lon_lat.latitude = blk_ccc_ofp_033[packge].area_informations[index].cycles.cycle_longitude_and_latitude.latitude;
 			blk_dtms_ctas_002.region_infos[0].reg_circle.center_lon_lat.longitude = blk_ccc_ofp_033[packge].area_informations[index].cycles.cycle_longitude_and_latitude.longitude;
+
 		}break;
 		case 2 :{ // ¶à±ßĞÎ
 			blk_dtms_ctas_002.region_infos[0].reg_ploygen.point_num = blk_ccc_ofp_033[packge].area_informations[index].polygonals.point_number;
@@ -6049,17 +6381,21 @@ void init_single_uav_zhanfa(){
 				blk_dtms_ctas_002.region_infos[0].reg_ploygen.points_lon_lat[j].longitude = blk_ccc_ofp_033[packge].area_informations[index].polygonals.point_coordinates[j].longitude;
 			}
 		}break;
+
 		}
+
 		blk_dtms_ctas_002.region_infos[0].reg_top_of_hei_valid = blk_ccc_ofp_033[packge].area_informations[index].upper_height_limit_valid_bit;
 		blk_dtms_ctas_002.region_infos[0].reg_down_of_hei_valid = blk_ccc_ofp_033[packge].area_informations[index].lower_height_limit_valid_bit;
 		blk_dtms_ctas_002.region_infos[0].kongyu_belong_to_uav_valid = 1;
 		blk_dtms_ctas_002.region_infos[0].top_of_hei = blk_ccc_ofp_033[packge].area_informations[index].upper_height_limit;
 		blk_dtms_ctas_002.region_infos[0].down_of_hei = blk_ccc_ofp_033[packge].area_informations[index].lower_height_limit;
+
 	}
 	else if(DPU_CCC_data_11.mission_object_type == 2){//(Ä¿±ê)
 		memset(&(blk_dtms_ctas_002.region_infos),0,sizeof(blk_dtms_ctas_002.region_infos));
 		// ÈÎÎñµãĞÅÏ¢
 		blk_dtms_ctas_002.region_infos[0].task_point_num = 1;
+
 		for(int k = 0;k < 30 ;k++){
 			//ÕÒµ½ÅúºÅ¶ÔÓ¦Ä¿±ê,0Ò²ÊÇÓĞĞ§µÄ
 			if(DPU_CCC_data_0.target_informations[k].target_lot_number1 == DPU_CCC_data_11.area_point_step_num)
@@ -6091,9 +6427,11 @@ void init_single_uav_zhanfa(){
 		blk_dtms_ctas_002.region_infos[0].point_infos[0].point_source = 0;
 		blk_dtms_ctas_002.region_infos[0].point_infos[0].point_lon_lat.latitude = DPU_CCC_data_11.waypoints_cursorSelection_longitude_and_latitude_synt.latitude;
 		blk_dtms_ctas_002.region_infos[0].point_infos[0].point_lon_lat.longitude = DPU_CCC_data_11.waypoints_cursorSelection_longitude_and_latitude_synt.longitude;
-	}
-}
 
+
+	}
+
+}
 // ÎŞÈË»úÏÂÒ»½×¶ÎÌáÊ¾
 void send_blk_ccc_ofp_006()
 {
@@ -6104,6 +6442,7 @@ void send_blk_ccc_ofp_006()
 		{
 			continue;
 		}
+
 		// µ±Ç°ÈÎÎñÊÇĞüÍ£²»ÌáÊ¾
 		int type = getUavCurrentTask(i);
 		// /*×ÓÈÎÎñÈÎÎñÀàĞÍ  0=N/A;1=¸¡±êÕìÊÕ;2=µõÉù¶¨²â;3=¸¡±ê²¼Õó;4=Í¨ĞÅÖĞ¼Ì;5=´ÅÌ½ËÑË÷;6=´ÅÌ½¸ú×Ù;7=¹âµçËÑË÷;8=¹âµç¸ú×Ù;9=±à¶Ó·ÉĞĞ;10=ÈÎÎñµ¼º½;11=·µº½;12=ĞüÍ£;13=ÁÙÊ±¸Äº½;14=ÅÌĞı;15¹¥»÷*/
@@ -6111,6 +6450,8 @@ void send_blk_ccc_ofp_006()
 		{
 			continue;
 		}
+
+
 		//ÅĞ¶Ï×¢ÈëµÄÎŞÈË»úº½Â·µãÊÇ·ñÒÑ¾­·ÉÍê£¬µ¹ÊıµÚ¶ş¸ö¼ÆËãµãºÍ×îºóÒ»¸öÎª»ú³¡µã²»·É(ÅĞ¶Ï×îºóÒ»¸öµã£¬ÇÒ´ı·É¾àĞ¡ÓÚÉè¶¨Öµ)£¬´ı·É¾àÀëĞ¡ÓÚ300£¬´¦ÓÚÈ«¾ÖÈÎÎñ¹æ»®
 		if(uav_route[i].tasking == 1 &&(uav_route[i].hull_number - 2 == uav_route[i].waypoint_number) /*&& g_toCurPointDis[i] < 300 */&& formulate_single == 1)
 		{
@@ -6152,7 +6493,6 @@ void send_blk_ccc_ofp_006()
 		}
 	}
 }
-
 // ÎŞÈË»úÏÂÒ»½×¶ÎÌáÊ¾·´À¡
 void recv_blk_ofp_ccc_041()
 {
@@ -6174,18 +6514,21 @@ void faBuProc()
 {
 	// ³åÍ»Ê±·¢²¼Ç°´¦Àí
 //	avoidLineCrashFabuProc();
+
 	if ((g_recv_fabuCode[0] == 1) ||(g_recv_fabuCode[1] == 1) ||(g_recv_fabuCode[2] == 1) ||(g_recv_fabuCode[3] == 1)) {
 		// Çå¿Õ·¢²¼±ê¼Ç
 		g_recv_fabuCode[0] = 0;
 		g_recv_fabuCode[1] = 0;
 		g_recv_fabuCode[2] = 0;
 		g_recv_fabuCode[3] = 0;
+
 		//·¢²¼º½ÏßÊ±Í£Ö¹²éÑ¯
 		hx_cx_flag = 0;
 		//ÊÇ·ñÎª¹¥»÷
 		if(blk_ofp_ccc_039.routeType == 2)
 		{
 			scheme_generation_state(2,2, 1, 2); // ·µ»Ø·¢²¼×´Ì¬µ½×ÛÏÔ
+
 			//ÖØĞÂÉú³É¹¥»÷º½Ïß¿ÕÓò
 			for(int i = 0 ; i < 2 ; i ++)
 				send_uav_airway(blk_ofp_ccc_039.Plan_ID % 3,i);
@@ -6194,8 +6537,10 @@ void faBuProc()
 		{
 			scheme_generation_state(1,2, 1, 2); // ·µ»Ø·¢²¼×´Ì¬µ½×ÛÏÔ
 		}
+
 		//ÕÒµ½·½°¸±àºÅË÷Òı
 		unsigned int plan = (blk_ofp_ccc_039.Plan_ID) % 3;
+
 		//³õÊ¼»¯ÎŞÈË»úÊı¾İ,½ÓÊÕ±êÖ¾,¿ÕÓòÓ¦ÓÃ±êÖ¾Çå¿Õ
 		for (int i = 0; i < 4; i++) {
 			memset(&uav_send[i], 0, sizeof(UAV_SEND));
@@ -6203,7 +6548,9 @@ void faBuProc()
 			memset(&s4D_frame_38[i], 0, sizeof(int));
 			send_area[i] = 0;
 		}
+
 		for (unsigned int i = 0; i < 4; i++) {
+
 			//½øÈëµÚ¶ş´Î·¢²¼£¬Ã»ÓĞ³åÍ»µÄÎŞÈË»ú²»ÔÙÖØĞÂ×¢Èë,Ö»×¢Èë´æÔÚ³åÍ»µÄÎŞÈË»ú»Ö¸´º½Ïß
 			if(blk_ofp_ccc_154.plan_query == 3 && g_lineCrashState[i].hasConflict == 0)
 			{
@@ -6211,6 +6558,7 @@ void faBuProc()
 			}
 			uav_send[i].drone_id =
 					CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[i + 1].platform_code;
+
 			//ÕÒµ½ÈÎÎñÀàĞÍ²ÎÊıË÷Òı
 			for (int j = 0; j < 8; j++) {
 				if (task_param[j].type_id
@@ -6220,6 +6568,7 @@ void faBuProc()
 					break;
 				}
 			}
+
 			//º½Â·µãÊıÁ¿
 			uav_send[i].waypoints_number =
 					blk_ccc_ofp_024_cunchu[plan][i].individual_drone_routing_programs.planning_informations.waypoints_number;
@@ -6228,6 +6577,7 @@ void faBuProc()
 					&blk_ccc_ofp_024_cunchu[plan][i].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],
 					sizeof(planning_information_waypoint_information)
 					* uav_send[i].waypoints_number);
+
 			//·¢ËÍ×¼±¸
 			uav_send[i].send_ready = 1;
 			uav_send[i].first_flag = 0;
@@ -6242,6 +6592,7 @@ void faBuProc()
 		track_point_count = -1;
 		send_count = 0;
 	}
+
 	static int send_uav_num = 0;				//·¢ËÍµÄÓĞĞ§ÎŞÈË»úÊıÁ¿
 	//ÅĞ¶ÏÎŞÈË»úĞÅÏ¢ÊÇ·ñ¶¼Â¼ÈëÍê³É²¢ÇÒ¶ÓÁĞÖĞÓĞ»¹Î´·¢ËÍµÄÊı¾İ
 	if (uav_hl_confirm == 0) {
@@ -6280,6 +6631,7 @@ void faBuProc()
 			}
 			memset(CCC_DPU_data_0.failreason, 0, 200);
 			printf("0x38 failed! %d\n", s4D_frame_38[send_index]);
+
 			//ÍË³öº¯Êı
 			return;
 		}
@@ -6340,6 +6692,7 @@ void faBuProc()
 						* points_number);
 				//ÎŞÈË»ú×¢Èë³É¹¦£¬¿ÉÓ¦ÓÃ¿ÕÓò
 				send_area[i] = 1;
+
 				cnt++;
 				s4D_frame_40[i] = 0;
 				//ÇĞ»»³É¹¦ÊıÁ¿Óë·¢ËÍµÄÓĞĞ§ÎŞÈË»úÊıÁ¿Ò»ÖÂ
@@ -6362,6 +6715,7 @@ void faBuProc()
 						//È¡³ö±£´æµÄ·½°¸£¬·¢ËÍÔËĞĞ·½°¸µ½×ÛÏÔ
 						memcpy(&blk_ccc_ofp_017, &CCC_DPU_data_6_Ofp[plan],
 								sizeof(BLK_CCC_OFP_017));
+
 						send_blk_ccc_ofp_017();
 						formulate_single = 1;
 					}
@@ -6372,12 +6726,15 @@ void faBuProc()
 							&message_type_id, data_length, &enRetCode);
 					//·¢ËÍ¸øpad new20250620
 					//					Send_Message(DDSTables.CCC_PAD_005.niConnectionId,0,&transaction_id, &blk_ccc_ofp_005[plan],&message_type_id, data_length, &enRetCode);
+
 					//·¢ËÍ¸¡±êºÍµõÉù½âËã
 					for (int i = 0; i < 8; i++) {
 						send_buoy_soanr_route_information(planning_id % 3, i); //·¢ËÍ¸¡±ê¡¢µõÉùĞÅÏ¢µ½×ÛÏÔ
 					}
+
 					//·¢ËÍµ±Ç°½×¶Î·´À¡ 20250830new
 					send_blk_ccc_ofp_025();
+
 					//µ¥ÎŞÈË»úº½ÏßÖ»·¢Ò»¼Ü»ú
 					if (single_uav_flag == 33)
 					{
@@ -6390,18 +6747,23 @@ void faBuProc()
 						// ÔÙ´Î·¢ËÍÎŞÈË»úº½Ïß£¨ÔËĞĞ·½°¸£©
 						send_blk_ccc_ofp_024(plan);
 					}
+
+
+
 					//ÊÇ·ñÎª¹¥»÷
 					if(blk_ofp_ccc_039.routeType == 2)
 					{
 						memcpy(&blk_ccc_ofp_047,&blk_ccc_ofp_047_save[plan],sizeof(BLK_CCC_OFP_047));
 						//×ª·¢µ½×ÛÏÔ
 						send_blk_ccc_ofp_047();
+
 						scheme_generation_state(2,2, 2, 2);      //·¢ËÍ·¢²¼Íê³É×´Ì¬µ½×ÛÏÔ
 					}
 					else if(blk_ofp_ccc_039.routeType == 1)
 					{
 						scheme_generation_state(1,2, 2, 2);      //·¢ËÍ·¢²¼Íê³É×´Ì¬µ½×ÛÏÔ
 					}
+
 					// ³åÍ»Ê±£¬µÚÒ»´Î·¢²¼²»Ôö¼Ó½×¶ÎÊı£¬³ıÁË³åÍ»Ê±µÚÒ»´Î·¢²¼£¬ÆäËû·¢²¼¶¼Ôö¼Ó
 					int tem_crash_recv_fabuCode = 0;// ËÄ¼Ü»ú¶¼²»ÔÚ³åÍ»·¢²¼½×¶Î1
 					for(int m =0;m < UAV_MAX_NUM; m++)
@@ -6417,6 +6779,7 @@ void faBuProc()
 						//½×¶ÎÊıÔö¼Ó
 						global_stage += 1;  //Ğè¿¼ÂÇ¶à¼ÜÎŞÈË»úµÄ½×¶ÎÊı
 					}
+
 					//µÚ¶ş´Î·¢²¼³É¹¦ºó£¬Çå¿Õ×´Ì¬
 					if(blk_ofp_ccc_154.plan_query == 3)
 						blk_ofp_ccc_154.plan_query = 0;
@@ -6424,6 +6787,7 @@ void faBuProc()
 					hx_cx_flag = 1;
 					//Ó¦ÓÃ¿ÕÓò
 					init_blk_ctas_dtms_010();
+
 //					for(int j = 0 ; j < UAV_MAX_NUM; j ++)
 //					{
 //						// ³åÍ»Ê±ĞèÒª·´À¡µ¯´°ÏûÒş
@@ -6439,6 +6803,7 @@ void faBuProc()
 //							memset(&g_lineCrashState[j], 0, sizeof(g_lineCrashState));
 //						}
 //					}
+
 				}
 			} else if (s4D_frame_40[i] == -1) {
 				//³õÊ¼»¯ÎŞÈË»úÊı¾İ
@@ -6469,6 +6834,7 @@ void faBuProc()
 				send_uav_num = 0;
 				timeout = 0;
 				uav_hl_confirm = 0;
+
 //				for(int j = 0 ; j < UAV_MAX_NUM; j ++)
 //				{
 //					// ÖØ¹æ»®·¢²¼Ê§°Ü
@@ -6486,6 +6852,8 @@ void faBuProc()
 //						send_blk_ccc_ofp_032();
 //					}
 //				}
+
+
 				//ÍË³öº¯Êı
 				return;
 			} else if (timeout > 200) {
@@ -6517,6 +6885,7 @@ void faBuProc()
 				send_uav_num = 0;
 				timeout = 0;
 				uav_hl_confirm = 0;
+
 //				for(int j = 0 ; j < UAV_MAX_NUM; j ++)
 //				{
 //					// ÖØ¹æ»®·¢²¼Ê§°Ü
@@ -6535,6 +6904,8 @@ void faBuProc()
 //						send_blk_ccc_ofp_032();
 //					}
 //				}
+
+
 				//ÍË³öº¯Êı
 				return;
 			}
@@ -6547,10 +6918,12 @@ void faBuProc()
  * Íê³ÉÎŞÈË»úº½Â·¹æ»®¹¦ÄÜºó£¬×ÛÏÔ¶ÔÎÒÃÇ¹æ»®ºÃµÄº½Ïß½øĞĞÑ¡Ôñ£¬½«Ñ¡¶¨µÄº½Ïß·µ»ØÀ´£¬½«Õâ¸öº½Ïß¸ù¾İÎŞÈË»úid·¢¸øÏàÓ¦µÄÎŞÈË»ú
  */
 void uav_simulation() {
+
 	// ½ÓÊÕ×ÛÏÔº½Ïß·¢²¼ÃüÁî
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_29.niConnectionId,
 			DDSTables.DPU2_CCC_29.niConnectionId, &blk_ofp_ccc_039,
 			sizeof blk_ofp_ccc_039);
+
 	//ÊÕ²»µ½¾ÍÊÕPAD new20250620
 	if (enRetCode != 0) {
 		Receive_Message(DDSTables.PAD_CCC_039.niConnectionId, 0,
@@ -6575,20 +6948,26 @@ void uav_simulation() {
 		for(int drone_index = 0;drone_index<4;drone_index++)
 		{
 			g_recv_fabuCode[drone_index] = 1;
+
 //			if(g_lineCrashState[drone_index].PayloadReplan == 2)
 //			{
 //              payload_task();
 //              g_recv_fabuCode[drone_index] = 0;
 //			}
 		}
+
 		// ·¢²¼Ê±ĞèÒª×ö³åÍ»¼ì²â
 //		avoidLineCrashJudgeProc();
 	}
+
+
 	// ·¢²¼´¦Àí
 	faBuProc();
+
 }
 
 void send_track_change(){
+
 	if(send_flag == 0)
 	{
 		for(unsigned int i = 1; i < 5 ; i++ )
@@ -6626,13 +7005,16 @@ void send_track_change(){
 	}
 }
 
+
 // ·¢ËÍÎŞÈË»úº½Â·¸ø·É·Â
 void send_uav_hl(unsigned int uav_id,unsigned char order){
 	//    send_array.clear();//Çå¿Õ
 	//    send_array.resize(2400);
+
 	// Çå¿ÕÖ¸ÁîÖ¡ÄÚÈİ ·ÀÖ¹¸ÉÈÅ
 	memset(&order_data_frames,0,sizeof(order_data_frame));
 	memset(&track_threat_frames,0,sizeof(track_threat_frame));
+
 	// ÎŞÈË»úº½ÏßÓëÍşĞ²Ö¡³õÊ¼»¯
 	track_threat_frames.tongbu_code = 0xaa55; // Í¬²½Âë
 	track_threat_frames.frame_count = frame_count; // Ö¡¼ÆÊı
@@ -6642,8 +7024,10 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 	switch (order){
 	case 0x00:{   // ¿ÕÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.empty_orders),sizeof(order_data_frames.empty_orders));
+
 	}break;
 	case 0x30:{   // ¶¨µãĞüÍ£Î»ÖÃ×¢ÈëÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
@@ -6652,30 +7036,38 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 		order_data_frames.ddxtwzzr_orders.xd_height = 200 / gaodu_scale;
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.ddxtwzzr_orders),sizeof(order_data_frames.ddxtwzzr_orders));
+
 	}break;
 	case 0x32:{  // Ó¦·µº½»ú³¡µã×¢ÈëÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.fhjczr_orders),sizeof(order_data_frames.fhjczr_orders));
+
 	}break;
 	case 0x34:{ // Ó¦¼±·µº½Ö¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.yjfh_orders),sizeof(order_data_frames.yjfh_orders));
 	}break;
 	case 0x4A:{ // ÏòĞËÈ¤µã·ÉÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.fly_to_xq_order),sizeof(order_data_frames.fly_to_xq_order));
 	}break;
 	case 0x36:{  // º½µã²åÈëÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_insert_orders),sizeof(order_data_frames.track_point_insert_orders));
 	}break;
 	case 0x38:{   // º½µã£¨¾ø¶Ô£©×°¶©Ö¸Áî
 		// ·¢ËÍµÚÒ»¸öµã »ú³¡µã£¬ÊÖ¶¯×°¶©»ú³¡µã
 		if(uav_send[send_index].first_flag == 0 ){
+
+
 			order_data_frames.track_point_jd_order.track_line_id = track_line;   // µ±Ç°º½ÏßºÅ£¬ÆğÊ¼º½ÏßºÅ+ÎŞÈË»úÄ¬ÈÏ±àºÅ
 			if(track_line == uav_route[send_index].route_number)
 			{
@@ -6683,6 +7075,7 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 			}
 			order_data_frames.track_point_jd_order.hb_height = HEIGHT / gaodu_scale;
 			order_data_frames.track_point_jd_order.speed = 35/ speed_scale;
+
 			//µ±Ç°º½µãºÅºÍÏÂÒ»¸öº½µãºÅ¸³Öµ
 			order_data_frames.track_point_jd_order.track_point_id = 1; // »ú³¡µãº½µãºÅÎª1
 			//order_data_frames.track_point_jd_order.next_track_point_id = order_data_frames.track_point_jd_order.track_point_id + 1;
@@ -6691,12 +7084,16 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 			order_data_frames.track_point_jd_order.lon = get_airport_lon(send_index) / lon_scale;
 			//ÌØÕ÷×ÖÇåÁã
 			memset(&(order_data_frames.track_point_jd_order.tezhenzi),0,sizeof(order_data_frames.track_point_jd_order.tezhenzi));
+
 			//ÌØÕ÷×Ö¸³Öµ
 			order_data_frames.track_point_jd_order.tezhenzi[0] = 0x07;
 			order_data_frames.track_point_jd_order.tezhenzi[7] = 0x01;
 			//                char check_num = 0x01;
 			//                memcpy(&(track_threat_frames.check_code)+1,&(check_num),1);
+
+
 		}else if(track_point_count < uav_send[send_index].waypoints_number - 3 && uav_send[send_index].first_flag  == 1){ // º½µã¼ÆÊı
+
 			order_data_frames.track_point_jd_order.track_line_id = track_line;   // µ±Ç°º½ÏßºÅ£¬ÆğÊ¼º½ÏßºÅ+ÎŞÈË»úÄ¬ÈÏ±àºÅ
 			if(track_line== uav_route[send_index].route_number)
 			{
@@ -6710,7 +7107,9 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 			//º½¼£µã¾­Î³¶È
 			order_data_frames.track_point_jd_order.lat = uav_send[send_index].waypoint_informations[track_point_count].latitude / lat_scale;
 			order_data_frames.track_point_jd_order.lon = uav_send[send_index].waypoint_informations[track_point_count].longitude / lon_scale;
+
 			memset(&(order_data_frames.track_point_jd_order.tezhenzi),0,sizeof(order_data_frames.track_point_jd_order.tezhenzi));
+
 			//Éú³ÉµÄ×îºóÒ»¸öº½Â·µãÎªÅÌĞıµã£¬ËÑË÷Ààº½Ïß
 			if(track_point_count == uav_send[send_index].waypoints_number -4 && uav_send[send_index].task_index < 7)
 			{
@@ -6778,6 +7177,7 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 				order_data_frames.track_point_jd_order.tezhenzi[6] = 0;//´ı»ú¾àÀë
 				order_data_frames.track_point_jd_order.tezhenzi[7] = 0x04;//È¦Êı
 			}
+
 		}
 		else if(track_point_count == uav_send[send_index].waypoints_number - 3)// ·¢ËÍµ¹ÊıµÚ¶ş¸öµã
 		{
@@ -6790,11 +7190,14 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 			order_data_frames.track_point_jd_order.track_point_id = uav_send[send_index].waypoints_number - 1;
 			order_data_frames.track_point_jd_order.hb_height = (400)/ gaodu_scale;
 			order_data_frames.track_point_jd_order.speed = 25  /speed_scale;
+
 			//×îºóÒ»¸ö»ú³¡µãÊÇ¶¨µã,Ò»°ãº½Â·µãµÄ×îºóÒ»¸öµã×÷Îª¶¯µã
 			Point last_second;
 			last_second = last_second_point(get_airport_lat(send_index),get_airport_lon(send_index),
 					uav_send[send_index].waypoint_informations[track_point_count-1].latitude,
 					uav_send[send_index].waypoint_informations[track_point_count-1].longitude);
+
+
 			//Ê¹ÓÃ·µº½º½ÏßµÄµ¹ÊıµÚ¶ş¸öµãµÄ¾­Î³¶È×÷Îª×¢Èëº½ÏßµÄµ¹ÊıµÚ¶ş¸ö½âËãµã
 			int point_index = 0;
 			point_index = load_file.blk_dlr_ccc_045[send_index].normal_num-2;
@@ -6802,11 +7205,16 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 //			order_data_frames.track_point_jd_order.lon = load_file.blk_dlr_ccc_045[send_index].normal_point[point_index].lon /lon_scale;
 //			order_data_frames.track_point_jd_order.lat = 47.55793 / lat_scale;//Ëş¹ş»ú³¡Ğ´ËÀ 47.55793
 //			order_data_frames.track_point_jd_order.lon = 124.24993 /lon_scale;//Ëş¹ş»ú³¡Ğ´ËÀ 124.24993
+
 			order_data_frames.track_point_jd_order.lat = last_second.lat / lat_scale;
 			order_data_frames.track_point_jd_order.lon = last_second.lon /lon_scale;//260201
+
 			memset(&(order_data_frames.track_point_jd_order.tezhenzi),0,sizeof(order_data_frames.track_point_jd_order.tezhenzi));
+
+
 		}
 		else if(track_point_count >= uav_send[send_index].waypoints_number -2){ // ·¢ËÍ×îºóÒ»¸öµã »ú½¢µã
+
 			order_data_frames.track_point_jd_order.track_line_id = track_line;   // µ±Ç°º½ÏßºÅ£¬ÆğÊ¼º½ÏßºÅ+ÎŞÈË»úÄ¬ÈÏ±àºÅ
 			if(track_line== uav_route[send_index].route_number)
 			{
@@ -6816,25 +7224,36 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 			order_data_frames.track_point_jd_order.track_point_id = uav_send[send_index].waypoints_number;
 			order_data_frames.track_point_jd_order.hb_height = HEIGHT/ gaodu_scale;
 			order_data_frames.track_point_jd_order.speed = 35  /speed_scale;
+
 			order_data_frames.track_point_jd_order.lat = get_airport_lat(send_index) / lat_scale;//260201
 			order_data_frames.track_point_jd_order.lon = get_airport_lon(send_index) /lon_scale;
+
+
 			memset(&(order_data_frames.track_point_jd_order.tezhenzi),0,sizeof(order_data_frames.track_point_jd_order.tezhenzi));
+
 			//ÌØÕ÷×Ö¸³Öµ
 			order_data_frames.track_point_jd_order.tezhenzi[0] = 0x07;
 			order_data_frames.track_point_jd_order.tezhenzi[7] = 0x01;
+
 		}
 		// ÌØÕ÷×Ö¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_jd_order),sizeof(order_data_frames.track_point_jd_order));
+
 		//		printf("lat %d lon %d \n",order_data_frames.track_point_jd_order.lat,order_data_frames.track_point_jd_order.lon);
+
+
 	}break;
 	case 0x39:{   // º½µã×°¶©(Ïà¶Ô£©Ö¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_xd_orders),sizeof(order_data_frames.track_point_xd_orders));
 	}break;
 	case 0x3A:{   // º½µãĞŞ¸ÄÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_modfiy_orders),sizeof(order_data_frames.track_point_modfiy_orders));
 	}break;
@@ -6847,11 +7266,13 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 	}break;
 	case 0x3D:{  // Ïà¶Ôº½Ïß¡¢º½µã²éÑ¯Ö¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.xd_track_point_search_orders),sizeof(order_data_frames.xd_track_point_search_orders));
 	}break;
 	case 0x3E:{  // º½Ïß¡¢º½µãÉ¾³ıÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.track_point_delete_orders),sizeof(order_data_frames.track_point_delete_orders));
 	}break;
@@ -6876,29 +7297,38 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 	}break;
 	case 0x42:{  // ÍşĞ²Êı¾İ×¢Èë
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.threat_data_intos),sizeof(order_data_frames.threat_data_intos));
 	}break;
 	case 0x44:{ // ÍşĞ²Çø²éÑ¯Ö¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.threat_area_searchs),sizeof(order_data_frames.threat_area_searchs));
 	}break;
 	case 0x46:{  // ÍşĞ²ÇøÉ¾³ıÖ¸Áî
 		// ¸ø¾ßÌåÖ¸Áî¸³Öµ
+
 		// ½«Ö¸Áî´æÈëÒ£¿ØÖ¡
 		memcpy(&(track_threat_frames.order_data),&(order_data_frames.threat_area_deletes),sizeof(order_data_frames.threat_area_deletes));
 	}break;
 	default:{
 		//qDebug()<<"Î´ÖªÒ£¿ØÖ¸Áî";
 	}break;
+
 	}
+
 	//   TODO  Î´Öª´úÂë£¬²»È·¶¨¹¦ÄÜµ«±àĞ´´æÔÚÎÊÌâ£¬»áÓ°ÏìÉÏÃæº½Ïß×¢Èëº¯Êı£¬ÒÑÒÆ¶¯ÖÁ send_yaokongframe()
+
 	// Ö»·¢º½ÏßÖ¡
 	//ToDoĞ£ÑéºÍ¿ÉÄÜ´æÔÚÎÊÌâ
 	unsigned short frame_check_code = do_crc_table((unsigned char*)&track_threat_frames.frame_count,sizeof(track_threat_frame)-4);
 	track_threat_frames.check_code = frame_check_code;
+
 	align_send_information(&track_threat_frames,sizeof(track_threat_frames),0);
+
+
 	if(send_count < 4){  // µ¥µã·¢ËÍËÄ´Î
 		send_count++; // ·¢Ò»´Î¼ÓÒ»´Î
 	}
@@ -6909,6 +7339,8 @@ void send_uav_hl(unsigned int uav_id,unsigned char order){
 		track_point_count++; // track_point£¨º½µã£©·¢ÍêµÚÒ»µãËÄ´Îºó ·¢ËÍÏÂÒ»µã
 	}
 	frame_count++; // ·¢ËÍ³É¹¦Ò»´ÎÖ¡¼ÆÊı¼Ó1
+
+
 }
 
 //µ¹ÊıµÚ¶ş¸öµãµÄ¾­Î³¶È¼ÆËã
@@ -6916,6 +7348,7 @@ Point last_second_point(double lat1, double lon1,double lat2, double lon2)
 {
 	Point target;
 	double dsitance = calculate_distances(lat1,lon1,lat2,lon2);
+
 	//¾àÀë´óÓÚ2.5kmÊ±
 	if(dsitance > 2.5)
 	{
@@ -6933,6 +7366,7 @@ Point last_second_point(double lat1, double lon1,double lat2, double lon2)
 		}
 		calculate_endpoint(lat1 , lon1 , reverse_azimuth , 2.5 , &target.lat , &target.lon );
 	}
+
 	return target;
 }
 
@@ -6941,13 +7375,11 @@ double deg2rad(double deg)
 {
 	return deg * M_PI / 180.0;
 }
-
 //»¡¶È×ª½Ç¶È
 double rad2deg(double rad)
 {
 	return rad* 180.0 / M_PI;
 }
-
 //¼ÆËã´Óµã1µ½µã2µÄ³õÊ¼·½Î»½Ç(»¡¶È£¬·¶Î§0,2¦Ğ)
 double calculate_azimuth(double lat1, double lon1,double lat2, double lon2)
 {
@@ -6955,32 +7387,39 @@ double calculate_azimuth(double lat1, double lon1,double lat2, double lon2)
 	double lat2_rad = deg2rad(lat2);
 	double lon1_rad = deg2rad(lon1);
 	double lon2_rad = deg2rad(lon2);
+
 	double	dlon = lon2_rad - lon1_rad;
 	double y = sin(dlon) * cos(lat2_rad);
 	double x = cos(lat1_rad) * sin(lat2_rad) - sin(lat1_rad) * cos(lat2_rad) * cos(dlon);
+
 	double azimuth = atan2(y,x);
+
 	//×ª»»Îª0µ½2¦Ğ·¶Î§
 	if(azimuth < 0)
 	{
 		azimuth += 2 * M_PI;
 	}
+
 	return azimuth;
 }
-
 //¸ù¾İÆğµã¡¢·½Î»½ÇºÍ¾àÀë¼ÆËãÖÕµã¾­Î³¶È
 void calculate_endpoint(double start_lat,double start_lon,double azimuth,double distance,double *end_lat,double *end_lon)
 {
 	double start_lat_rad = deg2rad(start_lat);
 	double start_lon_rad = deg2rad(start_lon);
+
 	double angular_dist = distance / 6371.0;//×ª»»Îª»¡¶È
 	double sin_ang = sin(angular_dist);
 	double cos_ang = cos(angular_dist);
+
 	//¼ÆËãÖÕµãÎ³¶È
 	double phi1 = asin(sin(start_lat_rad) * cos_ang + cos(start_lat_rad) * sin_ang * cos(azimuth));
 	//¼ÆËãÖÕµã¾­¶È
 	double lambda1 = start_lon_rad + atan2(sin(azimuth) * sin_ang * cos(start_lat_rad) , cos_ang - sin(start_lat_rad) * sin(phi1));
+
 	*end_lat = rad2deg(phi1);
 	*end_lon = rad2deg(lambda1);
+
 	//µ÷Õû¾­¶Èµ½-180,180·¶Î§ÄÚ
 	*end_lon = fmod(*end_lon, 360.0);
 	if(*end_lon > 180.0)
@@ -6992,15 +7431,14 @@ void calculate_endpoint(double start_lat,double start_lon,double azimuth,double 
 		*end_lon += 360.0;
 	}
 }
-
 /*************************************** ¿ØÖÆÈ¨½»½ÓÄ£¿é ***************************************/
+
 void send_blk_ccc_ofp_120(unsigned char response)
 {
 	blk_ccc_ofp_120.response = response;
 	data_length = sizeof(BLK_CCC_OFP_120);
 	Send_Message(DDSTables.CCC_DPU_43.niConnectionId,0,&transaction_id, &blk_ccc_ofp_120, &message_type_id, data_length, &enRetCode);
 }
-
 void recv_blk_ofp_ccc_148()
 {
 	//½ÓÊÕ×ÛÏÔµÄÊÂ¼şÖ¸Áî
@@ -7065,6 +7503,7 @@ void recv_blk_ofp_ccc_148()
 			//²éÑ¯
 			//²éÑ¯±êÖ¾ÖÃÎ»£¬ÊÂ¼ş¿ªÊ¼
 			cx_flag = 1;
+
 			//        		//ÅĞ¶ÏÊÇ·ñÎªÈÎÎñº½Ïß
 			//        		if(uav_route[index].route_number != 5 || uav_route[index].route_number != 6)
 			//        		{
@@ -7099,6 +7538,7 @@ void recv_blk_ofp_ccc_148()
 					cnt = 0;
 					break;
 				}
+
 				//´Ó»º´æÖĞ¶ÁÈ¡ÏÂÒ»º½µãĞÅÏ¢
 				int point = uav_route[index].waypoint_number;//+1ÏÂÒ»º½µã -1ÏÂ±ê
 				blk_ccc_ofp_120.uavSn = blk_ofp_ccc_148.uavSn;//ÎŞÈË»úĞòºÅ
@@ -7123,6 +7563,8 @@ void recv_blk_ofp_ccc_148()
 				cnt = 0;
 				break;
 			}
+
+
 			//´Ó»º´æÖĞ¶ÁÈ¡ÏÂÒ»º½µãĞÅÏ¢
 			int point = uav_route[index].waypoint_number - 1;//+1ÏÂÒ»º½µã -1ÏÂ±ê -1»ú³¡µã
 			blk_ccc_ofp_120.uavSn = blk_ofp_ccc_148.uavSn;//ÎŞÈË»úĞòºÅ
@@ -7132,6 +7574,8 @@ void recv_blk_ofp_ccc_148()
 			blk_ccc_ofp_120.lati = uav_route[index].waypoint[point].latitude;
 			blk_ccc_ofp_120.height = uav_route[index].waypoint[point].height;
 			blk_ccc_ofp_120.speed = uav_route[index].waypoint[point].speed * 3.6;
+
+
 			//ÊÂ¼ş´¦Àí½áÊø
 			cnt = 0;
 			break;
@@ -7153,6 +7597,7 @@ void recv_blk_ofp_ccc_148()
 			//¸ß¶Èµ÷Õû
 			//µ÷¸ß±êÖ¾ÖÃÎ»£¬ÊÂ¼ş¿ªÊ¼
 			tg_flag = 1;
+
 			//Ò»ºÅº½Ïß
 			if(uav_route[index].route_number == 1)
 			{
@@ -7176,6 +7621,7 @@ void recv_blk_ofp_ccc_148()
 					cnt = 0;
 					break;
 				}
+
 				//ÅĞ¶Ïµ±Ç°µãÊÇ·ñÒÑ¹ıµã
 				if(uav_route[index].waypoint_number + 1 > blk_ofp_ccc_148.pointNum /*×ÛÏÔ·¢ËÍµÄµãºÅ*/)
 				{
@@ -7231,6 +7677,9 @@ void recv_blk_ofp_ccc_148()
 					break;
 				}
 			}
+
+
+
 			blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.yt_start = 0x52;
 			blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.order_code[0] = 0x12;//¾ø¶Ô¸ß¶ÈÒ£µ÷ £¬Ïà¶Ô¸ß¶ÈÒ£µ÷0x08
 			blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.order_code[1] = 0x12;
@@ -7265,6 +7714,7 @@ void recv_blk_ofp_ccc_148()
 					cnt = 0;
 					break;
 				}
+
 				//ÅĞ¶Ïµ±Ç°µãÊÇ·ñÒÑ¹ıµã
 				if(uav_route[index].waypoint_number + 1 > blk_ofp_ccc_148.pointNum /*×ÛÏÔ·¢ËÍµÄµãºÅ*/)
 				{
@@ -7320,6 +7770,8 @@ void recv_blk_ofp_ccc_148()
 					break;
 				}
 			}
+
+
 			blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.yt_start = 0x52;
 			blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.order_code[0] = 0x0c;
 			blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.order_code[1] = 0x0c;
@@ -7330,6 +7782,7 @@ void recv_blk_ofp_ccc_148()
 			break;
 		}
 	}
+
 	//·¢ËÍ²éÑ¯»Ø±¨
 	if(cx_flag == 1)
 	{
@@ -7432,7 +7885,6 @@ void recv_blk_ofp_ccc_148()
 		}
 	}
 }
-
 // ÎŞÈË»úÒ£¿ØÖ¡// uav_indexÎŞÈË»úĞòºÅ£¨0-3£©
 void init_blk_ccc_kkl_008_026_027_028(int uav_index)
 {
@@ -7445,25 +7897,32 @@ void init_blk_ccc_kkl_008_026_027_028_front(int uav_index)
 {
 	/***»ù±¾Ò£¿ØÖ¸Áî******/
 	static unsigned char frame_count[UAV_MAX_NUM] = {0,0,0,0};
+
 	//ÏÂÃæµÄ¸³ÖµĞèÒª²Î¿¼¾ßÌåĞ­Òé
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.sync_code[0] = 0xEB;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.sync_code[1] = 0x90;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.frame_type = 0xFC;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.frame_count = frame_count[uav_index];
+
 	//ÎŞÈË»úidÌîĞ´Èı±é
 	unsigned short plane_adr = CCC_DPU_data_3.drone_specific_informations[uav_index].platform_num;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.plane_adr[0] = plane_adr;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.plane_adr[1] = plane_adr;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.plane_adr[2] = plane_adr;
+
 	//±¾Õ¾idÌîĞ´
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.station_adr[0] = MANNED_ID;//0x3001 MANNED_ID
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.station_adr[1] = MANNED_ID;
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.station_adr[2] = MANNED_ID;
+
 	//Ò£µ÷Ğ£ÑéºÍ
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.yt_check = checkSum(blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code, 29);
+
 	//×ÜÌåĞ£ÑéºÍ
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.check_sum = \
 			do_crc_table((unsigned char*)blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.sync_code+2, sizeof(blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data)-4);
+
+
 	/****  ·ÉĞĞº½ÏßÍşĞ²Ö¸ÁîÖ¡ 32×Ö½Ú*********/
 	if(uav_index == send_index)//¿ØÖÆÈ¨ÔÚÓĞÈË»ú²Å¿½±´º½ÏßÊı¾İ
 	{
@@ -7477,6 +7936,8 @@ void init_blk_ccc_kkl_008_026_027_028_front(int uav_index)
 	blk_ccc_kkl_008_026_027_028[uav_index].front.track_threat_frame_data.check_code = do_crc_table((unsigned char*)&blk_ccc_kkl_008_026_027_028[uav_index].front.track_threat_frame_data.frame_count,sizeof(track_threat_frame)-4);
 	//    printf("ct:%d,order:0x%x,lId:%d,pId:%d.\n",frame_count[uav_index], blk_ccc_kkl_008_026_027_028[uav_index].front.track_threat_frame_data.order_code[0],\
 	//    		blk_ccc_kkl_008_026_027_028[uav_index].front.track_threat_frame_data.order_data[0], blk_ccc_kkl_008_026_027_028[uav_index].front.track_threat_frame_data.order_data[1]);
+
+
 	/****  ÈÎÎñ¿ØÖÆÖ¸ÁîÖ¡ 64×Ö½Ú*********/
 	if(frame_count[uav_index]%2 == 0)
 	{
@@ -7507,13 +7968,16 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 {
 	/***»ù±¾Ò£¿ØÖ¸Áî******/
 	static unsigned char frame_count[UAV_MAX_NUM] = {0,0,0,0};
+
 	//ÏÂÃæµÄ¸³ÖµĞèÒª²Î¿¼¾ßÌåĞ­Òé
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.sync_code[0] = 0xAA;
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.sync_code[1] = 0x55;
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.frame_type = 0xFC;
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.frame_count = frame_count[uav_index];
+
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.plane_adress = (uav_index == 0) ? (UAV1_ID & 0xff) : (UAV2_ID & 0xff);
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.station_adress = MANNED_ID >> 8;
+
 	// ¸üĞÂÓĞÈË»úÎ»ÖÃ
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_start = 'Z';
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[0] = 0x00;// ÓĞÈË»ú·É»ú×´Ì¬¿ÕÖ¸Áî
@@ -7535,6 +7999,7 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 	int weixing_heigth = DPU_CCC_data_4.WX_HEIGHT * 100;
 	//test 20251115
 //	int weixing_heigth = 1000 * 100;
+
 	memcpy(yt_order_data + ytOffset, &weixing_heigth, sizeof(weixing_heigth));
 	ytOffset += sizeof(weixing_heigth);
 	// Ö¸Ê¾¿ÕËÙ£¨ÊÇ²»ÊÇÕæ¿ÕËÙ£©
@@ -7759,6 +8224,7 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 	memcpy(yt_order_data + ytOffset, &gps_ms, sizeof(gps_ms));
 	ytOffset += sizeof(gps_ms);
 #endif
+
 //Áìº½
 	if(start_lh_flag[uav_index] == 1)
 	{
@@ -7771,6 +8237,7 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 		temp.high_cmd = (500.0 / (6000.0/ 65535));
 		temp.hori_distance = (6000.0 /(10000.0/ 65535));
 		memcpy(&blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data,&temp,sizeof(temp));
+
 		//·¢ËÍ5ÅÄ
 		lh_send_cnt ++;
 		if(lh_send_cnt > 5)
@@ -7785,6 +8252,7 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[0] = 0x14;
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[1] = 0x14;
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[2] = 0x14;
+
 //		if(uav_route[uav_index].route_number == 48 || uav_route[uav_index].route_number == 49)
 //		{
 //			blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[0] = uav_route[uav_index].route_number;
@@ -7796,12 +8264,14 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 //			blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[1] = dissolve_point;
 //		}
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[0] = uav_route[uav_index].route_number;
+		//20260205ÍË³öÁìº½È¥µÚÆß¸öµã¸ÄµÚÁù¸öµã
 		unsigned char exit_point = dissolve_point;
 		if((uav_route[uav_index].route_number == 48 || uav_route[uav_index].route_number == 49) && exit_point == 7)
 		{
 			exit_point = 6;
 		}
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[1] = exit_point;
+
 		//·¢ËÍ5ÅÄ
 		tclh_send_cnt ++;
 		if(tclh_send_cnt > 5)
@@ -7810,18 +8280,27 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 			start_tclh_flag[uav_index] = 2;
 		}
 	}
+
 	//Ò£µ÷Ğ£ÑéºÍ
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_check_sum = checkSum(blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code, 86);
+
 	//×ÜÌåĞ£ÑéºÍ
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.check_crc = \
 			do_crc_table((unsigned char*)blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.sync_code+2, sizeof(blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl)-4);
+
+
+
 	/****  Êı¾İ¿â¹ÜÀíÖ¸ÁîÖ¡*********/
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.sync_code[0] = 0x7E;
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.sync_code[1] = 0x7E;
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.frame_count = frame_count[uav_index];
 	blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.check_crc = do_crc_table((unsigned char*)blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.sync_code+2, sizeof(blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase)-4);
+
+
+
 	frame_count[uav_index]++;
 }
+
 
 void send_blk_ccc_kkl_008_026_027_028(){
 	static int tem1 = 1;
@@ -7834,6 +8313,7 @@ void send_blk_ccc_kkl_008_026_027_028(){
 	{
 		temnum = 2;
 	}
+
 	//    for(int uav_index = 0; uav_index < UAV_MAX_NUM; uav_index++)
 	for(int uav_index = 0; uav_index < temnum; uav_index++)
 	{
@@ -7851,12 +8331,18 @@ void send_blk_ccc_kkl_008_026_027_028(){
 		{
 			tclhtime[uav_index]++;
 		}
+
+
 		// CÁ´Ö»·¢ËÍÇ°160×Ö½Ú
 		// Èç¹ûu¶Ë»ú±¾»úÁ´Â·×´Ì¬Êı¾İÖĞµÄ¸Ã·É»úµÄuÁ´ÉÏĞĞ´«ÊäËÙÂÊÊÇ51.2kbps£¬ÄÇÃ´¾Í·¢320×Ö½ÚÍêÕû°ü¡£Èç¹û²»ÊÇ£¬ÔòÖ»·¢Ç°160×Ö½Ú
 		// Ç°160
+
+
 		align_send_information(&(blk_ccc_kkl_008_026_027_028[uav_index]),sizeof(BLK_CCC_KKL_008_026_027_028_Front),0);
 		//ºó160×Ö½Ú
+
 		memcpy(send_array.dataA + 160, &blk_ccc_kkl_008_026_027_028[uav_index].tail,160);
+
 		SINT32_SIX messageId;
 		switch (uav_index) {
 		case 0:
@@ -7874,6 +8360,7 @@ void send_blk_ccc_kkl_008_026_027_028(){
 		default:
 			break;
 		}
+
 #if !SIMTESTFLAG // °ëÎïÀí»·¾³ÓĞÕâ¸öÂß¼­£¬·ÂÕæÏÈ²»¼Ó£¨ÈçÓĞĞèÒªÔÙ·Å¿ª£©
 		//if(formationId[uav_index].isControl == 1)// ÓĞ¿ØÈ¨²Å·¢ËÍ
 #endif
@@ -7884,6 +8371,9 @@ void send_blk_ccc_kkl_008_026_027_028(){
 				printf("send yaokong error.\n");
 			}
 		}
+
+
+
 		// UÁ´·¢ËÍ¸ù¾İÌõ¼şÅĞ¶Ï
 		// Èç¹ûu¶Ë»ú±¾»úÁ´Â·×´Ì¬Êı¾İÖĞµÄ¸Ã·É»úµÄuÁ´ÉÏĞĞ´«ÊäËÙÂÊ´óÓÚµÈÓÚ51.2kbps£¬ÄÇÃ´¾Í·¢320×Ö½ÚÍêÕû°ü¡£Èç¹û²»ÊÇ£¬ÔòÖ»·¢Ç°160×Ö½Ú
 		if(blk_ccc_ofp_199.ULparSet_1[0].UpRate_3 >= 2)  //0927×ª¸ø·É¿Ø²âÊÔ×¢ÊÍ
@@ -7913,6 +8403,7 @@ void send_blk_ccc_kkl_008_026_027_028(){
 		default:
 			break;
 		}
+
 #if !SIMTESTFLAG // °ëÎïÀí»·¾³ÓĞÕâ¸öÂß¼­£¬·ÂÕæÏÈ²»¼Ó£¨ÈçÓĞĞèÒªÔÙ·Å¿ª£©
 		//        if(formationId[uav_index].isControl == 1)// ÓĞ¿ØÈ¨²Å·¢ËÍ
 #endif
@@ -7924,10 +8415,12 @@ void send_blk_ccc_kkl_008_026_027_028(){
 				printf("send yaokong ulink error.\n");
 			}
 		}
+
 		// ÖØÖÃ
 		memset(&blk_ccc_kkl_008_026_027_028[uav_index], 0, sizeof(BLK_CCC_KKL_008_026_027_028));
 	}
 }
+
 
 void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 {
@@ -7937,12 +8430,14 @@ void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 	{
 		// ÀàĞÍ¹Ì¶¨04
 		blk_ccc_kkl_000.Type = 0x04;
+
 		/******************************************************
 		 *1-10;ÉèÖÃÎŞÈË»úÅäÖÃ²ÎÊı
 		 *11-20£ºÉèÖÃÏÂĞĞËÙÂÊ
 		 *21-30£ºÉèÖÃÌìÏßÄ£Ê½
 		 * 31-40£º·¢ËÍÖ÷Á´×ªÒÆÖ¸Áî
 		 * /*******************************************/
+
 		switch (*p_main_link_send) {
 		case 1:
 			blk_ccc_kkl_000.UavID = blk_ofp_ccc_014.CR_Handover_UAV_Infos[uav_index].UAV_ID;
@@ -7978,6 +8473,8 @@ void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 			// Ã¿¸ö²Ù×÷Íê³É£¬½×¶ÎĞÔÍË³ö·¢ËÍ
 			*p_main_link_send = 0;
 			break;
+
+
 			/************11-20£ºÉèÖÃÏÂĞĞËÙÂÊ************************/
 		case 11:
 			blk_ccc_kkl_000.UavID = blk_ofp_ccc_014.CR_Handover_UAV_Infos[uav_index].UAV_ID;
@@ -8005,6 +8502,7 @@ void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 			// Ã¿¸ö²Ù×÷Íê³É£¬½×¶ÎĞÔÍË³ö·¢ËÍ
 			*p_main_link_send = 0;
 			break;
+
 			/************21-30£ºÉèÖÃÌìÏßÄ£Ê½************************/
 		case 21:
 			blk_ccc_kkl_000.UavID = blk_ofp_ccc_014.CR_Handover_UAV_Infos[uav_index].UAV_ID;// ±»¿ØÎŞÈË»úid
@@ -8014,6 +8512,9 @@ void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 			// Ã¿¸ö²Ù×÷Íê³É£¬½×¶ÎĞÔÍË³ö·¢ËÍ
 			*p_main_link_send = 0;
 			break;
+
+
+
 			/************31-40£º·¢ËÍÖ÷Á´×ªÒÆÖ¸Áî************************/
 		case 31:
 			blk_ccc_kkl_000.UavID = blk_ofp_ccc_014.CR_Handover_UAV_Infos[uav_index].UAV_ID;
@@ -8023,6 +8524,9 @@ void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 			// Ã¿¸ö²Ù×÷Íê³É£¬½×¶ÎĞÔÍË³ö·¢ËÍ
 			*p_main_link_send = 0;
 			break;
+
+
+
 		case 55:
 			blk_ccc_kkl_000.KaiGuanLiang = 0x0A;        //0AH CÁ´½»½Ó³É¹¦È·ÈÏ
 			break;
@@ -8034,7 +8538,10 @@ void set_blk_ccc_kkl_000(int uav_index, unsigned int* p_main_link_send)
 		{
 			return;
 		}
+
 		send_blk_ccc_kkl_000();
+
+
 		if(--main_link_send_count<=0)//·¢ÍêÈı´Î
 		{
 			(*p_main_link_send)++;//·¢ËÍÏÂÒ»¸öÊı¾İ
@@ -8054,6 +8561,7 @@ void init_blk_ccc_kkl_000()
 	blk_ccc_kkl_000.BenJiID = MANNED_ID;
 	blk_ccc_kkl_000.CRC16 = do_crc_table(&blk_ccc_kkl_000.Type, 10);//CRC16 ÓòÃèÊö£ºĞ£Ñé4-13¹²10¸ö×Ö½Ú
 	blk_ccc_kkl_000.HeJiaoYan = checkSum((unsigned char*)&blk_ccc_kkl_000, sizeof(BLK_CCC_KKL_009_029_030_031)-1);
+
 }
 
 void send_blk_ccc_kkl_000()
@@ -8062,6 +8570,7 @@ void send_blk_ccc_kkl_000()
 	init_blk_ccc_kkl_000();
 	//Ö÷Á´½»½Ó³É¹¦£¬0xa20e00
 	data_length = sizeof(BLK_CCC_KKL_000);
+
 	Send_Message(DDSTables.CCC_KKL_000.niConnectionId,0,&transaction_id, &blk_ccc_kkl_000 , &message_type_id, data_length, &enRetCode);
 	memset(&blk_ccc_kkl_000, 0, sizeof(BLK_CCC_KKL_000));
 }
@@ -8079,6 +8588,7 @@ void init_blk_ccc_kkl_009_029_030_031(int uav_index)
 	blk_ccc_kkl_009_029_030_031[uav_index].CRC16 = do_crc_table((unsigned char*)&blk_ccc_kkl_009_029_030_031[uav_index]+3, 10);//CRC16 ÓòÃèÊö£ºĞ£Ñé4-13¹²10¸ö×Ö½Ú
 	blk_ccc_kkl_009_029_030_031[uav_index].HeJiaoYan = checkSum((unsigned char*)&blk_ccc_kkl_009_029_030_031[uav_index], sizeof(BLK_CCC_KKL_009_029_030_031)-1);
 }
+
 
 void send_blk_ccc_kkl_009_029_030_031(int uav_index){
 	// uav_indexÎŞÈË»úĞòºÅ£¨0-3£©
@@ -8106,6 +8616,7 @@ void send_blk_ccc_kkl_009_029_030_031(int uav_index){
 	memset(&blk_ccc_kkl_009_029_030_031[uav_index], 0, sizeof(BLK_CCC_KKL_009_029_030_031));
 }
 
+
 // ½ÓÊÕ Ğ­Í¬Í¨ĞÅĞÅÏ¢  ¿Õ¿ÕÁ´.Ğ­Í¬Ö¸¿Ø¼ÆËã»ú
 void recv_kkl_ccc(){
 	message_size = 2048;
@@ -8114,12 +8625,15 @@ void recv_kkl_ccc(){
 	if(enRetCode == 0){
 		memcpy(&(KKL_CCC_data_3.KKLCNumber_2),dds_data_rece.dataA,sizeof (KKL_CCC_data_3));
 	}
+
 	// ¿Õ¿ÕÁ´²ÎÊı·´À¡ĞÅÏ¢
+
 	message_size = 2048;
 	Receive_Message(DDSTables.KKL_CCC_4.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KKL_CCC_data_4.KKLCNumber_1_1),dds_data_rece.dataA,sizeof (KKL_CCC_data_4));
 	}
+
 }
 
 // ·Ö°ü·¢ËÍÍ¨ÓÃº½Â·µã
@@ -8137,6 +8651,7 @@ void send_blk_ccc_ofp_018(int k,unsigned int plan,unsigned int task)
 	{
 		//send_array.resize(2400);
 		memcpy(send_array.dataA,&blk_ccc_ofp_018_cunchu[plan][task],21);
+
 		// ¼ÓÈë40¸öº½¼£µã
 		align_send_information(&(blk_ccc_ofp_018_cunchu[plan][task].waypoint_informations[0]),40 * sizeof (waypoint_information),21);
 		data_length = sizeof(BLK_CCC_OFP_018);
@@ -8158,11 +8673,13 @@ void send_blk_ccc_ofp_018(int k,unsigned int plan,unsigned int task)
 	{
 		//±£´æºó40¸öº½Â·µãµÄÓĞĞ§Êı
 		unsigned short point_num = blk_ccc_ofp_018_cunchu[plan][task].airway_point_num;
+
 		/*********************µÚÒ»´Î·¢ËÍ****************************/
 		//send_array.resize(2400);
 		blk_ccc_ofp_018_cunchu[plan][task].airway_point_start_num = 0;
 		blk_ccc_ofp_018_cunchu[plan][task].airway_point_num = 40;
 		memcpy(send_array.dataA,&blk_ccc_ofp_018_cunchu[plan][task],21);
+
 		// ¼ÓÈë40¸öº½¼£µã
 		align_send_information(&(blk_ccc_ofp_018_cunchu[plan][task].waypoint_informations[0]),40 * sizeof (waypoint_information),21);
 		data_length = sizeof(BLK_CCC_OFP_018);
@@ -8178,11 +8695,14 @@ void send_blk_ccc_ofp_018(int k,unsigned int plan,unsigned int task)
 		// ¸økdl·¢ËÍ
 		send_blk_ccc_kdl_018();
 		//send_array.clear();//Çå¿Õ
+
+
 		/*********************µÚ¶ş´Î·¢ËÍ****************************/
 		//        send_array.resize(2400);
 		blk_ccc_ofp_018_cunchu[plan][task].airway_point_start_num = 40;
 		blk_ccc_ofp_018_cunchu[plan][task].airway_point_num = point_num;
 		memcpy(send_array.dataA,&blk_ccc_ofp_018_cunchu[plan][task],21);
+
 		// ¼ÓÈëºó40¸öº½¼£µã
 		align_send_information(&(blk_ccc_ofp_018_cunchu[plan][task].waypoint_informations[40]),40 * sizeof (waypoint_information),21);
 		data_length = sizeof(BLK_CCC_OFP_018);
@@ -8199,13 +8719,17 @@ void send_blk_ccc_ofp_018(int k,unsigned int plan,unsigned int task)
 		send_blk_ccc_kdl_018();
 		//send_array.clear();//Çå¿Õ
 	}
+
 }
+
+
 
 /******************************** PAD½»»¥Ä£¿é ******************************/
 void recv_pad_message(){  // Ä£¿éÖ÷º¯Êı
 	recv_pad_heart();
 	recv_pad_ccc_778();
 }
+
 
 // ½ÓÊÕpadÔÚÏßĞÄÌøĞÅºÅ
 void recv_pad_heart()
@@ -8214,6 +8738,7 @@ void recv_pad_heart()
 	message_size = sizeof(PAD_hearts);
 	//pad_recv.resize(4096);
 	Receive_Message(DDSTables.PAD_CCC_777.niConnectionId, 0, &transaction_id, pad_recv.dataA, &message_type_id, &message_size, &enRetCode);
+
 	if(enRetCode == 0)
 	{
 		timeout = -1;
@@ -8226,15 +8751,18 @@ void recv_pad_heart()
 		{
 			tail_pad_heart_flag = PAD_hearts.heart;
 		}
+
 		Pad_heart_flag = front_pad_heart_flag || tail_pad_heart_flag;
 //		printf("receive pad heart");
 	}
+
 	if(timeout>20)
 	{
 		Pad_heart_flag = 0;
 		front_pad_heart_flag = 0;
 		tail_pad_heart_flag = 0;
 	}
+
 	timeout++;
 }
 
@@ -8242,6 +8770,7 @@ void recv_pad_heart()
 void recv_pad_ccc_778()
 {
 	Receive_Message(DDSTables.PAD_CCC_778.niConnectionId, 0, &transaction_id, &blk_pad_ccc_778, &message_type_id, &message_size, &enRetCode);
+
 	if(enRetCode == 0)
 	{
 		int plan = blk_pad_ccc_778.planId;
@@ -8253,13 +8782,18 @@ void recv_pad_ccc_778()
 			data_length = sizeof(BLK_CCC_OFP_302);
 			// ×ª·¢¸ø×ÛÏÔ¸¡±ê²¼Õó¹æ»®
 			Send_Message(DDSTables.CCC_DPU_056.niConnectionId,0,&transaction_id, &blk_ccc_ofp_302_save[plan][task], &message_type_id, data_length, &enRetCode);
+
 		}
+
+
 		if(blk_ccc_ofp_403_save[plan][task].Plan_ID != 0)
 		{
 			data_length = sizeof(BLK_CCC_OFP_403);
 			// ×ª·¢¸ø×ÛÏÔµõÉù¶¨²âµã¹æ»®
 			Send_Message(DDSTables.CCC_DPU_057.niConnectionId,0,&transaction_id, &blk_ccc_ofp_403_save[plan][task], &message_type_id, data_length, &enRetCode);
+
 		}
+
 	}
 }
 
@@ -8269,10 +8803,12 @@ void init_blk_ccc_kdl_000(){
 	blk_ccc_kdl_000.synchronization_code[0] = (char)0xeb;
 	blk_ccc_kdl_000.synchronization_code[1] = (char)0x94;
 	blk_ccc_kdl_000.frame_class = (char)0xb3;
+
 	//TODO ´ÓÕæÊµÊı¾İÈ¡¡£¡¾´ıÈ·ÈÏ¡¿ÎŞÈË»úÒ£²âÊı¾İ(ÎŞÈË»ú×´Ì¬ĞÅÏ¢)¡¢ÓĞÈË»úÊµÊ±Î»ÖÃ£¨0x062a10£©
 	//    integrated_formation_postures.manned_helicopter_flight_informations.manned_helicopter_latitude = (long long)(24.456 * lat_Scale1);
 	//    integrated_formation_postures.manned_helicopter_flight_informations.manned_helicopter_longitude = (long long)(123.456 * lon_Scale1);
 	//    integrated_formation_postures.manned_helicopter_flight_informations.manned_helicopter_height =  (int)500 / 0.1;
+
 	blk_ccc_kdl_000.manned_helicopter_flight_informations.manned_helicopter_latitude = (long long)(DPU_CCC_data_4.manned_longitude_and_latitude_synt.latitude * lat_Scale1);
 	blk_ccc_kdl_000.manned_helicopter_flight_informations.manned_helicopter_longitude = (long long)(DPU_CCC_data_4.manned_longitude_and_latitude_synt.longitude * lon_Scale1);
 	blk_ccc_kdl_000.manned_helicopter_flight_informations.manned_helicopter_height = (int)(DPU_CCC_data_4.absolute_barometric_altitude / (0.1));
@@ -8281,6 +8817,9 @@ void init_blk_ccc_kdl_000(){
 	blk_ccc_kdl_000.manned_helicopter_flight_informations.manned_helicopter_tilt=(int)(DPU_CCC_data_4.tilt * lon_scale);
 	blk_ccc_kdl_000.manned_helicopter_flight_informations.manned_helicopter_roll_angle=(int)(DPU_CCC_data_4.roll_angle * lat_scale);
 	blk_ccc_kdl_000.manned_helicopter_flight_informations.manned_helicopter_valid_flag_bit = 1;
+
+
+
 	//TODO CCC_DPU_data_3
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[0].uav_id = 0X1005;
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[0].control_attribution = 2;
@@ -8290,9 +8829,13 @@ void init_blk_ccc_kdl_000(){
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].control_attribution = 2;
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].unmanned_helicopter_latitude = (int)(22.321 * lat_scale2);
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].unmanned_helicopter_longitude = (int)(124.654 * lon_scale2);
+
+
+
 	// ÎŞÈË»úID´ÓÄÄÀï½ÓÊÕ£¿ÔÚ¡¡CCC_DPU_data_3¡¡ÖĞÃ»ÓĞ¡£»¹ÊÇËµÊÇ¹Ì¶¨Öµ£¿
 	// »³ÒÉ ¿ØÖÆÈ¨¹éÊô control_attribution Óë Æ½Ì¨¿ØÖÆÈ¨×´Ì¬ unsigned short platform_control_status£¨4A¡¡Õ¾µØÖ·ÅĞ¶Ï£© ÓĞ¹Ø
 	//uav_idÊı¾İÀàĞÍÇ°ºó²»Ò»ÖÂ£¨uav_idÎªushort,platform_numÎªuint£©
+
 	//½ÓÊÕÒ£²âÊ±´¦Àí
 //	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[0].uav_id =(unsigned short)CCC_DPU_data_3.drone_specific_informations[0].platform_num;
 //	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[0].control_attribution = (unsigned char)CCC_DPU_data_3.drone_specific_informations[0].platform_control_status;
@@ -8313,10 +8856,12 @@ void init_blk_ccc_kdl_000(){
 //	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[0].flight_path = (unsigned short)(s4A_frame.fly_course*0.1);
 //	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[0].current_flight_path_num = (char)(s3A_frame.route_number);
 //	blk_ccc_kdl_000.unmanned_helicopter_flight_informations[0].current_flight_waypoint_num = (char)(s3A_frame.waypoint_number);
+
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].uav_id =CCC_DPU_data_3.drone_specific_informations[1].platform_num;
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].control_attribution = CCC_DPU_data_3.drone_specific_informations[1].platform_control_status;
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].unmanned_helicopter_latitude = (int)CCC_DPU_data_3.drone_specific_informations[1].uav_infos.uav_lati * lat_scale2;
 	//    integrated_formation_postures.unmanned_helicopter_flight_informations[1].unmanned_helicopter_longitude = (int)CCC_DPU_data_3.drone_specific_informations[1].uav_infos.uav_longi * lon_scale2;
+
 	//TODOµ±Ç°Ä¿±êĞÅÏ¢´ıÈ·ÈÏ
 	blk_ccc_kdl_000.data_fusions.goal_number=0;
 	blk_ccc_kdl_000.data_fusions.goal_informations.standby=0;
@@ -8330,6 +8875,7 @@ void init_blk_ccc_kdl_000(){
 	blk_ccc_kdl_000.data_fusions.goal_informations.goal_longitude=0;
 	blk_ccc_kdl_000.data_fusions.goal_informations.goal_attributes=0;
 	blk_ccc_kdl_000.data_fusions.goal_informations.data_valid_flag_bit=0;
+
 	// Ğ£ÑéºÍ´ı¼ÆËã
 	blk_ccc_kdl_000.checksum=checkSum(&blk_ccc_kdl_000,sizeof(BLK_CCC_KDL_000) - 1);
 }
@@ -8345,6 +8891,7 @@ void send_blk_ccc_kdl_000()
 // ¿ØÖÆÈ¨½»½ÓÉêÇë
 // uav_indexÎŞÈË»úĞòºÅ£¨0-3£©
 void init_blk_ccc_kdl_002(int uav_index){
+
 	blk_ccc_kdl_002.synchronization_code[0] = 0xEB;
 	blk_ccc_kdl_002.synchronization_code[1] = 0x94;
 	blk_ccc_kdl_002.frame_class = 0xD8;
@@ -8368,7 +8915,9 @@ void send_blk_ccc_kdl_002(int uav_index){
 	align_send_information(&(blk_ccc_kdl_002),sizeof(blk_ccc_kdl_002),0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_KDL_1.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 }
+
 
 // ÎŞÈË»ú1¹âµçÊÓÆµ-·¢ËÍ
 void init_blk_ccc_kdl_004(){
@@ -8390,20 +8939,21 @@ void init_blk_ccc_kdl_010(){
 	blk_ccc_kdl_010.index_id = frameCount++;
 	blk_ccc_kdl_010.jyh = checkSum((unsigned char*)&blk_ccc_kdl_010.frame_class, sizeof(blk_ccc_kdl_010)-2);
 }
-
 void send_blk_ccc_kdl_010(){
 	init_blk_ccc_kdl_010();
 	align_send_information(&(blk_ccc_kdl_010),sizeof(blk_ccc_kdl_010),0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_KDL_11.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 }
 
 //ÎŞÈË»ú2¹âµçÊÓÆµ
 void init_blk_ccc_kdl_012(){
 	//³õÊ¼»¯ÎŞÈË»ú2¹âµçÊÓÆµ
-}
 
+}
 void send_blk_ccc_kdl_012(){
+
 	init_blk_ccc_kdl_012();
 	align_send_information(&(blk_ccc_kdl_012),sizeof(blk_ccc_kdl_012),0);
 	//·¢ËÍ
@@ -8430,13 +8980,14 @@ void init_blk_ccc_kdl_014()
 	}
 	blk_ccc_kdl_014.checksum = checkSum((unsigned char*)&blk_ccc_kdl_014,sizeof(BLK_CCC_KDL_014)-1);
 }
-
 void send_blk_ccc_kdl_014(){
+
 	init_blk_ccc_kdl_014();
 	align_send_information(&(blk_ccc_kdl_014),sizeof(blk_ccc_kdl_014),0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_KDL_4.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
+
 
 // ÈÎÎñ·ÖÅä½á¹ûĞÅÏ¢
 void init_blk_ccc_kdl_017(){
@@ -8444,16 +8995,18 @@ void init_blk_ccc_kdl_017(){
 	blk_ccc_kdl_017.synchronization_code[0] = 0xEB;
 	blk_ccc_kdl_017.synchronization_code[1] = 0x94;
 	blk_ccc_kdl_017.frame_type = 0xB5;
+
 	memcpy((char*)&blk_ccc_kdl_017+3, (char*)&blk_ccc_ofp_019, sizeof(blk_ccc_ofp_019)); // ¸÷×ÔÌø¹ı²»Ò»ÖÂ²¿·Ö
 	blk_ccc_kdl_017.check_num = checkSum((unsigned char *)&blk_ccc_kdl_017, sizeof(blk_ccc_kdl_017)-1);
 }
-
 void send_blk_ccc_kdl_017(){
+
 	init_blk_ccc_kdl_017();
 	align_send_information(&(blk_ccc_kdl_017),sizeof(blk_ccc_kdl_017),0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_KDL_5.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
+
 
 // ÓĞÈË»úÍ¨ÓÃº½Â·½á¹ûĞÅÏ¢   ĞŞ¸ÄÖ±½Óµ÷ÓÃ·â×°º¯Êı
 void init_blk_ccc_kdl_018(){
@@ -8464,7 +9017,6 @@ void init_blk_ccc_kdl_018(){
 	memcpy((char*)&blk_ccc_kdl_018+3, (char*)send_array.dataA, sizeof(BLK_CCC_OFP_018));// ¸÷×ÔÌø¹ı½á¹¹Ìå²»Ò»ÖÂµÄµØ·½
 	blk_ccc_kdl_018.check_num = checkSum((unsigned char *)&blk_ccc_kdl_018, sizeof(blk_ccc_kdl_018)-1);
 }
-
 void send_blk_ccc_kdl_018(){
 	init_blk_ccc_kdl_018();
 	align_send_information(&(blk_ccc_kdl_018),sizeof(blk_ccc_kdl_018),0);
@@ -8517,6 +9069,7 @@ void init_blk_ccc_kdl_024(){
 		blk_ccc_kdl_024.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index].standby_time_lapsNumber_cycleNumber_valid_bit = blk_ccc_ofp_024.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index].standby_time_lapsNumber_cycleNumber_valid_bit;
 		blk_ccc_kdl_024.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index].standby_radius = blk_ccc_ofp_024.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index].standby_radius;
 	}
+
 	blk_ccc_kdl_024.check_num = checkSum((unsigned char *)&blk_ccc_kdl_024, sizeof(blk_ccc_kdl_024)-1);
 }
 
@@ -8526,6 +9079,7 @@ void send_blk_ccc_kdl_024(){
 	init_blk_ccc_kdl_024();
 	data_length = sizeof(blk_ccc_kdl_024);
 	Send_Message(DDSTables.CCC_KDL_7.niConnectionId,0,&transaction_id, &blk_ccc_kdl_024, &message_type_id, data_length, &enRetCode);
+
 }
 
 // ÈÎÎñÇø/¿ÕÓòĞÅÏ¢
@@ -8537,12 +9091,14 @@ void init_blk_ccc_kdl_033(){
 	blk_ccc_kdl_033.check_num = checkSum((unsigned char *)&blk_ccc_kdl_033, sizeof(blk_ccc_kdl_033)-1);
 }
 
+
 void send_blk_ccc_kdl_033(){
 	init_blk_ccc_kdl_033();
 	align_send_information(&(blk_ccc_kdl_033),sizeof(blk_ccc_kdl_033),0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_KDL_8.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
+
 
 //  1.10 ÈÎÎñµãĞÅÏ¢
 void init_blk_ccc_kdl_034(){
@@ -8552,6 +9108,7 @@ void init_blk_ccc_kdl_034(){
 	blk_ccc_kdl_034.frame_type = (char)0xB9;
 	memcpy((char*)&blk_ccc_kdl_034+3, (char*)&blk_ccc_ofp_034, sizeof(blk_ccc_ofp_034));// ¸÷×ÔÌø¹ı½á¹¹Ìå²»Ò»ÖÂµÄµØ·½
 	blk_ccc_kdl_034.check_num = checkSum((unsigned char *)&blk_ccc_kdl_034, sizeof(blk_ccc_kdl_034)-1);
+
 }
 
 void send_blk_ccc_kdl_034(){
@@ -8561,6 +9118,7 @@ void send_blk_ccc_kdl_034(){
 	Send_Message(DDSTables.CCC_KDL_9.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	// send_array.clear();
 }
+
 
 // ÈÎÎñÏßĞÅÏ¢
 void init_blk_ccc_kdl_035(){
@@ -8578,6 +9136,10 @@ void send_blk_ccc_kdl_035(){
 	Send_Message(DDSTables.CCC_KDL_10.niConnectionId,0,&transaction_id, &blk_ccc_kdl_035, &message_type_id, data_length, &enRetCode);
 }
 
+
+
+
+
 // ´¦Àí¸³ÖµÓĞĞ§Î»
 short set_data_valid(short data,int judg_data,int b){  // data ½øĞĞ±ÈÌØÎ»¸³ÖµµÄÊı¾İ  judg_data ÅĞ¶ÏÓĞĞ§µÄÊı¾İ  b ¸³ÖµµÄ±ÈÌØÎ»
 	if(judg_data > 0){
@@ -8589,6 +9151,7 @@ short set_data_valid(short data,int judg_data,int b){  // data ½øĞĞ±ÈÌØÎ»¸³ÖµµÄÊ
 	return data;
 }
 
+
 ///*ÎŞÈË»úÊı¾İÓĞĞ§±êÖ¾Î»  diff*/  // È«ÓĞĞ§
 //    CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = 0;
 //    CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = set_data_valid(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,CCC_DPU_data_3.drone_specific_informations[i].remaining_mission_time,0);
@@ -8598,6 +9161,7 @@ short set_data_valid(short data,int judg_data,int b){  // data ½øĞĞ±ÈÌØÎ»¸³ÖµµÄÊ
 //    CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = set_data_valid(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,CCC_DPU_data_3.drone_specific_informations[i].T45,4);
 //    CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = set_data_valid(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,CCC_DPU_data_3.drone_specific_informations[i].U,5);
 //    CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid = set_data_valid(CCC_DPU_data_3.drone_specific_informations[i].uav_infos.uav_data_valid,CCC_DPU_data_3.drone_specific_informations[i].U_storage,6);
+
 /*********** KDLÍ¨ĞÅÄ£¿é ************/
 // kdl½ÓÊÕ
 void recv_kdl(){
@@ -8607,24 +9171,31 @@ void recv_kdl(){
 	if(enRetCode == 0){
 		memcpy(&(KDL_CCC_data_0),dds_data_rece.dataA,sizeof(KDL_CCC_data_0));
 	}
+
 	Receive_Message(DDSTables.KDL_CCC_1.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KDL_CCC_data_1),dds_data_rece.dataA,sizeof(KDL_CCC_data_1));
 	}
+
 	Receive_Message(DDSTables.KDL_CCC_2.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KDL_CCC_data_2),dds_data_rece.dataA,sizeof(KDL_CCC_data_2));
+
 	}
+
 	Receive_Message(DDSTables.KDL_CCC_3.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KDL_CCC_data_3),dds_data_rece.dataA,sizeof(KDL_CCC_data_3));
+
 	}
+
 }
 
 /*********** KKLÍ¨ĞÅÄ£¿é ************/
 // kkl ·¢ËÍ
 // Á´Â·½»½Ó¿ØÖÆÖ¸Áî
 void init_link_jiaojie(){
+
 }
 
 void send_link_jiaojie(){
@@ -8632,6 +9203,7 @@ void send_link_jiaojie(){
 	align_send_information(&(CCC_KKL_data_3),sizeof(CCC_KKL_data_3),0);
 	//·¢ËÍ
 	Send_Message(sg_sttaConDirTopicId[150].niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 }
 
 // ¿Õ¿ÕÁ´²ÎÊıÉèÖÃ  042
@@ -8663,25 +9235,33 @@ void send_ckpartset(){
 	Send_Message(DDSTables.CCC_KKL_2.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 }
 
+
 // µ¼º½Êı¾İ 025
 void init_navigation_data(){
+
 }
 
 void send_navigation_data(){
+
 	init_navigation_data();
 	align_send_information(&(CCC_KKL_data_4),sizeof(CCC_KKL_data_4),0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_KKL_4.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 }
 
 void send_kkl(){
+
 	// Á´Â·½»½Ó¿ØÖÆÖ¸Áî
 	send_link_jiaojie();
+
 	// ¿Õ¿ÕÁ´²ÎÊıÉèÖÃ  042
 	send_ckpartset();
+
 	// µ¼º½Êı¾İ 025
 	send_navigation_data();
 }
+
 
 // kkl½ÓÊÕ
 void recv_kkl(){
@@ -8692,29 +9272,35 @@ void recv_kkl(){
 		memcpy(&(KKL_CCC_data_4),dds_data_rece.dataA,sizeof(KKL_CCC_data_4));
 		//// printf("¿Õ¿ÕÁ´²ÎÊı·´À¡ĞÅÏ¢ success!!!\n");
 	}
+
 	Receive_Message(DDSTables.KKL_CCC_3.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KKL_CCC_data_3),dds_data_rece.dataA,sizeof(KKL_CCC_data_3));
 		//// printf("uÁ´×´Ì¬ĞÅÏ¢ success!!!\n");
 	}
+
 	Receive_Message(DDSTables.KKL_CCC_5.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KKL_CCC_data_5),dds_data_rece.dataA,sizeof(KKL_CCC_data_5));
 		//// printf("kklÁ´Â·×´Ì¬Êı¾İ success!!!\n");
 	}
+
 	Receive_Message(DDSTables.KKL_CCC_7.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KKL_CCC_data_7),dds_data_rece.dataA,sizeof(KKL_CCC_data_7));
 		//// printf("Á´Â·½»½Ó¿ØÖÆÖ¸Áî·´À¡ success!!!\n");
 	}
+
 	Receive_Message(DDSTables.KKL_CCC_20.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0){
 		memcpy(&(KKL_CCC_data_20),dds_data_rece.dataA,sizeof(KKL_CCC_data_20));
 		//// printf("·ÉĞĞ¹ÊÕÏÇåµ¥ success!!! \n");
 	}
-}
 
+}
 /***************************************************************************************************************/
+
+
 /***************************** DPM1A½»»¥  20241105 ********************************/
 //void send_DPM1A_message(){ // Ö÷º¯Êı
 //    send_DPM1A_1();
@@ -8731,6 +9317,7 @@ void recv_kkl(){
 //    send_DPM1A_12();
 //    recv_DPM1A_message();
 //}
+
 // ÎŞÈË»ú×´Ì¬ĞÅÏ¢13
 void send_DPM1A_1(){
 #if 0
@@ -8753,9 +9340,13 @@ void send_DPM1A_1(){
 	CCC_DPM_data_0.drone_specific_informations[0].uav_infos.vectx_speed= 900;
 	CCC_DPM_data_0.drone_specific_informations[0].data_valid_bit = 0xffff;
 	CCC_DPM_data_0.drone_specific_informations[0].uav_infos.uav_icon_flag = 1;
+
+
 	align_send_information(&(CCC_DPM_data_0), sizeof(CCC_DPM_data_0), 0);
 	//·¢ËÍ
+
 	Send_Message(DDSTables.CCC_DPM_0.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	if(enRetCode == 0)
 	{
 		//                 printf("CCC_DPM_data_0 (len %d) SEND SUCCESS!\n", data_length);
@@ -8774,9 +9365,11 @@ void send_DPM1A_2(){
 	CCC_DPM_data_1.surface_station_num=99;
 	//    CCC_DPM_data_1.drone_link_status_informations[0].u_send_strength=80;
 	//    CCC_DPM_data_1.drone_link_status_informations[0].c_send_strength=50;
+
 	align_send_information(&CCC_DPM_data_1, sizeof(CCC_DPM_data_1), 0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_1.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	if(enRetCode == 0){
 		//// printf("±à¶ÓÁ´Â·×´Ì¬ĞÅÏ¢ buflen=%d send success!!!", sizeof (CCC_DPM_data_1));
 	}
@@ -8785,10 +9378,13 @@ void send_DPM1A_2(){
 
 // ×ÛºÏÌ¬ÊÆ(Ä¿±êÈÚºÏ15
 void send_DPM1A_3(){
+
+
 	CCC_DPM_data_2.tgt_Number=99;
 	align_send_information(&CCC_DPM_data_2, sizeof(CCC_DPM_data_2), 0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_2.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	if(enRetCode == 0){
 		//// printf("×ÛºÏÌ¬ÊÆ£¨Ä¿±êÈÚºÏ buflen=%d send success!!!", sizeof (CCC_DPM_data_2));
 	}
@@ -8796,10 +9392,12 @@ void send_DPM1A_3(){
 
 // ÈÎÎñ·ÖÅä½á¹ûĞÅÏ¢17
 void send_DPM1A_4(){
+
 	CCC_DPM_data_3.platform_num=99;
 	align_send_information(&CCC_DPM_data_3, sizeof(CCC_DPM_data_3), 0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_3.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	if(enRetCode == 0){
 		//// printf("ÈÎÎñ·ÖÅä½á¹ûĞÅÏ¢ buflen=%d send success!!!", sizeof (CCC_DPM_data_3));
 	}
@@ -8820,7 +9418,9 @@ void send_DPM1A_5(){
 	CCC_DPM_data_4_5_6.blk_ccc_ofp_018.waypoint_informations[2].waypoint_longitude_and_latitude.latitude = 11.5;
 	CCC_DPM_data_4_5_6.blk_ccc_ofp_018.waypoint_informations[3].waypoint_longitude_and_latitude.longitude = 101.8;
 	CCC_DPM_data_4_5_6.blk_ccc_ofp_018.waypoint_informations[3].waypoint_longitude_and_latitude.latitude = 11.8;
+
 	align_send_information(&(CCC_DPM_data_4_5_6.blk_ccc_ofp_018), sizeof(CCC_DPM_data_4_5_6.blk_ccc_ofp_018), 0);
+
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_4.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	//printf("ÓĞÈË»úº½Â·¹æ»®½á¹ûĞÅÏ¢ buflen=%d send success!!!\n", data_length);
@@ -8834,6 +9434,7 @@ void send_DPM1A_5(){
 	align_send_information(&(CCC_DPM_data_4_5_6.suspended_sound_fixed_measurement_points), sizeof(CCC_DPM_data_4_5_6.suspended_sound_fixed_measurement_points), 0);
 	//·¢ËÍ
 	//    Send_Message(DDSTables.CCC_DPM_6.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	if(enRetCode == 0)
 	{
 		//         printf("ÓĞÈË»úº½Â·¹æ»®½á¹ûĞÅÏ¢ buflen=%d send success!!!\n", sizeof (CCC_DPM_data_4_5_6));
@@ -8859,6 +9460,7 @@ void send_DPM1A_6(){
 	align_send_information(&CCC_DPM_data_7, sizeof(CCC_DPM_data_7), 0);
 	//·¢ËÍ
 	Send_Message(DDSTables.CCC_DPM_7.niConnectionId,0,&transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 	if(enRetCode == 0){
 		//// printf("ÎŞÈË»úº½Â·¹æ»® buflen=%d send success!!!", sizeof (CCC_DPM_data_7));
 	}
@@ -8866,6 +9468,7 @@ void send_DPM1A_6(){
 
 // Ğ­Í¬ÈÎÎñÖ´ĞĞ×´Ì¬ÌáÊ¾32
 void send_DPM1A_7(){
+
 	CCC_DPM_data_8.cue_message_type=99;
 	align_send_information(&CCC_DPM_data_8, sizeof(CCC_DPM_data_8), 0);
 	//·¢ËÍ
@@ -8877,6 +9480,7 @@ void send_DPM1A_7(){
 
 // ÈÎÎñÇø/¿ÕÓòĞÅÏ¢33
 void send_DPM1A_8(){
+
 	CCC_DPM_data_9.area_number=99;
 	align_send_information(&CCC_DPM_data_9, sizeof(CCC_DPM_data_9), 0);
 	//·¢ËÍ
@@ -8888,6 +9492,7 @@ void send_DPM1A_8(){
 
 // ÈÎÎñµãĞÅÏ¢34
 void send_DPM1A_9(){
+
 	CCC_DPM_data_10.point_number=99;
 	align_send_information(&CCC_DPM_data_10, sizeof(CCC_DPM_data_10), 0);
 	//·¢ËÍ
@@ -8899,6 +9504,7 @@ void send_DPM1A_9(){
 
 // ÈÎÎñÏßĞÅÏ¢35
 void send_DPM1A_10(){
+
 	CCC_DPM_data_11.line_number=99;
 	align_send_information(&CCC_DPM_data_11, sizeof(CCC_DPM_data_11), 0);
 	//·¢ËÍ
@@ -8910,6 +9516,7 @@ void send_DPM1A_10(){
 
 // ÎŞÈË»ú¹âµç¿ØÖÆÈ¨·´À¡41
 void send_DPM1A_11(){
+
 	CCC_DPM_data_12.ssds_control_feedback=99;
 	align_send_information(&CCC_DPM_data_12, sizeof(CCC_DPM_data_12), 0);
 	//·¢ËÍ
@@ -8952,6 +9559,7 @@ void recv_DPM1A_message(){
 	}
 }
 
+
 void hanover_state(int uav_index,unsigned char ctrl_releasing,unsigned char ctrl_recieving,unsigned short status)
 {
 	data_length = sizeof(CR_ControlHandoverStatusFeedback);
@@ -8974,8 +9582,10 @@ void set_blk_ccc_kkl_009_029_030_031(int uav_index, unsigned int* p_main_link_se
 	// ·¢ËÍ½»½Ó²ÎÊı
 	if(*p_main_link_send>0)
 	{
+
 		// ÀàĞÍ¹Ì¶¨04
 		blk_ccc_kkl_009_029_030_031[uav_index].Type = 0x04;
+
 		switch (*p_main_link_send) {
 		case 1:
 			blk_ccc_kkl_009_029_030_031[uav_index].UavID = blk_ofp_ccc_014.CR_Handover_UAV_Infos[uav_index].UAV_ID;
@@ -9007,6 +9617,7 @@ void set_blk_ccc_kkl_009_029_030_031(int uav_index, unsigned int* p_main_link_se
 			blk_ccc_kkl_009_029_030_031[uav_index].LianXuLiangH = blk_ofp_ccc_014.CommunicationParam.handover_up_channel >> 8;
 			blk_ccc_kkl_009_029_030_031[uav_index].LianXuLiangL = blk_ofp_ccc_014.CommunicationParam.handover_up_channel & 0x00ff;
 			break;
+
 #if 0  // ÔİÊ±²»·¢
 		case 6:
 			blk_ccc_kkl_009_029_030_031[uav_index].UavID = blk_ofp_ccc_014.CR_Handover_UAV_Infos[uav_index].UAV_ID;
@@ -9021,6 +9632,7 @@ void set_blk_ccc_kkl_009_029_030_031(int uav_index, unsigned int* p_main_link_se
 			blk_ccc_kkl_009_029_030_031[uav_index].LianXuLiangL = blk_ofp_ccc_014.CommunicationParam.u_channel & 0x00ff;
 			break;
 #endif
+
 		case 33:
 			blk_ccc_kkl_009_029_030_031[uav_index].KaiGuanLiang = 0x0C;        //0CH Æô¶¯Ö÷Á´×ªÒÆ
 			break;
@@ -9032,6 +9644,7 @@ void set_blk_ccc_kkl_009_029_030_031(int uav_index, unsigned int* p_main_link_se
 			break;
 		}
 		send_blk_ccc_kkl_009_029_030_031(uav_index);
+
 		if(--main_link_send_count<=0)//·¢ÍêÈı´Î
 		{
 			(*p_main_link_send)++;//·¢ËÍÏÂÒ»¸öÊı¾İ
@@ -9046,29 +9659,37 @@ void set_blk_ccc_kkl_009_029_030_031(int uav_index, unsigned int* p_main_link_se
 void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 {
 #if _PC_SIMULATION_
+
 	static int sleepCount = 40; // ÑÓÊ±¼ÆÊıÆ÷
 	static int pre_take_over_flag = 0;// Ç°Ò»ÅÄ½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 	static int sendCount = 50;// ·¢ËÍ¼ÆÊıÆ÷
+
 	if(*p_take_over_flag!=1)
 	{
 		pre_take_over_flag = 0;
 		return;
 	}
+
 	if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 		return;
+
 	// µÚÒ»´Î½øÈë½»½Ó
 	if(pre_take_over_flag == 0)
 	{
 		s4D_frame_04[uav_index] = 0;
+
 		//¸øDPU·¢¿ØÖÆÈ¨½»½Ó×´Ì¬£¬¿ØÖÆÖĞ
 		hanover_state(0,1);
+
 		// blk_ccc_kdl_002²ÎÊı¸³Öµ
 		send_blk_ccc_kdl_002(uav_index);
 	}
+
 	// ½ÓÊÕÓ¦´ğ(blk_kdl_ccc_010ÊÂ¼şÏûÏ¢£¬°ÑÖ¡Àà±ğµ±×öÓĞĞ§ĞÔ)
 	if(blk_kdl_ccc_010.frame_class != 0xD9)
 	{
 		pre_take_over_flag = *p_take_over_flag;// ¸üĞÂÇ°Ò»ÅÄµÄ±êÖ¾Á¿
+
 		// Ã»ÊÕµ½ÔòµÈ´ı
 		return;
 	}
@@ -9079,16 +9700,20 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		// Ö±½ÓÖØÖÃ£¬ÍË³ö½»½ÓÁ÷³Ì
 		*p_take_over_flag = 0;
 		blk_kdl_ccc_010.frame_class = 0;
+
 		//Íê³É½»½ÓÔòÖØÖÃblk_ofp_ccc_014
 		memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
 		return;
 	}
+
+
 	//ÊÕµ½Æô¶¯½»½ÓÖ¸Áî
 	if(s4D_frame_04[uav_index] == 1)
 	{
 		// ÑÓÊ±2s
 		sleepCount--;
 	}
+
 	if(sleepCount < 0)
 	{
 		if(sendCount-- > 0)
@@ -9100,6 +9725,7 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			s4D_frame_04[uav_index] = 0;
 			sleepCount = 40;
 			sendCount = 50;
+
 			//ÎŞÈË»úÖ÷Á´½»½Ó³É¹¦£¬±êÖ¾Î»ÇåÁã
 			*p_take_over_flag = 0;
 			blk_kdl_ccc_010.frame_class = 0;// ÅĞ¶Ï½»½ÓÓ¦´ğµÄ
@@ -9110,19 +9736,27 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
 		}
 	}
+
+
 	pre_take_over_flag = *p_take_over_flag;
+
 #else
+
 	// ±êÖ¾Á¿
 	static unsigned int main_link_send = 0; // ÊÇ·ñ·¢ËÍ3°üÖ÷Á´½»½ÓÖ¸Áî¡£0£º²»ĞèÒª·¢ËÍ£»1£ºCÁ´½»½Ó³É¹¦È·ÈÏ£»2£ºÆô¶¯Ö÷Á´×ªÒÆ£¨ÊÍ·ÅÖ÷Á´£©
 	static int pre_take_over_flag = 0;// Ç°Ò»ÅÄ½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 	static int get_step = 0; // »ñÈ¡¿ØÖÆÈ¨µÄ²½Öè
+
 	if(*p_take_over_flag!=1)
 	{
 		pre_take_over_flag = 0;
 		return;
 	}
+
 	if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 		return;
+
+
 	/***** ½»½ÓµÚÒ»²½:·¢ËÍ¿ØÖÆÈ¨½»½ÓĞÅÏ¢send_blk_ccc_kdl_002  ***********/
 	if(get_step == 0)
 	{
@@ -9131,6 +9765,7 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		get_step++;
 		return;
 	}
+
 	/***** ½»½ÓµÚ¶ş²½:µÈ´ı½ÓÊÕblk_kdl_ccc_015  ***********/
 	if(get_step == 1)
 	{
@@ -9140,6 +9775,7 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			// Ã»ÊÕµ½ÔòµÈ´ı
 			return;
 		}
+
 		// ÊÕµ½ÅĞ¶Ï½á¹û
 		if(blk_kdl_ccc_015.ans != 0) // ¾Ü¾øÔòÍË³ö½»½Ó(Ä¿Ç°ÈÏÎª²»Í¬ÒâÔòÎª¾Ü¾ø)£¬Í¬ÒâÔò¼ÌĞøÏÂÃæ´¦Àí
 		{
@@ -9158,28 +9794,39 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			hanover_state(uav_index,0,1,0xa);
 			get_step++;// ½øÈëÏÂÒ»²½
 		}
+
 	}
+
 	/***** ½»½ÓµÚÈı²½:CCC½«±¾»úCÁ´²ÎÊıĞŞ¸Ä³ÉµØÃæÕ¾·µ»ØµÄ²ÎÊı  ***********/
 	static int step3_send_time = 0; // ·¢ËÍ3´ÎÅĞ¶¨
 	static int step3_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
 	if(get_step == 2)
 	{
+
 		if(step3_send_time < 3) // ·¢ËÍÂß¼­
 		{
 			if(step3_rec_count == 0) // Ã¿´ÎÎª0Ê±·¢ËÍ£¬È»ºóµÈ´ı5°ü
 			{
+
 				//Ê¹ÓÃ¿ÕµØÁ´´«¹ıÀ´µÄ²ÎÊı
+
 				main_link_send = 11; // ?´ı¶¨
 			}
+
 			// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 			if(main_link_send!=0)
 			{
 				set_blk_ccc_kkl_000(uav_index, &main_link_send);
 				return;
 			}
+
+
 			int tem_change_success = 0;
+
+
 			for(int i =0; i<UAV_MAX_NUM; i++)
 			{
+
 				if(blk_kkl_ccc_007.uav_cl_status_info[i].NoHeliID == formationId[uav_index].planeId)
 				{
 					if(1) //ÅĞ¶ÏÁ´Â·×´Ì¬,ÅĞ¶ÏÉèÖÃµÄËÙÂÊºÍÆµ¶ÎÊÇ·ñÓë·¢ËÍµÄÒ»ÖÂ £¬20Ö¡³¬Ê±
@@ -9189,6 +9836,7 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 					}
 				}
 			}
+
 			if(tem_change_success == 2)// ËµÃ÷06¡¢07¶¼Âú×ã
 			{
 				get_step++;// ½øÈëÏÂÒ»²½
@@ -9196,32 +9844,46 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			else
 			{
 				step3_rec_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
+
 				if(step3_rec_count>5)
 				{
 					step3_rec_count = 0;// ÍË³ö±¾´ÎµÈ´ı
 					step3_send_time++;// ·¢ËÍ´ÎÊı×ÔÔö
 				}
 			}
+
 		}
 		else
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step3_send_time = 0;
 			step3_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			get_step = 0;
+
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÉêÇë¿ØÖÆÈ¨Ê§°Ü-Á´Â·²ÎÊıÇĞ»»²»³É¹¦
 			hanover_state(uav_index,0,3,0x8);
+
 		}
+
 		return;
 	}
+
+
+
+
 	/***** ½»½ÓµÚËÄ²½:ÅĞ¶ÏÉÏÏÂĞĞËø¶¨3Ãë£¬²»Âú×ãÔòÊ§°Ü£¨ÔÊĞí×î´óÁ¬Ğø5°üÊ§Ëø£©  ***********/
 	static int step4_wait_count = 0;// ½øÈëµÚÈı²½ÏÈµÈ´ı5ÅÄ
 	static int step4_lock_time = 0; // Ëø¶¨ÈıÃëÅĞ¶¨
@@ -9231,12 +9893,14 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step3_send_time = 0;
 		step3_rec_count = 0;
+
 		// µÈ´ı5ÅÄ
 		if(step4_wait_count < 5)
 		{
 			step4_wait_count++;
 			return;
 		}
+
 		int tem_change_success = 0;
 		for(int i =0; i<UAV_MAX_NUM; i++)
 		{
@@ -9250,8 +9914,10 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 				}
 			}
 		}
+
 		for(int i =0; i<UAV_MAX_NUM; i++)
 		{
+
 			if(blk_kkl_ccc_007.uav_cl_status_info[i].NoHeliID == formationId[uav_index].planeId)
 			{
 				if(blk_kkl_ccc_007.uav_cl_status_info[i].IfNoHeliCon == 1) //lock£¿
@@ -9260,7 +9926,9 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 					break;
 				}
 			}
+
 		}
+
 		if(tem_change_success == 2)// ËµÃ÷06¡¢07¶¼Âú×ã
 		{
 			step4_lock_time++;// ¼ÆÊ±ÀÛ¼Ó
@@ -9269,6 +9937,8 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		{
 			step4_break_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
 		}
+
+
 		// ÀÛ¼ÆÊ§Ëø3·ÖÖÓÔòÊ§°Ü
 		if(step4_break_count>180*20)
 		{
@@ -9276,22 +9946,31 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			step4_wait_count = 0;
 			step4_lock_time = 0;
 			step4_break_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			get_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·´À¡½»½Ó×´Ì¬,¿ØÖÆÈ¨ÉêÇë-Ê§°Ü-Á´Â·Î´½¨Á¢
 			hanover_state(uav_index,0,3,0xb);
 		}
+
 		// ÀÛ¼ÆËø¶¨1Ãë
 		if(step4_lock_time>20)
 		{
 			get_step++;// ½øÈëÏÂÒ»²½
 		}
+
 		return;
 	}
+
+
+
 	/***** ½»½ÓµÚÎå²½:·¢ËÍÖ÷Á´½»½Ó³É¹¦Ö¸Áî  Ö±½Ó·¢ËÍÒ»°ü£¬½øÈëÏÂÒ»²½£¬ºóĞøĞèÒª¸úÎŞÈË»ú²¿È·ÈÏ***********/
 	static int step5_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step5_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -9301,11 +9980,14 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		step4_wait_count = 0;
 		step4_lock_time = 0;
 		step4_break_count = 0;
+
+
 		if(step5_send_time < 1) // ·¢ËÍÂß¼­
 		{
 			step5_send_time++;
 			main_link_send = 31;
 		}
+
 		// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 		if(main_link_send!=0)
 		{
@@ -9315,8 +9997,12 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		{
 			get_step++;// ½øÈëÏÂÒ»²½
 		}
+
 		return;
 	}
+
+
+
 	/***** ½»½ÓµÚÁù²½:·¢ËÍÒ£¿ØÖ¸ÁîÖ¡½áÊø½»½ÓÖ¸Áî£¨È¨½»½Ó£©  ***********/
 	static int step6_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step6_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -9325,6 +10011,8 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step5_send_time = 0;
 		step5_rec_count = 0;
+
+
 		if(step6_send_time < 3) // ·¢ËÍÂß¼­
 		{
 			if(step6_rec_count == 0) // Ã¿´ÎÎª0Ê±·¢ËÍ£¬È»ºóµÈ´ı5°ü
@@ -9332,6 +10020,8 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 				// ·¢ËÍÒ£¿ØÖ¸ÁîÖ¡½áÊø½»½ÓÖ¸Áî
 				fc_order_send(uav_index, 1);
 			}
+
+
 			// ÅĞ¶ÏÒ£²âÖ¡
 			if(s4D_frame_24[uav_index] == 1)
 			{
@@ -9340,29 +10030,39 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			else
 			{
 				step6_rec_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
+
 				if(step6_rec_count>5)
 				{
 					step6_rec_count = 0;// ÍË³ö±¾´ÎµÈ´ı
 					step6_send_time++;// ·¢ËÍ´ÎÊı×ÔÔö
 				}
 			}
+
 		}
 		else
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step6_send_time = 0;
 			step6_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			get_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·´À¡½»½Ó×´Ì¬???·ÉĞĞÒ£¿Ø»Ø±¨³¬Ê±ÈçºÎÅĞ¶Ï
 			hanover_state(uav_index,3,0,0); //£¿Ã¶¾Ù´ı¸üĞÂ
+
 		}
+
 		return;
 	}
+
+
 	/***** ½»½ÓµÚÆß²½:¸ù¾İÒ£²âÖ¡ ÅĞ¶ÏÊÇ·ñ½»½Ó³É¹¦ ***********/
 	static int step7_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step7_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -9371,8 +10071,10 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step6_send_time = 0;
 		step6_rec_count = 0;
+
 		if(step7_send_time < 1) // ·¢ËÍÂß¼­
 		{
+
 			// ÅĞ¶ÏÓĞ¿ØÈ¨Ôò³É¹¦
 			if(formationId[uav_index].isControl == 1)
 			{
@@ -9381,45 +10083,65 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 			else
 			{
 				step7_rec_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
+
 				if(step7_rec_count>5)
 				{
 					step7_rec_count = 0;// ÍË³ö±¾´ÎµÈ´ı
 					step7_send_time++;// ·¢ËÍ´ÎÊı×ÔÔö
 				}
 			}
+
 		}
 		else
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step7_send_time = 0;
 			step7_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			get_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·´À¡½»½Ó×´Ì¬???Î´ÊÕµ½Ò£²âÖ¡³¬Ê±
 			//            hanover_state(4,0); //£¿Ã¶¾Ù´ı¸üĞÂ
+
 		}
+
 		return;
 	}
+
+
+
 	/***** ½»½ÓµÚ°Ë²½:Íê³É½»½Ó ***********/
 	if(get_step == 7)
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step7_send_time = 0;
 		step7_rec_count = 0;
+
 		// ²½Öè±êÖ¾ÇåÁã
 		get_step = 0;
+
 		// ±¾»ú½»½ÓÀà±ğÇåÁã
 		*p_take_over_flag = 0;
+
 		// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 		memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 		// ·´À¡½»½Ó×´Ì¬³É¹¦,¿ØÖÆÈ¨ÉêÇë-³É¹¦
 		hanover_state(uav_index,0,2,0xc);
 	}
+
+
+
+
 #endif
+
 }
 
 //ÎŞÈË»ú¿ØÖÆÈ¨½»½Ó-ÊÖ¶¯ÊÍ·Å¿ØÖÆÈ¨
@@ -9428,16 +10150,26 @@ void UAV_Takeover_Process_get(int uav_index, unsigned int* p_take_over_flag)
 void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 {
 #if _PC_SIMULATION_
+
+
+
 #else
+
 	static unsigned int main_link_send = 0; // ÊÇ·ñ·¢ËÍ3°üÖ÷Á´½»½ÓÖ¸Áî¡£0£º²»ĞèÒª·¢ËÍ£»1£ºCÁ´½»½Ó³É¹¦È·ÈÏ£»2£ºÆô¶¯Ö÷Á´×ªÒÆ£¨ÊÍ·ÅÖ÷Á´£©
+
+
 	//    if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 	//        return;
+
+
 	/***** ½»½ÓµÚ0²½:ÅĞ¶ÏÊÇ·ñÉÏÏÂĞĞËø¶¨  ***********/
 	static int step0_lock_time[4] = {0,0,0,0}; // Ëø¶¨ÈıÃëÅĞ¶¨
 	if(*p_hand_get_step==0) // Ö±½ÓÅĞ¶ÏÊÇ·ñÊÇ0£¬ÖÜÆÚÅĞ¶Ï
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		//ÎŞ
+
+
 		int tem_change_success = 0;
 		for(int i =0; i<UAV_MAX_NUM; i++)
 		{
@@ -9451,6 +10183,7 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 				}
 			}
 		}
+
 		for(int i =0; i<UAV_MAX_NUM; i++)
 		{
 			//cÁ´ÎŞÈË»úidÓë·É¿Ø±à¶ÓÎŞÈË»úidÒ»ÖÂ£¬Ä¿Ç°¸ÃÎŞÈË»úÎŞ¿ØÖÆÈ¨£¬Ò£²âÊı¾İÊÇ´ÓCÁ´À´µÄ
@@ -9463,20 +10196,26 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 				}
 			}
 		}
+
 		if(tem_change_success == 2)// ËµÃ÷06¡¢07¶¼Âú×ã
 		{
 			step0_lock_time[uav_index]++;// ¼ÆÊ±ÀÛ¼Ó
 		}
+
+
 		// ÀÛ¼ÆËø¶¨3Ãë60ÅÄ£¬ÔİÊ±30ÅÄ
 		if(step0_lock_time[uav_index] == 30)
 		{
 			//ÊÖ¶¯»ñÈ¡¿ØÖÆÈ¨-Ö÷Á´½¨Á¢
 			hanover_state(uav_index,0,1,0x11);// ·µ»Ø×´Ì¬
+
 			//			//Ëø¶¨Ã¿ÈıÅÄ·¢ËÍÒ»´Î
 			//			step0_lock_time = 0;
 		}
+
 		return;
 	}
+
 	/***** ½»½ÓµÚ1²½:·¢ËÍÖ÷Á´½»½ÓºÍÈ¨½»½Ó  ***********/
 	static int step1_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step1_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -9486,6 +10225,7 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step0_lock_time[uav_index] = 0;
+
 		if(step1_send_time < 1) // ·¢ËÍÂß¼­
 		{
 			if(step1_rec_count == 0) // Ã¿´ÎÎª0Ê±·¢ËÍ£¬È»ºóµÈ´ı5°ü
@@ -9502,17 +10242,20 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 					main_link = 0;
 				}
 			}
+
 			// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 			if(main_link_send!=0)
 			{
 				set_blk_ccc_kkl_000(uav_index, &main_link_send);
 				return;
 			}
+
 			// ÅĞ¶ÏÓĞ¿ØÈ¨Ôò³É¹¦
 			if(formationId[uav_index].isControl == 1)
 			{
 				//Ö÷¶¯»ñÈ¡-¿ØÖÆÈ¨½»½Ó³É¹¦
 				hanover_state(uav_index,0,2,0x13); // ·´À¡
+
 				//Çå¿Õ±êÖ¾Á¿
 				//µ±Ç°²½Öè±êÖ¾ÇåÁã
 				*p_hand_get_step += 1;
@@ -9525,6 +10268,7 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 			{
 				//Ö÷¶¯»ñÈ¡-¿ØÖÆÈ¨½»½ÓÊ§°Ü
 				hanover_state(uav_index,0,2,0x14); // ·´À¡
+
 				//Çå¿Õ±êÖ¾Á¿
 				//µ±Ç°²½Öè±êÖ¾ÇåÁã
 				*p_hand_get_step += 1;
@@ -9534,7 +10278,9 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 				main_link = 1;
 			}
 		}
+
 	}
+
 	/***** ½»½ÓµÚ2²½:´ı×ÛÏÔÈ·ÈÏ±¾´Î½»½Ó½áÊø  ***********/
 	if(*p_hand_get_step == 2)
 	{
@@ -9545,8 +10291,11 @@ void UAV_Takeover_Process_get_hand(int uav_index, unsigned int* p_hand_get_step)
 			printf("get_hand end\n");
 		}
 	}
+
+
 #endif
 }
+
 
 void UAV_Takeover_Process_get_hand_test(int uav_index, unsigned int* p_hand_get_step)
 {
@@ -9565,11 +10314,13 @@ void UAV_Takeover_Process_get_hand_test(int uav_index, unsigned int* p_hand_get_
 			hanover_state(uav_index,0,1,0x12);// ·µ»Ø×´Ì¬
 		}
 		step1_rec_count++;
+
 		// ÅĞ¶ÏÓĞ¿ØÈ¨Ôò³É¹¦
 		if(formationId[uav_index].isControl == 1)
 		{
 			//Ö÷¶¯»ñÈ¡-¿ØÖÆÈ¨½»½Ó³É¹¦
 			hanover_state(uav_index,0,2,0x13); // ·´À¡
+
 			//Çå¿Õ±êÖ¾Á¿
 			//µ±Ç°²½Öè±êÖ¾ÇåÁã
 			*p_hand_get_step += 1;
@@ -9581,6 +10332,7 @@ void UAV_Takeover_Process_get_hand_test(int uav_index, unsigned int* p_hand_get_
 		{
 			//Ö÷¶¯»ñÈ¡-¿ØÖÆÈ¨½»½ÓÊ§°Ü
 			hanover_state(uav_index,0,2,0x14); // ·´À¡
+
 			//Çå¿Õ±êÖ¾Á¿
 			//µ±Ç°²½Öè±êÖ¾ÇåÁã
 			*p_hand_get_step += 1;
@@ -9589,6 +10341,7 @@ void UAV_Takeover_Process_get_hand_test(int uav_index, unsigned int* p_hand_get_
 			step1_time_out = 0;
 		}
 	}
+
 	else if(*p_hand_get_step == 2)
 	{
 		//ÊÍ·Å¿ØÖÆÈ¨
@@ -9601,21 +10354,27 @@ void UAV_Takeover_Process_get_hand_test(int uav_index, unsigned int* p_hand_get_
 	}
 }
 
+
 //ÎŞÈË»ú¿ØÖÆÈ¨½»½Ó-ÊÍ·Å¿ØÖÆÈ¨
 // uav_index:ÎŞÈË»úĞòºÅ
 // p_take_over_flag½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1Ö¸Õë£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 {
 #if _PC_SIMULATION_
+
+
 	static int pre_take_over_flag = 0;// Ç°Ò»ÅÄ½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 	static int sendCount = 100;
+
 	if(*p_take_over_flag!=2)
 	{
 		pre_take_over_flag = 0;
 		return;
 	}
+
 	if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 		return;
+
 	// µÚÒ»´Î½øÈë½»½Ó
 	if(pre_take_over_flag == 0)
 	{
@@ -9625,11 +10384,13 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		hanover_state(1,0);
 		sendCount = 100;
 	}
+
 	if(sendCount-- > 0)
 	{
 		// ÊÍ·Å¿ØÖÆÈ¨
 		fc_order_send(uav_index, 0);
 	}
+
 	// Íê³É½»½Ó
 	if(s4D_frame_24[uav_index] == 2)
 	{
@@ -9643,24 +10404,32 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		//Íê³É½»½ÓÔòÖØÖÃblk_ofp_ccc_014
 		memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
 	}
+
 	pre_take_over_flag = *p_take_over_flag;
+
+
 #else
+
 	static int pre_take_over_flag = 0;// Ç°Ò»ÅÄ½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 	static int free_step = 0; // ÊÍ·Å¿ØÖÆÈ¨µÄ²½Öè
 	static unsigned int main_link_send = 0; // ÊÇ·ñ·¢ËÍ3°üÖ÷Á´½»½ÓÖ¸Áî¡£0£º²»ĞèÒª·¢ËÍ£»1£ºCÁ´½»½Ó³É¹¦È·ÈÏ£»2£ºÆô¶¯Ö÷Á´×ªÒÆ£¨ÊÍ·ÅÖ÷Á´£©
+
 	if(*p_take_over_flag!=2)
 	{
 		free_step = 0;
 		pre_take_over_flag = 0;
 		return;
 	}
+
 	if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 		return;
+
 	/***** ½»½ÓµÚÒ»²½:ÇĞ¶ÔÓ¦ÎŞÈË»úµÄ¶ÔÓ¦ËÙÂÊµ½25.6// ÅĞ¶ÏËÙÂÊÊÇ·ñÇĞ»»³É¹¦£¨×î¶àÇĞÈı´Î£¬Ã¿´ÎµÈ5ÅÄ£¬¶¼²»³É¹¦ÔòÅĞÎªÇĞ»»Ê§°Ü£©  ***********/
 	static int step1_send_time = 0; // ·¢ËÍ3´ÎÅĞ¶¨
 	static int step1_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
 	if(free_step == 0)
 	{
+
 		//·¢ËÍÖ®Ç°ÅĞ¶ÏÉÏĞĞËø¶¨»òÏÂĞĞËø¶¨£¬Á¬Ğø15s²»Ëø¶¨¾ÍÖ±½ÓÊ§°Ü
 		static int lock_cnt_1 = 0;
 		//Á¬ĞøÊ®ÎåÃëÊ§ËøÊ§°Ü
@@ -9669,15 +10438,20 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step1_send_time = 0;
 			step1_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-½»½Ó×¼±¸Ê§°Ü-ËÙÂÊÇĞ»»Ê§°Ü
 			hanover_state(uav_index,3,0,0x1);
 		}
@@ -9705,6 +10479,7 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 				}
 			}
 		}
+
 		for(int i =0; i<UAV_MAX_NUM; i++)
 		{
 			if(blk_kkl_ccc_007.uav_cl_status_info[i].NoHeliID == formationId[uav_index].planeId)
@@ -9738,31 +10513,41 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			//·¢ËÍºó¿ªÊ¼¼ÆÊ±
 			step1_rec_count++;
 		}
+
 		// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 		if(main_link_send!=0)
 		{
 			set_blk_ccc_kkl_000(uav_index, &main_link_send);
 		}
+
 		//·¢ËÍºó³¬¹ı¶şÊ®ÅÄÊ§°Ü
 		if(step1_rec_count > 25)
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step1_send_time = 0;
 			step1_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-½»½Ó×¼±¸Ê§°Ü-ËÙÂÊÇĞ»»Ê§°Ü
 			hanover_state(uav_index,3,0,0x1);
+
 		}
+
 		return;
 	}
+
 	/***** ½»½ÓµÚ¶ş²½:ÇĞ¶ÔÓ¦ÎŞÈË»úµÄ¶ÔÓ¦ËÙÂÊµ½È«ÌìÏß// ÅĞ¶ÏÌìÏßÊÇ·ñÇĞ»»³É¹¦£¨×î¶àÇĞÈı´Î£¬Ã¿´ÎµÈ5ÅÄ£¬¶¼²»³É¹¦ÔòÅĞÎªÇĞ»»Ê§°Ü£©  ***********/
 	static int step2_send_time = 0; // ·¢ËÍ3´ÎÅĞ¶¨
 	static int step2_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -9771,6 +10556,8 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step1_send_time = 0;
 		step1_rec_count = 0;
+
+
 		//·¢ËÍÖ®Ç°ÅĞ¶ÏÉÏĞĞËø¶¨»òÏÂĞĞËø¶¨£¬Á¬Ğø15s²»Ëø¶¨¾ÍÖ±½ÓÊ§°Ü
 		static int lock_cnt_2 = 0;
 		//Á¬ĞøÊ®ÎåÃëÊ§ËøÊ§°Ü
@@ -9779,15 +10566,20 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step2_send_time = 0;
 			step2_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-½»½Ó×¼±¸Ê§°Ü-ÌìÏßÄ£Ê½ÇĞ»»Ê§°Ü
 			hanover_state(uav_index,3,0,0x2);
 		}
@@ -9815,8 +10607,10 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 				}
 			}
 		}
+
 		for(int i =0; i<UAV_MAX_NUM; i++)
 		{
+
 			if(blk_kkl_ccc_007.uav_cl_status_info[i].NoHeliID == formationId[uav_index].planeId)
 			{
 				if(blk_kkl_ccc_007.uav_cl_status_info[i].WorkMode == 1) //È«ÏòÌìÏß£¿
@@ -9826,6 +10620,7 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 				}
 			}
 		}
+
 		static int hold_cnt_2 = 0;
 		if(tem_change_success == 2)// ËµÃ÷06¡¢07¶¼Âú×ã
 		{
@@ -9848,6 +10643,7 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			//·¢ËÍºó¿ªÊ¼¼ÆÊ±
 			step2_rec_count++;
 		}
+
 		// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 		if(main_link_send!=0)
 		{
@@ -9858,20 +10654,28 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step2_send_time = 0;
 			step2_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-½»½Ó×¼±¸Ê§°Ü-ÌìÏßÄ£Ê½ÇĞ»»Ê§°Ü
 			hanover_state(uav_index,3,0,0x2);
+
 		}
+
 		return;
 	}
+
 	/***** ½»½ÓµÚÈı²½:ÅĞ¶ÏÉÏÏÂĞĞËø¶¨3Ãë£¬²»Âú×ãÔòÊ§°Ü£¨ÔÊĞí×î´óÁ¬Ğø5°üÊ§Ëø£©  ***********/
 //	static int step3_wait_count = 0;// ½øÈëµÚÈı²½ÏÈµÈ´ı5ÅÄ
 //	static int step3_lock_time = 0; // Ëø¶¨ÈıÃëÅĞ¶¨
@@ -9960,6 +10764,7 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 //
 //		return;
 //	}
+
 	/***** ½»½ÓµÚËÄ²½:Ö¸¿Ø¸ø¿ÕµØÁ´·¢ËÍÍ¬Òâ½»½ÓÖ¸Áî  ***********/
 	if(free_step == 3)
 	{
@@ -9967,13 +10772,19 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 //		step3_wait_count = 0;
 //		step3_lock_time = 0;
 //		step3_break_count = 0;
+
 		step2_send_time = 0;
 		step2_rec_count = 0;
+
 		// ·¢ËÍÍ¬Òâ½»½ÓÖ¸Áî
 		blk_ccc_kdl_010.ans = 0;
 		send_blk_ccc_kdl_010();
+
 		free_step++;
 	}
+
+
+
 	/***** ½»½ÓµÚÎå²½:·¢ËÍÎŞÈË»ú½»½Ó²ÎÊı ccc_kkl_000  ***********/
 	static int step5_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨
 	static int step5_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -9981,6 +10792,7 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		// ÉÏ²½ÎŞ
+
 		//·¢ËÍÖ®Ç°ÅĞ¶ÏÉÏĞĞËø¶¨»òÏÂĞĞËø¶¨£¬Á¬Ğø15s²»Ëø¶¨¾ÍÖ±½ÓÊ§°Ü
 		static int lock_cnt_5 = 0;
 		//Á¬ĞøÊ®ÎåÃëÊ§ËøÊ§°Ü
@@ -9989,15 +10801,20 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step5_send_time = 0;
 			step5_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-½»½Ó×¼±¸Ê§°Ü-ÌìÏßÄ£Ê½ÇĞ»»Ê§°Ü
 			hanover_state(uav_index,3,0,0x2);
 		}
@@ -10011,11 +10828,13 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			//ÉÏÏÂĞĞËø¶¨£¬Çå¿Õ³¬Ê±±êÖ¾Î»£¬½øÈëÏÂÒ»¸öÅĞ¶Ï
 			lock_cnt_5 = 0;
 		}
+
 		if(step5_send_time < 1) // ·¢ËÍÂß¼­
 		{
 			step5_send_time ++;
 			main_link_send = 1;
 		}
+
 		// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 		if(main_link_send!=0)
 		{
@@ -10025,8 +10844,11 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		{
 			free_step++;// ·¢ËÍÍê³É½øÈëÏÂÒ»²½
 		}
+
 		return;
 	}
+
+
 	/***** ½»½ÓµÚÁù²½:·¢ËÍÒ£¿ØÖ¸ÁîÖ¡Æô¶¯½»½ÓÖ¸Áî£¨È¨½»½Ó£©  ***********/
 	static int step6_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step6_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -10035,6 +10857,8 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step5_send_time = 0;
 		step5_rec_count = 0;
+
+
 		if(step6_send_time < 3) // ·¢ËÍÂß¼­£¬·¢ËÍÈı±é£¬Ã¿±é·¢ËÍÈı´Î£¬µÈ´ı¶şÊ®ÅÄ
 		{
 			if(step6_rec_count < 3) // Ã¿´ÎÎª0Ê±·¢ËÍ£¬È»ºóµÈ´ı5°ü
@@ -10042,6 +10866,8 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 				// ÊÍ·Å¿ØÖÆÈ¨
 				fc_order_send(uav_index, 1);
 			}
+
+
 			// ÅĞ¶ÏÒ£²âÖ¡
 			if(s4D_frame_04[uav_index] == 1)
 			{
@@ -10050,29 +10876,39 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			else
 			{
 				step6_rec_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
+
 				if(step6_rec_count>23)
 				{
 					step6_rec_count = 0;// ÍË³ö±¾´ÎµÈ´ı
 					step6_send_time++;// ·¢ËÍ´ÎÊı×ÔÔö
 				}
 			}
+
 		}
 		else
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step6_send_time = 0;
 			step6_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-¿ØÖÆÈ¨½»½ÓÊ§°Ü-ÎŞÈË»úÍË»ØÔ­À´²ÎÊı
 			hanover_state(uav_index,3,0,0x5);
+
 		}
+
 		return;
 	}
+
+
 	/***** ½»½ÓµÚÆß²½:·¢ËÍÖ÷Á´½»½ÓÆô¶¯Ö¸Áî  ***********/
 	static int step7_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step7_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -10081,6 +10917,8 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step6_send_time = 0;
 		step6_rec_count = 0;
+
+
 		//·¢ËÍÖ®Ç°ÅĞ¶ÏÉÏĞĞËø¶¨»òÏÂĞĞËø¶¨£¬Á¬Ğø15s²»Ëø¶¨¾ÍÖ±½ÓÊ§°Ü
 		static int lock_cnt_7 = 0;
 		//Á¬ĞøÊ®ÎåÃëÊ§ËøÊ§°Ü
@@ -10089,15 +10927,20 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step7_send_time = 0;
 			step7_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·¢ËÍ¾Ü¾ø½»½ÓÖ¸Áî
 			blk_ccc_kdl_010.ans = 1;
 			send_blk_ccc_kdl_010();
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-½»½Ó×¼±¸Ê§°Ü-ÌìÏßÄ£Ê½ÇĞ»»Ê§°Ü
 			hanover_state(uav_index,3,0,0x2);
 		}
@@ -10111,6 +10954,8 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 			//ÉÏÏÂĞĞËø¶¨£¬Çå¿Õ³¬Ê±±êÖ¾Î»£¬½øÈëÏÂÒ»¸öÅĞ¶Ï
 			lock_cnt_7 = 0;
 		}
+
+
 		if(step7_send_time < 1) // ·¢ËÍÂß¼­
 		{
 			step7_send_time++;
@@ -10130,38 +10975,54 @@ void UAV_Takeover_Process_free(int uav_index, unsigned int* p_take_over_flag)
 		{
 			free_step++;// ½øÈëÏÂÒ»²½
 		}
+
 		//µÈ´ı180Ãë£¬³¬Ê±Ê§°Ü
 		if(step7_rec_count > 20*180)
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step7_send_time = 0;
 			step7_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			free_step = 0;
+
 			// ±¾»ú½»½ÓÀà±ğÇåÁã
 			*p_take_over_flag = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			// ·´À¡½»½Ó×´Ì¬,ÊÍ·Å¿ØÖÆÈ¨-¿ØÖÆÈ¨½»½ÓÊ§°Ü-ÎŞÈË»úÍË»ØÔ­À´²ÎÊı
 			hanover_state(uav_index,3,0,0x5);
 		}
+
+
 		return;
 	}
+
+
 	/***** ½»½ÓµÚ°Ë²½:½»½Ó³É¹¦  ***********/
 	if(free_step == 7)
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step7_send_time = 0;
 		step7_rec_count = 0;
+
 		// ²½Öè±êÖ¾ÇåÁã
 		free_step = 0;
+
 		// ±¾»ú½»½ÓÀà±ğÇåÁã
 		*p_take_over_flag = 0;
+
 		// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 		memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
+
 		// ·¢ËÍ³É¹¦Ö¸Áî¸øofp,ÊÍ·Å¿ØÖÆÈ¨-¿ØÖÆÈ¨½»½Ó³É¹¦
 		hanover_state(uav_index,2,0,0x6);
 	}
+
+
 #endif
 }
 
@@ -10181,8 +11042,10 @@ int up_down_lock(unsigned int uav_index)
 			}
 		}
 	}
+
 	for(int i =0; i<UAV_MAX_NUM; i++)
 	{
+
 		if(blk_kkl_ccc_007.uav_cl_status_info[i].NoHeliID == formationId[uav_index].planeId)
 		{
 			if(blk_kkl_ccc_007.uav_cl_status_info[i].IfNoHeliCon == 1) //lock£¿
@@ -10192,10 +11055,12 @@ int up_down_lock(unsigned int uav_index)
 			}
 		}
 	}
+
 	if(lock_cnt == 2)
 	{
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -10205,14 +11070,22 @@ int up_down_lock(unsigned int uav_index)
 void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_step)
 {
 #if 0//_PC_SIMULATION_
+
+
+
 #else
+
 	static unsigned int main_link_send = 0; // ÊÇ·ñ·¢ËÍ3°üÖ÷Á´½»½ÓÖ¸Áî¡£0£º²»ĞèÒª·¢ËÍ£»1£ºCÁ´½»½Ó³É¹¦È·ÈÏ£»2£ºÆô¶¯Ö÷Á´×ªÒÆ£¨ÊÍ·ÅÖ÷Á´£©
+
 	if(*p_hand_free_step==0)
 	{
 		return;
 	}
+
 	//    if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 	//        return;
+
+
 	/***** ½»½ÓµÚÒ»²½:·¢ËÍÒ£¿ØÖ¸ÁîÖ¡Æô¶¯½»½ÓÖ¸Áî£¨È¨½»½Ó£©  ***********/
 	static int step1_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step1_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -10220,6 +11093,8 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		// ÎŞ
+
+
 		if(step1_send_time < 1) // ·¢ËÍÂß¼­
 		{
 			//            if(step1_rec_count < 3) // Ã¿´ÎÎª0Ê±·¢ËÍ£¬È»ºóµÈ´ı5°ü
@@ -10227,6 +11102,8 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 				// ÊÍ·Å¿ØÖÆÈ¨
 				fc_order_send(uav_index, 0);
 			}
+
+
 			// ÅĞ¶ÏÒ£²âÖ¡
 			if(s4D_frame_04[uav_index] == 1)
 			{
@@ -10235,27 +11112,35 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 			else
 			{
 				step1_rec_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
+
 				if(step1_rec_count>200)
 				{
 					step1_rec_count = 0;// ÍË³ö±¾´ÎµÈ´ı
 					step1_send_time++;// ·¢ËÍ´ÎÊı×ÔÔö
 				}
 			}
+
 		}
 		else
 		{
 			// ±¾²½Öè±êÖ¾Á¿ÇåÁã
 			step1_send_time = 0;
 			step1_rec_count = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			*p_hand_free_step = 0;
+
 			// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 			memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 			//ÊÖ¶¯ÊÍ·Å-¿ªÊ¼½»½ÓÊ§°Ü£¬·É¿ØÎ´ÏìÓ¦
 			hanover_state(uav_index,3,0,0x16);
 		}
+
 		return;
 	}
+
+
 	//210Ãë·É¿Øµ¹¼ÆÊ±
 	static int timeout_210 = 0;
 	//·É¿Ø½»½Ó210Ãë³¬Ê±¿ªÊ¼¼ÆÊ±£¬±êÖ¾Î»
@@ -10270,23 +11155,30 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 		step1_send_time = 0;
 		step1_rec_count = 0;
+
 		// ²½Öè±êÖ¾ÇåÁã
 		*p_hand_free_step = 0;
+
 		// ·´À¡½»½Ó×´Ì¬,ÊÖ¶¯ÊÍ·Å-¿ªÊ¼¿ØÖÆÈ¨½»½Ó
 		hanover_state(uav_index,1,0,0xd);
+
 		//210Ãë·É¿Øµ¹¼ÆÊ±¿ªÊ¼¼ÆÊ±
 		flag_210 = 1;
 		//100ÃëÖ÷Á´³¬Ê±¿ªÊ¼¼ÆÊ±
 		flag_100 = 1;
 	}
+
 	/***** ½»½ÓµÚÈı²½:·¢ËÍÖ÷Á´½»½ÓÖ¸Áî  ***********/
 	static int step3_main_link = 1;
 	if(*p_hand_free_step == 3)
 	{
 		// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
+
 		//Çå¿Õ100s¼ÆÊ±±êÖ¾Î»£¬ºÍÅÄÊı
 		timeout_100 = 0;
 		flag_100 = 0;
+
+
 		if(step3_main_link)
 		{
 			main_link_send = 31;
@@ -10294,12 +11186,15 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 			hanover_state(uav_index,1,0,0x10);
 			step3_main_link = 0;
 		}
+
+
 		// Î´·¢ËÍÍêÖ®Ç°ÏÈÒ»Ö±·¢ËÍ
 		if(main_link_send!=0)
 		{
 			set_blk_ccc_kkl_000(uav_index, &main_link_send);
 			return;
 		}
+
 		// ÅĞ¶ÏÎŞ¿ØÈ¨Ôò³É¹¦
 		if(formationId[uav_index].isControl == 0)
 		{
@@ -10315,12 +11210,17 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 				{
 					// ±¾²½Öè±êÖ¾Á¿ÖØÖÃ
 					step3_main_link = 1;
+
 					// ²½Öè±êÖ¾ÇåÁã
 					*p_hand_free_step = 0;
+
+
 					// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 					memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 					// ·´À¡½»½Ó×´Ì¬,ÊÖ¶¯ÊÍ·Å-¿ØÖÆÈ¨½»½ÓÊ§°Ü
 					hanover_state(uav_index,3,0,0xf);
+
 					//Çå¿Õ210s·É¿Ø¼ÆÊ±±êÖ¾Î»£¬ºÍÅÄÊı
 					timeout_210 = 0;
 					flag_210 = 0;
@@ -10330,34 +11230,50 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 				{
 					// ±¾²½Öè±êÖ¾Á¿ÖØÖÃ
 					step3_main_link = 1;
+
 					// ²½Öè±êÖ¾ÇåÁã
 					*p_hand_free_step = 0;
+
+
 					// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 					memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 					//ÊÖ¶¯ÊÍ·Å-¿ØÖÆÈ¨½»½ÓÊ§°Ü£¬ÎŞÈË»úÎ´ÏìÓ¦
 					hanover_state(uav_index,3,0,0x17);
+
 					//Çå¿Õ210s·É¿Ø¼ÆÊ±±êÖ¾Î»£¬ºÍÅÄÊı
 					timeout_210 = 0;
 					flag_210 = 0;
 				}
+
 			}
 		}
+
 	}
+
+
 	/***** ½»½ÓµÚËÄ²½:½»½Ó³É¹¦  ***********/
 	if(*p_hand_free_step == 4)
 	{
 		// ÖØÖÃµÚÉÏ²½Öè±êÖ¾Á¿
 		step3_main_link = 1;
+
 		// ²½Öè±êÖ¾ÇåÁã
 		*p_hand_free_step = 0;
+
+
 		// Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 		memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
+
 		// ·¢ËÍ³É¹¦Ö¸Áî¸øofp,ÊÖ¶¯ÊÍ·Å-¿ØÖÆÈ¨½»½Ó³É¹¦
 		hanover_state(uav_index,2,0,0xe);
+
 		//Çå¿Õ210s·É¿Ø¼ÆÊ±±êÖ¾Î»£¬ºÍÅÄÊı
 		timeout_210 = 0;
 		flag_210 = 0;
 	}
+
 	//210Ãë·É¿Øµ¹¼ÆÊ±¿ªÊ¼¼ÆÊ±
 	if(flag_210)
 	{
@@ -10372,26 +11288,35 @@ void UAV_Takeover_Process_free_hand(int uav_index, unsigned int* p_hand_free_ste
 		{
 			//ÊÖ¶¯ÊÍ·Å-²Ù×÷³¬Ê±£¬Ö÷Á´½»½ÓĞèÒªÔÚ100sÄÚÍê³É
 			hanover_state(uav_index,3,0,0x15);
+
 			//Çå¿Õ±êÖ¾Î»
 			timeout_100 = 0;
 			flag_100 = 0;
 			timeout_210 = 0;
 			flag_210 = 0;
+
 			// ²½Öè±êÖ¾ÇåÁã
 			*p_hand_free_step = 0;
 		}
 	}
+
+
+
 #endif
 }
 
 void UAV_Takeover_Process_free_hand_test(int uav_index, unsigned int* p_hand_free_step)
 {
+
 	if(*p_hand_free_step==0)
 	{
 		return;
 	}
+
 	//    if(uav_index<0 || uav_index > UAV_MAX_NUM-1)
 	//        return;
+
+
 	/***** ½»½ÓµÚÒ»²½:·¢ËÍÒ£¿ØÖ¸ÁîÖ¡Æô¶¯½»½ÓÖ¸Áî£¨È¨½»½Ó£©  ***********/
 	static int step1_send_time = 0; // ·¢ËÍ1´ÎÅĞ¶¨ // ×î¶à¼¸´ÎĞèÈ·ÈÏ£¿
 	static int step1_rec_count = 0; // ÅĞ¶ÏÊÇ·ñÇĞ»»³É¹¦,Á¬ĞøÅĞ¶Ï5°ü
@@ -10404,6 +11329,7 @@ void UAV_Takeover_Process_free_hand_test(int uav_index, unsigned int* p_hand_fre
 			// ÊÍ·Å¿ØÖÆÈ¨
 			fc_order_send(uav_index, 0);
 		}
+
 		// ÅĞ¶ÏÒ£²âÖ¡
 		if(s4D_frame_04[uav_index] == 1)
 		{
@@ -10412,30 +11338,39 @@ void UAV_Takeover_Process_free_hand_test(int uav_index, unsigned int* p_hand_fre
 		else
 		{
 			step1_rec_count++; // ½ÓÊÕ´ÎÊıÔö¼Ó£¨×î¶àµÈ5ÅÄ£©
+
 			if(step1_rec_count>200)
 			{
 				step1_rec_count = 0;// ÍË³ö±¾´ÎµÈ´ı
 			}
 		}
 	}
+
      /***** ½»½ÓµÚ¶ş²½:·¢ËÍblk_ccc_ofp_003·´À¡Êı¾İ  ***********/
 	else if(*p_hand_free_step == 2)
     {
 	// Çå¿ÕµÚÉÏ²½Öè±êÖ¾Á¿
 	step1_send_time = 0;
 	step1_rec_count = 0;
+
 	// ²½Öè±êÖ¾ÇåÁã
 	*p_hand_free_step++;
+
 	// ·´À¡½»½Ó×´Ì¬,ÊÖ¶¯ÊÍ·Å-¿ªÊ¼¿ØÖÆÈ¨½»½Ó
 	hanover_state(uav_index,1,0,0xd);
      }
+
+
      /***** ½»½ÓµÚÈı²½:½»½Ó³É¹¦  ***********/
      if(*p_hand_free_step == 3)
      {
+
 	   // ²½Öè±êÖ¾ÇåÁã
 	   *p_hand_free_step = 0;
+
 	   // Çå¿Õ±¾´Î½»½ÓÖ¸Áî
 	   memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
+
 	   // ·¢ËÍ³É¹¦Ö¸Áî¸øofp,ÊÖ¶¯ÊÍ·Å-¿ØÖÆÈ¨½»½Ó³É¹¦
 	   hanover_state(uav_index,2,0,0xe);
       }
@@ -10446,9 +11381,11 @@ void UAV_Takeover_Process()
 {
 #if _PC_SIMULATION_
 	/**Êı×Ö»·¾³¿ØÖÆÈ¨½»½Ó*/
+
 	// ±êÖ¾Á¿
 	static unsigned int take_over_flag = 0;  // ½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 	static int uav_over_index = -1;
+
 	//ÊÕµ½062a0e½»½Ó¿ØÖÆÖ¸Áî
 	message_size = sizeof(BLK_OFP_CCC_014);
 	Receive_Message(DDSTables.DPU_CCC_2.niConnectionId, 0, &transaction_id, &blk_ofp_ccc_014, &message_type_id, &message_size, &enRetCode);
@@ -10491,21 +11428,28 @@ void UAV_Takeover_Process()
 				send_blk_ccc_kdl_010();
 				//¸øDPU·¢¿ØÖÆÈ¨½»½Ó×´Ì¬
 				hanover_state(3,0);
+
 				//Íê³É½»½ÓÔòÖØÖÃblk_ofp_ccc_014
 				memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
 				return;
 			}
 		}
 	}
+
 	//ÇëÇó¿ØÖÆÈ¨
 	UAV_Takeover_Process_get(uav_over_index, &take_over_flag);
 	//ÊÍ·Å¿ØÖÆÈ¨
 	UAV_Takeover_Process_free(uav_over_index, &take_over_flag);
+
+
 #else
+
 	/**°ëÎïÀí»·¾³¿ØÖÆÈ¨½»½Ó*/
+
 	// ±êÖ¾Á¿
 	static unsigned int take_over_flag = 0;  // ½»½Ó¹ı³Ì±êÖ¾Á¿¡£0£ºÎ´ÔÚ½»½Ó£»1£ºÔÚÉêÇë¿ØÖÆÈ¨£»2£ºÔÚÊÍ·Å¿ØÖÆÈ¨
 	static unsigned int uav_over_index = -1; // ½»½Ó·É»úµÄĞòºÅ£¨0-3£©
+
 	//ÊÕµ½062a0e½»½Ó¿ØÖÆÖ¸Áî
 	message_size = sizeof(BLK_OFP_CCC_014);
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_2.niConnectionId,DDSTables.DPU2_CCC_2.niConnectionId,&blk_ofp_ccc_014,sizeof blk_ofp_ccc_014);
@@ -10551,18 +11495,24 @@ void UAV_Takeover_Process()
 				// ¸økdlÓ¦´ğ
 				blk_ccc_kdl_010.ans = 1;
 				send_blk_ccc_kdl_010();
+
 				//¸øDPU·¢¿ØÖÆÈ¨½»½Ó×´Ì¬
 				hanover_state(uav_index,3,0,0);
+
 				//Íê³É½»½ÓÔòÖØÖÃblk_ofp_ccc_014
 				memset(&blk_ofp_ccc_014, 0, sizeof(blk_ofp_ccc_014));
 				return;
 			}
 		}
 	}
+
 	//ÇëÇó¿ØÖÆÈ¨
 	UAV_Takeover_Process_get(uav_over_index, &take_over_flag);
 	//ÊÍ·Å¿ØÖÆÈ¨
 	UAV_Takeover_Process_free(uav_over_index, &take_over_flag);
+
+
+
 	static unsigned int hand_get_step = 0;
 	static unsigned int hand_free_step = 0;
 	static unsigned int hand_get_step_test = 0;
@@ -10600,6 +11550,7 @@ void UAV_Takeover_Process()
 			hand_free_step_test = 1;
 		}
 	}
+
 	//ÊÖ¶¯ÇëÇó¿ØÖÆÈ¨
 	if(hand_get_step > 0)
 	{
@@ -10612,13 +11563,16 @@ void UAV_Takeover_Process()
 		{
 			UAV_Takeover_Process_get_hand(uav, &hand_get_step);
 		}
+
 	}
+
 	//ÊÖ¶¯ÊÍ·Å¿ØÖÆÈ¨
 	UAV_Takeover_Process_free_hand(blk_ofp_ccc_044.uav_num-1, &hand_free_step);
 //	//·ÂÕæ»·¾³²âÊÔ½Ó¿Ú
 //	UAV_Takeover_Process_get_hand_test(blk_ofp_ccc_044.uav_num-1, &hand_get_step_test);
 //
 //	UAV_Takeover_Process_free_hand_test(blk_ofp_ccc_044.uav_num-1, &hand_free_step_test);
+
 #endif
 }
 
@@ -10631,6 +11585,7 @@ CCC-DPU: CCC_DPU_data_22
  */
 // ½ÓÊÕÎŞÈË»ú¹âµçÊÓÆµMFD¿ØÖÆ DPU-CCC
 void recv_DPU_CCC_MFD() {
+
 	// ÎŞÈË»ú¹âµç¿ØÖÆÈ¨ÉèÖÃ
 	message_size = RECV_MAX_SIZE;
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_15.niConnectionId,DDSTables.DPU2_CCC_15.niConnectionId,&DPU_CCC_data_15,sizeof DPU_CCC_data_15);
@@ -10645,6 +11600,7 @@ void recv_DPU_CCC_MFD() {
 		align_send_information(&CCC_DPM_data_12, sizeof(DPM_guangdian_kongzhi_feedback), 0);
 		Send_Message(DDSTables.CCC_DPM_12.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 	}
+
 	static int send_count_gd = 0;
 	// Ç°ºó²Õ¶¼ÄÜ¿ØÖÆ¹âµç£¬¸ù¾İÇ°²Õ×ÛÏÔÖ¸ÁîÅĞ¶Ï½ÓÊÕÄÄ±ßµÄ¿ØÖÆÖ¸Áî¸üĞÂ
 	if(DPU_CCC_data_15.uav_kongzhiquanshezhi == 2)//ºó²ÕÈÎÎñ·¢³ö
@@ -10664,6 +11620,9 @@ void recv_DPU_CCC_MFD() {
 			Receive_Message(DDSTables.PAD_CCC_028.niConnectionId, 0, &transaction_id, &DPU_CCC_data_14, &message_type_id, &message_size, &enRetCode);
 		}
 	}
+
+
+
 	// ½ÓÊÕ³É¹¦£¬½«ÊÕµ½µÄÊı¾İÌîÈë¶ÔÓ¦µÄ½á¹¹Ìå
 	if(enRetCode == 0) {
 		send_count_gd = 6;
@@ -10748,12 +11707,15 @@ void recv_DPU_CCC_MFD() {
 			{
 				//°´¼ü
 				parse_blk_piu_ccc_006_key01(uav_index);
+
 				//·½Î»
 				parse_blk_piu_ccc_006_key02(uav_index);
+
 				//¸©Ñö
 				parse_blk_piu_ccc_006_key03(uav_index);
 			}
 		}
+
 		//ºó²Õ¿ØÖÆ
 		if(blk_piu_ccc_006.joy_key_01.status == 1 && DPU_CCC_data_15.uav_kongzhiquanshezhi == 2)
 		{
@@ -10770,7 +11732,6 @@ void recv_DPU_CCC_MFD() {
 		}
 	}
 }
-
 void parse_blk_piu_ccc_006_key01(int uav_index)
 {
 	//ÅĞ¶Ïµ±Ç°ÊÇºìÍâ»¹ÊÇµçÊÓ
@@ -10976,6 +11937,7 @@ void parse_blk_piu_ccc_006_key01(int uav_index)
 		//²ÎÊı
 		setBit(CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.zhiling_data, target ,1);
 	}
+
 	//ºÚ/°×ÈÈ(ºìÍâÕı/¸ºÏñÇĞ»»)
 	if(blk_piu_ccc_006.joy_key_01.F_NOTE == 0x0E)
 	{
@@ -11002,6 +11964,7 @@ void parse_blk_piu_ccc_006_key01(int uav_index)
 			change = 0;
 		}
 	}
+
 	//ÊÖ¶¯(ÊÖ¿Ø)/¸ú×Ù
 	if(blk_piu_ccc_006.joy_key_01.F_NOTE == 0x10)
 	{
@@ -11065,7 +12028,6 @@ void parse_blk_piu_ccc_006_key03(int uav_index)
 	fuyang = blk_piu_ccc_006.joy_key_03.integer;
 	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.dangan_fuyang = fuyang * 5;
 }
-
 /// ½âÎöÒ£²âÊı¾İÖ¡×ÓÖ¡4D  uav_index:ÎŞÈË»úĞòºÅ£¨0-3£©
 void parseYaoCeZiZhen4D(int uav_index)
 {
@@ -11074,11 +12036,14 @@ void parseYaoCeZiZhen4D(int uav_index)
 	{
 		return;
 	}
+
 	// Ò£µ÷Ö¸Áî»Ø±¨£¨Èç¹û·¢ËÍµÄÖ¸Áî£¬ÓÉÓÚĞ£ÑéÎ´Í¨¹ı»òÕßÈıÅĞ¶şÎ´Í¨¹ı£¬Ôò»Ø±¨Ö¸ÁîÂëÊÇ0xff£©
 	if(s4D_frame.zhiLingHuiBao == 0xFF)
 	{
 		return;
 	}
+
+
 	if(s4D_frame.zhiLingHuiBao == 0x04)
 	{
 		s4D_frame_04[uav_index] = 1;
@@ -11087,6 +12052,8 @@ void parseYaoCeZiZhen4D(int uav_index)
 	{
 		s4D_frame_04[uav_index] = 0;
 	}
+
+
 	if(s4D_frame.zhiLingHuiBao == 0x24)
 	{
 		s4D_frame_24[uav_index] = 1;
@@ -11095,6 +12062,7 @@ void parseYaoCeZiZhen4D(int uav_index)
 	{
 		s4D_frame_24[uav_index] = 0;
 	}
+
 	//º½Ïß×°¶©
 	if(s4D_frame.zhiLingHuiBao == 0x38)
 	{
@@ -11107,6 +12075,7 @@ void parseYaoCeZiZhen4D(int uav_index)
 	//º½ÏßÇĞ»»
 	if(s4D_frame.zhiLingHuiBao == 0x40)
 	{
+
 		if(s4D_frame.result.result == 0)
 		{
 			//ĞŞ¸´Âß¼­: Ç¿ÖÆÌí¼Ó¼ì²é
@@ -11123,22 +12092,27 @@ void parseYaoCeZiZhen4D(int uav_index)
 		{
 			s4D_frame_40[uav_index] = -1;//00=Ö´ĞĞ³É¹¦ | 01=ÏìÓ¦Ìõ¼ş²»Âú×ãÖ´ĞĞÊ§°Ü 10=ÉèÖÃ²ÎÊı²»ºÏÀíÖ´ĞĞÊ§°Ü | 11=ÆäËûÔ­ÒòÖ´ĞĞÊ§°Ü
 		}
+
 	}
 	//º½Ïß³¤¶È²éÑ¯
 	if(s4D_frame.zhiLingHuiBao == 0x41)
 	{
+
 		if(s4D_frame.result.result == 0)//00=Ö´ĞĞ³É¹¦ | 01=ÏìÓ¦Ìõ¼ş²»Âú×ãÖ´ĞĞÊ§°Ü 10=ÉèÖÃ²ÎÊı²»ºÏÀíÖ´ĞĞÊ§°Ü | 11=ÆäËûÔ­ÒòÖ´ĞĞÊ§°Ü
 		{
 			if(s4D_frame.data[0] == uav_route[uav_index].route_number)
 			{
 				s4D_frame_41[uav_index] = s4D_frame.data[1];
 			}
+
 		}
 		else
 		{
 			s4D_frame_41[uav_index] = -1;
 		}
+
 	}
+
 	//º½Ïß²éÑ¯
 	if(s4D_frame.zhiLingHuiBao == 0x3c)
 	{
@@ -11205,6 +12179,7 @@ void parseYaoCeZiZhen4D(int uav_index)
 			}
 		}
 	}
+
 		//µ÷¸ß
 	if(s4D_frame.zhiLingHuiBao == 0x12)
 	{
@@ -11229,8 +12204,8 @@ void parseYaoCeZiZhen4D(int uav_index)
 			s4D_frame_0c[uav_index] = -1;//00=Ö´ĞĞ³É¹¦ | 01=ÏìÓ¦Ìõ¼ş²»Âú×ãÖ´ĞĞÊ§°Ü 10=ÉèÖÃ²ÎÊı²»ºÏÀíÖ´ĞĞÊ§°Ü | 11=ÆäËûÔ­ÒòÖ´ĞĞÊ§°Ü
 		}
 	}
-}
 
+}
 void parseYaoCeZiZhen82(int uav_index)
 {
 	//Ô¤¿Ø
@@ -11245,6 +12220,7 @@ void parseYaoCeZiZhen82(int uav_index)
 			printf("YK erro\n");
 		}
 	}
+
 	//·µº½·´À¡
 	if(s82_frame.inst_ret == 0x30)
 	{
@@ -11259,10 +12235,11 @@ void parseYaoCeZiZhen82(int uav_index)
 			s82_frame_30[uav_index] = -1;//00=Ö´ĞĞ³É¹¦ | 01=ÏìÓ¦Ìõ¼ş²»Âú×ãÖ´ĞĞÊ§°Ü 10=ÉèÖÃ²ÎÊı²»ºÏÀíÖ´ĞĞÊ§°Ü | 11=ÆäËûÔ­ÒòÖ´ĞĞÊ§°Ü
 		}
 	}
+
 	// ĞÂÔö´ı·É¾àÀë½âÎö£¨ÓÃÔÚÏÂ½×¶ÎÌáÊ¾£©
 	g_toCurPointDis[uav_index] = s82_frame.radius * 5;
-}
 
+}
 void parseYaoCeZiZhen3A(int uav_index)
 {
 	//ÖÜÆÚ»ñÈ¡ÎŞÈË»úµ±Ç°º½ÏßºÍº½µã
@@ -11280,9 +12257,15 @@ void sendSimulateHeartBeat()
 	static int64_t onLineTime = 0;
 	if(!onLineTime)
 	{
+
 		onLineTime = QDateTime::currentSecsSinceEpoch();
+
 	}
+
+
 	heartBeatInfo.timeStamp = (UINT32)(QDateTime::currentSecsSinceEpoch() - onLineTime);					//Ê±¼ä´Á	£¨µ¥Î»£ºs£»·¶Î§£º0~2^32-1£©
+
+
 	heartBeatInfo.systemID = CoodinatedConmandSystemID;					//ÏµÍ³µÄID
 	memcpy(heartBeatInfo.systemIP, g_curAppIP, 32);				//ÏµÍ³IP
 	heartBeatInfo.controlCommond = SimulatorStart;				//·ÂÕæ×´Ì¬·´À¡
@@ -11291,8 +12274,11 @@ void sendSimulateHeartBeat()
 	strcpy_s(heartBeatInfo.versionUpdateTime, "1744185939"); // 1970ÖÁ½ñµÄÃëÊı
 	align_send_information(&heartBeatInfo, sizeof(heartBeatInfo), 0);
 	Send_Message(DDSTables.CCC_SIMCONTROL_0.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
+
 	/*****·ÂÕæ½ø³Ì¿ØÖÆÃüÁî»ñÈ¡*******************/
 	SimulatorControl simulatorControl;
+
 	Receive_Message(DDSTables.CCC_SIMCONTROL_2.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode == 0)
 	{
@@ -11328,12 +12314,14 @@ void sendSimulateHeartBeat()
 			Send_Message(DDSTables.CCC_SIMCONTROL_1.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 		}
 	}
+
 #endif
 }
 
 // ½«¹âµçÊÓÆµ¿ØÖÆ·´À¡·¢ËÍ¸ø×ÛÏÔ CCC-DPU
 void send_uav_photoelectric_video_ctrl_feedback()
 {
+
 	// ĞÂÔöÖÜÆÚ¸ømidsÉÏ±¨µ±Ç°¿ØÖÆµÄÎŞÈË»úÊÓÆµÔ´ËùÔÚµÄÎŞÈË»ú±àºÅ(µ±Ç°ÊµÏÖ»ùÓÚ£¨ÒòÎªµ±Ç°¹Ì¶¨ÊÇ1005ºÍ1006))
 	char uav_id = 0;
 	if(DPU_CCC_data_14.video_source_type == 2)
@@ -11350,6 +12338,8 @@ void send_uav_photoelectric_video_ctrl_feedback()
 	}
 	data_length = sizeof(uav_id);
 	Send_Message(DDSTables.CCC_MIDS_001.niConnectionId, 0, &transaction_id, &uav_id, &message_type_id, data_length, &enRetCode);
+
+
 	// ÊÓÆµÔ´ÀàĞÍ£¨0H=NA;1H=ÓĞÈË»úÊÓÆµ;2H=ÎŞÈË»ú1ÊÓÆµ;3H=ÎŞÈË»ú2ÊÓÆµ;4H=ÎŞÈË»ú3ÊÓÆµ;5H=ÎŞÈË»ú4ÊÓÆµ£©
 	for(int i = 0 ; i < UAV_MAX_NUM ; i ++)
 	{
@@ -11358,14 +12348,22 @@ void send_uav_photoelectric_video_ctrl_feedback()
 			continue;
 		}
 		CCC_DPU_data_22[i].video_source_type = DPU_CCC_data_14.video_source_type;
+
+
 		align_send_information(&CCC_DPU_data_22[i], sizeof(DPU_guangdina_video), 0);
 		Send_Message(DDSTables.CCC_DPU_22.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
 		//·¢ËÍ¸øpad new20250620
 		Send_Message(DDSTables.CCC_PAD_042.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
+
 		// ¸øÈÎÎñÏµÍ³·¢ËÍ¹âµçÊÓÆµ¿ØÖÆ·´À¡
 		Send_Message(DDSTables.CCC_DPM_13.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 		//printf("|DTMS|ESO rad[%d]\n",CCC_DPU_data_22.video_param_setting_feedbacks.ir_pwr_fb);
+
 	}
+
+
 	//	//    CCC_DPU_data_22.video_param_setting_feedbacks.type ÔÚkkl_ccc·µ»Ø×´Ì¬ĞÅÏ¢´¦½âÎöÊ±ÒÑ¸³Öµ
 	//	// µ±¿ØÖÆÖ¸ÁîÊÇ0£¨NA£©Ê±£¬·´À¡Ö¸Áî±£³Ö²»±ä·´À¡¡£
 	//	int lock_scan_switch_change = 0;// Ëø¶¨,É¨Ãè×´Ì¬ÇĞ»»±êÖ¾Á¿(0,×´Ì¬Î´ÇĞ»»£»1£¬É¨ÃèÇĞ»»³ÉËø¶¨×´Ì¬;2,Ëø¶¨ÇĞ»»³ÉÉ¨Ãè×´Ì¬£»)
@@ -11413,10 +12411,15 @@ void send_uav_photoelectric_video_ctrl_feedback()
 	//			CCC_DPU_data_22.video_param_setting_feedbacks.lock_param = DPU_CCC_data_14.video_params_setting_feedbacks.lock_param;
 	//		}
 	//	}
+
+
 }
 
 // ³õÊ¼»¯ÈÎÎñÒ£¿ØÊı¾İAÖ¡£¨CCC_UAV_Azhens£©£¬Æä×÷ÎªÈÎÎñ¿ØÖÆÖ¸ÁîÖ¡·â×°ÔÚÒ£¿ØÖ¸ÁîÖ¡ÖĞ£¨CCC_KKL_data_11.task_control_frame_data£© CCC-KKL
 void init_drone_information_Azhen(int uav_index){
+
+
+
 	// ¹âµçÒ£¿ØÖ¸Áî (»úÔØ)
 	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.guangdian_control_mingling = 0x00;
 	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.zhiling_data = 0x00;
@@ -11503,6 +12506,8 @@ void init_drone_information_Azhen(int uav_index){
 			}
 		}
 	}
+
+
 //	//ToDo:ÔİÎ´È·¶¨ÏûÏ¢À´Ô´
 //	//Îª×ÛºÏÈÎÎñ¹ÜÀíÏµÍ³¸³Öµ
 //	char yaotiaobianma[3];
@@ -11629,12 +12634,15 @@ void init_drone_information_Azhen(int uav_index){
 //			memcpy(&(CCC_UAV_Azhens[uav_index].zongherenwuguanlixitong_leida_citanzhiling) + 3,&CCC_UAV_A_data3_3,sizeof (CCC_UAV_A_data3_3));
 //	break;
 //	}
+
 }
 
 // ½ÓÊÕÔØºÉÒ£²âÓëÖ¸ÁîÏìÓ¦Ö¡£¬²¢½âÎöÆäÖĞµÄÒ£²âÊı¾İ×ÓÖ¡2£¨¹âµçÊı¾İ£© KKL-CCC
 void recv_telemetry_data_subframe2_single(int uav_index) {
+
 	//dds_data_rece.resize(1500);
 	message_size = 1500;
+
 	SINT32_SIX messageId;
 	switch(uav_index)
 	{
@@ -11653,6 +12661,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	default:
 		break;
 	}
+
 	Receive_Message(messageId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if (enRetCode == 0) {
 //		YaoCeDataZhen temYaoCeDataZhen;
@@ -11677,6 +12686,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	} else {
 		//// printf("Telemetry_Frame_0xaa1001_recv_ERROR ret=%d\n", enRetCode);
 	}
+
 	//ÈÎÎñÒ£²âÖ¡£¬ÔØºÉÔÚÏßÏà¹Ø´¦Àí1CÖ¡
 	memcpy(&KKL_CCC_data_21_1[uav_index], &KKL_CCC_data_21[uav_index].YaoCeDataZiZhen1s, 64);
 	if(KKL_CCC_data_21_1[uav_index].data[2] == 0x65)
@@ -11684,6 +12694,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 		//Ã¿ÅÄÊÕµ½±êÖ¾Î»ÖÃÎ»
 		t1c_flag[uav_index] = 1;
 	}
+
 	//ÈÎÎñÒ£²âÖ¡£¬´ÅÌ½¸ËÏà¹Ø´¦Àí 3B2Ö¡
 	memcpy(&KKL_CCC_data_21_3[uav_index], &KKL_CCC_data_21[uav_index].YaoCeDataZiZhen3s, 64);
 	//Ö¡Àà±ğ
@@ -11747,6 +12758,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 		//¼ÇÂ¼ÉÏ´ÎµÄÌ½¸Ë³¤¶È
 		last_changdu[uav_index] = changdu;
 	}
+
 	//ÈÎÎñÒ£²âÖ¡£¬ÔØºÉÔÚÏßÏà¹Ø´¦Àí 4AÖ¡
 	memcpy(&KKL_CCC_data_21_4[uav_index], &KKL_CCC_data_21[uav_index].YaoCeDataZiZhen4s, 64);
 	//Ö¡Àà±ğ
@@ -11795,6 +12807,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 		}
 		//ÆäÓàÔİÎŞ
 	}
+
 	//ÈÎÎñÒ£²âÖ¡£¬Ïà¹Ø´¦Àí 5Ö¡
 	memcpy(&KKL_CCC_data_21_5[uav_index], &KKL_CCC_data_21[uav_index].YaoCeDataZiZhen5s, 64);
 	//Ö¡Àà±ğ
@@ -11803,6 +12816,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 		//Ã¿ÅÄÊÕµ½±êÖ¾Î»ÖÃÎ»
 		t5_flag[uav_index] = 1;
 	}
+
 	//ÈÎÎñÒ£²âÖ¡£¬Ïà¹Ø´¦Àí 2Ö¡
 	memcpy(&KKL_CCC_data_21_2[uav_index], &KKL_CCC_data_21[uav_index].YaoCeDataZiZhen2s, 64);
 	if(KKL_CCC_data_21_2[uav_index].zhenLeiBie == 0x66)
@@ -11843,6 +12857,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	} else if (g_image_main_channel == 0x01 && long_short[uav_index] == 0x01) {
 		CCC_DPU_data_22[uav_index].video_param_setting_feedbacks.type = 0x04;
 	}
+
 	// ºìÍâÉÏµç×´Ì¬·´À¡
 	// 0-Î´ÉÏµç
 	// 1-ÖÆÀäÖĞ ÕıÔÚÉÏµç
@@ -11860,6 +12875,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	} else {
 		CCC_DPU_data_22[uav_index].video_param_setting_feedbacks.ir_pwr_fb = 0;// ºìÍâÉÏµç×´Ì¬·´À¡ 0=NA
 	}
+
 	// ¹âµç×´Ì¬·´À¡
 	float fangweijiao = (float)KKL_CCC_data_21_2[uav_index].fangweijiao * 360 / (1LL << 16);
 	float fuyangjiao = (float)KKL_CCC_data_21_2[uav_index].fuyangjiao * 360 / (1LL << 16);
@@ -11867,10 +12883,13 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	// fuyangjiao = 19.3f;
 	CCC_DPU_data_22[uav_index].photoelectric_state_feedbacks.photoelectric_platform_azimuth = fangweijiao;// ¹âµçÆ½Ì¨·½Î»½Ç
 	CCC_DPU_data_22[uav_index].photoelectric_state_feedbacks.photoelectric_platform_pitch = fuyangjiao;// ¹âµçÆ½Ì¨¸©Ñö½Ç
+
 	//printf("fw %f fy %f\n",fangweijiao,fuyangjiao);
+
 	unsigned short Target1status = KKL_CCC_data_21_2[uav_index].Target1status;
 	unsigned short Target2status = KKL_CCC_data_21_2[uav_index].Target2status;
 	GeoLibDas geoLibLocal = {plane_lon, plane_lat};
+
 	//20241119:ÓÉÓÚ²âÊÔ»·¾³´æÔÚÄ¿±êÓĞĞ§ĞÔÎª0x100µÄÊı£¬ËùÒÔ½ö¶ÔÓĞĞ§ĞÔÎª1µÄÊıÖµ½øĞĞ¸³Öµ
 	//¶ÔÄ¿±ê1ºÍÄ¿±ê2µÄÓĞĞ§ĞÔÅĞ¶Ï£¬²¢¸³ÖµÄ¿±ê1ºÍÄ¿±ê2µÄ¾àÀë¡£
 	CCC_DPU_data_22[uav_index].photoelectric_state_feedbacks.target_param_significant_bit
@@ -11911,6 +12930,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	{
 		ac = -ac;
 	}
+
 	//Á¬Ğø5ÅÄ±ä»¯²»¶¯ÈÏÎªËø¶¨
 	if(ac < 0.5)
 	{
@@ -11962,6 +12982,7 @@ void recv_telemetry_data_subframe2_single(int uav_index) {
 	}
 	//¼ÇÂ¼ÉÏÒ»ÅÄµÄ·½Î»½Ç
 	last_fangweijiao[uav_index] = fangweijiao;
+
 }
 
 //½ÓÊÕ×ÛÏÔ´ÅÌ½¸ËÖ¸Áî
@@ -11991,6 +13012,7 @@ void recv_blk_ofp_ccc_045()
 			CCC_UAV_Azhens[index].zongherenwuguanlixitong_leida_citanzhiling[2] = 0x32;
 			CCC_UAV_Azhens[index].zongherenwuguanlixitong_leida_citanzhiling[3] = 0x55;//0xaaÉì³ö£¬0x55ÊÕ»Ø
 		}
+
 		//·µº½¿ØÖÆÖ¸Áî
 		if(blk_ofp_ccc_045.gd == 1) //0-NA£¬1-·µº½
 		{
@@ -12014,6 +13036,7 @@ void recv_blk_ofp_ccc_045()
 		blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.fc_order[1] = 0x30;
 		blk_ccc_kkl_008_026_027_028[index].front.basic_yaotiao_order_frame_data.fc_order[2] = 0x30;
 		fh_cnt--;
+
 		//		//ÇĞ»»
 		//		order_data_frames.track_point_chage_orders.track_line_id = 17;   // º½ÏßºÅ
 		//		order_data_frames.track_point_chage_orders.track_point_id = 1;
@@ -12037,6 +13060,7 @@ void recv_blk_ofp_ccc_045()
 		//ÑÓÊ±ÈıÅÄ
 		fh_cnt--;
 	}
+
 }
 
 void recv_blk_ofp_ccc_047()
@@ -12058,6 +13082,7 @@ void recv_blk_ofp_ccc_047()
 				// ·¢ËÍÖ´ĞĞÊ§°ÜÖ¸Áî
 				blk_dtps_dtms_043.executeSta = 3;
 			}
+
 			send_blk_ccc_ofp_043();
 		}
 		else if(blk_dtms_dtps_047.control == 0 && blk_dtms_dtps_047.confirm == 0)// È¡ÏûÖ´ĞĞ
@@ -12073,34 +13098,37 @@ void recv_blk_ofp_ccc_047()
 		}
 	}
 }
-
 void send_blk_ccc_ofp_043()
 {
 	data_length = sizeof(BLK_CCC_OFP_043);
 	Send_Message(DDSTables.CCC_DPU_043.niConnectionId,0,&transaction_id, &blk_dtps_dtms_043, &message_type_id, data_length, &enRetCode);
 }
-
 // µ¥ÎŞÈË»úÖ¸Áî±£»¤´¦Àí false:²»¿ÉÖ´ĞĞ£»true:¿ÉÒÔÖ´ĞĞ
 BOOL signleUavCmdProtect()
 {
+
 	if(blk_dtps_dtms_043.cmdType != 8)// ·Çµ¥ÎŞÈË»úÖ¸¿Ø
 	{
 		return TRUE;
 	}
+
 	// ÅĞ¶ÏÎŞÈË»úÊÇ·ñ´æÔÚ
 	if(blk_dtps_dtms_043.singleUavSn<1 || blk_dtps_dtms_043.singleUavSn>UAV_MAX_NUM)// ±à¶ÓºÅÎŞĞ§
 	{
 		return FALSE;
 	}
+
 	if(formationId[blk_dtps_dtms_043.singleUavSn-1].count > formationIdTimeOutCount)// ²»ÔÚÏß
 	{
 		return FALSE;
 	}
+
 	// ¿ØÈ¨ÅĞ¶Ï
 	if(formationId[blk_dtps_dtms_043.singleUavSn-1].isControl == 0)// ÎŞ¿ØÈ¨
 	{
 		return FALSE;
 	}
+
 	// ÅĞ¶ÏÈÎÎñÇøÊÇ·ñ´æÔÚ
 	if((blk_dtps_dtms_043.singleUavType == 1) || \
 	   (blk_dtps_dtms_043.singleUavType == 12) || \
@@ -12116,18 +13144,22 @@ BOOL signleUavCmdProtect()
 				isExit = TRUE;
 			}
 		}
+
 		// Ã»ÕÒµ½
 		if(!isExit)
 		{
 			return FALSE;
 		}
+
 	}
+
 	// ÅĞ¶ÏÄ¿±êÊÇ·ñ´æÔÚ
 	if((blk_dtps_dtms_043.singleUavType == 2) || \
 	   (blk_dtps_dtms_043.singleUavType == 14))
 	{
 		// ±éÀúËùÓĞÈÎÎñÇø£¬Èç¹ûÃ»ÕÒµ½ÈÎÎñÇø£¬Ôò·µ»ØÊ§°Ü
 		BOOL isExit = FALSE;
+
 		for(int k = 0;k < 30 ;k++)
 		{
 			//ÕÒµ½ÅúºÅ¶ÔÓ¦Ä¿±ê,0Ò²ÊÇÓĞĞ§µÄ
@@ -12136,15 +13168,18 @@ BOOL signleUavCmdProtect()
 				isExit = TRUE;
 			}
 		}
+
 		// Ã»ÕÒµ½
 		if(!isExit)
 		{
 			return FALSE;
 		}
-	}
-	return TRUE;
-}
 
+	}
+
+	return TRUE;
+
+}
 void recv_blk_ofp_ccc_053()
 {
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_048.niConnectionId,DDSTables.DPU2_CCC_048.niConnectionId,&blk_ofp_ccc_053,sizeof blk_ofp_ccc_053);
@@ -12173,6 +13208,7 @@ void recv_blk_ofp_ccc_155()
 		//¿ªÊ¼·¢ËÍ±à¶ÓÄÜÁ¦¿ØÖÆÖ¸Áî
 		BD_ability_cnt = 9;
 	}
+
 	if(BD_ability_cnt > 0 && BD_ability_cnt <= 3)
 	{
 		//·¢ËÍ±à¶ÓÄÜÁ¦¿ØÖÆÖ¸Áî
@@ -12190,6 +13226,7 @@ void recv_blk_ofp_ccc_155()
 			blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.fc_order[2] = 0x04;
 		}
 		BD_ability_cnt--;
+
 	}
 	else if(BD_ability_cnt > 6 && BD_ability_cnt <= 9)
 	{
@@ -12205,8 +13242,8 @@ void recv_blk_ofp_ccc_155()
 		//ÑÓÊ±ÈıÅÄ
 		BD_ability_cnt--;
 	}
-}
 
+}
 void recv_blk_ofp_ccc_156()
 {
 	static int query_code = 0;
@@ -12254,6 +13291,7 @@ void recv_blk_ofp_ccc_156()
 			query_timeout_cnt = 0;
 			send_index = 0;
 		}
+
 	}
 	//·¢ËÍ0x41Ö¸Áî²éÑ¯º½Ïß³¤¶È
 	if(query_code == 1)
@@ -12318,7 +13356,6 @@ void recv_blk_ofp_ccc_156()
 		}
 	}
 }
-
 //º½Ïß²éÑ¯×´Ì¬
 void send_blk_ccc_ofp_157(unsigned char status)
 {
@@ -12337,7 +13374,6 @@ void send_blk_ccc_ofp_158()
 	data_length = sizeof(BLK_CCC_OFP_158);
 	Send_Message(DDSTables.CCC_DPU_158.niConnectionId,0,&transaction_id, &blk_ccc_ofp_158, &message_type_id, data_length, &enRetCode);
 }
-
 // ½ÓÊÕÔØºÉÒ£²âÓëÖ¸ÁîÏìÓ¦Ö¡£¬²¢½âÎöÆäÖĞµÄÒ£²âÊı¾İ×ÓÖ¡2£¨¹âµçÊı¾İ£© KKL-CCC
 void recv_telemetry_data_subframe2()
 {
@@ -12351,12 +13387,14 @@ void recv_telemetry_data_subframe2()
 void fc_order_send(int uav_index, int actionFlag)
 {
 	blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.yt_start = 'R';
+
 	//Ö¸Áî±àÂë£¬¿ØÖÆÈ¨½»½Ó½áÊø0x24
 	if(actionFlag == 0)
 	{
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code[0] = 0x04;
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code[1] = 0x04;
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code[2] = 0x04;
+
 		//Ö¸ÁîÊı¾İ£¬¿ØÖÆÕ¾µØÖ·
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_data[0] = GCS_ID;//0x3001
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_data[1] = GCS_ID;
@@ -12367,12 +13405,19 @@ void fc_order_send(int uav_index, int actionFlag)
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code[0] = 0x24;
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code[1] = 0x24;
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_code[2] = 0x24;
+
 		//Ö¸ÁîÊı¾İ£¬¿ØÖÆÕ¾µØÖ·
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_data[0] = 0x9001;
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_data[1] = 0x9001;
 		blk_ccc_kkl_008_026_027_028[uav_index].front.basic_yaotiao_order_frame_data.order_data[2] = 0x9001;
 	}
+
 }
+
+
+
+
+
 
 /** ½ÓÊÕ¿ÕµØÁ´µÄÏûÏ¢****/
 void recv_kdl_message()
@@ -12403,6 +13448,7 @@ void recv_blk_smd_ccc_000()
 			memcpy(&CCC_UAV_Azhens[index].zongherenwuguanlixitong_leida_citanzhiling[0],&blk_smd_ccc_000,sizeof(blk_smd_ccc_000));
 			memcpy(&CCC_UAV_Azhens[index].zongherenwuguanlixitong_leida_citanzhiling[35],&check_sum,1);
 		}
+
 	}
 }
 
@@ -12434,13 +13480,13 @@ void recv_blk_smd_ccc_001()
 		memcpy(&blk_smd_ccc_001[index], &temp, sizeof(BLK_SMD_CCC_001));
 	}
 }
-
 void recv_blk_kdl_ccc_002()
 {
 	Receive_Message(DDSTables.KDL_CCC_6.niConnectionId, 0, &transaction_id, dds_data_rece.dataA, &message_type_id, &message_size, &enRetCode);
 	if(enRetCode==0)
 	{
 		memcpy(&blk_kdl_ccc_002, dds_data_rece.dataA, sizeof(blk_kdl_ccc_002));
+
 		// Ïòofp·¢ËÍshenqing
 		memcpy((unsigned char*)&CCC_DPU_data_1+2, (unsigned char*)&blk_kdl_ccc_002+4, sizeof(CCC_DPU_data_1)-2);//Ìø¹ı¸÷×Ô²»Ò»ÖÂ
 		send_kongzhiquan_jiaojie();
@@ -12464,13 +13510,16 @@ void recv_blk_kdl_ccc_015()
 	{
 		memcpy(&blk_kdl_ccc_015, dds_data_rece.dataA, sizeof(blk_kdl_ccc_015));
 	}
+
 }
+
 
 #if _PC_SIMULATION_
 #if SIMTESTFLAG
 void writeLog(char* block, int length)
 {
 	QByteArray tem((char*)block, length);
+
 	if(!logFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
 	{
 		static QTextStream stream(logFile);
@@ -12483,9 +13532,9 @@ void writeLog(char* block, int length)
 		}
 	}
 }
+#endif
+#endif
 
-#endif
-#endif
 //ÎŞÈË»úĞ­Í¬ÕÕÉä¿ØÖÆ
 void send_blk_dpu_ccc_020()
 {
@@ -12506,6 +13555,7 @@ int pnpoly(Point * polygon,int n , Point p)
 		//Ìø¹ıË®Æ½±ß
 		if(fabs(a.lat - b. lat) < (1e-8))
 			continue;
+
 		//ÅĞ¶Ï±ßÊÇ·ñ¿çÔ½´ı²âµãµÄÎ³¶ÈÏß
 		int a_above;
 		int b_above;
@@ -12513,11 +13563,13 @@ int pnpoly(Point * polygon,int n , Point p)
 		b_above = (b.lat > p.lat + (1e-8)); //bµãÔÚÉäÏßÉÏ·½
 		if(a_above == b_above)
 			continue;
+
 		//¼ÆËã±ßÓëÉäÏß£¨y = p.lat£©µÄ½»µã¾­¶Èx_inter
 		double t;
 		double x_inter;
 		t = (p.lat - a.lat) / (b.lat - a.lat);//²ÎÊıt
 		x_inter = a.lon + t * (b.lon - a.lon);//½»µã¾­¶È
+
 		//´ı²âµãÔÚ½»µã×ó²àÊ±·­×ª×´Ì¬£¨¿¼ÂÇ¾«¶ÈÎó²î£©
 		if(p.lon <x_inter - (1e-8))
 		{
@@ -12570,6 +13622,7 @@ void recv_blk_ofp_ccc_018() {
 		data_length = sizeof(blk_ofp_ccc_018);
 		Send_Message(DDSTables.CCC_PAD_018.niConnectionId,0,&transaction_id, &blk_ofp_ccc_018, &message_type_id, data_length, &enRetCode);
 	}
+
 }
 
 void recv_blk_ofp_ccc_040()
@@ -12585,18 +13638,23 @@ void recv_blk_ofp_ccc_040()
 	{
 		SINT32_SIX niConnectionId = 0;
 		niConnectionId = DDSTables.CCC_KKL_16.niConnectionId;
+
 		if(niConnectionId != 0)
 		{
 			data_length = sizeof(blk_ofp_ccc_040);
 			Send_Message(niConnectionId,0,&transaction_id, &blk_ofp_ccc_040, &message_type_id, data_length, &enRetCode);
 		}
+
 	}
 }
+
 
 void send_blk_ccc_ofp_015()
 {
 	// Ì¬ÊÆÈÚºÏÊı¾İ´ÓÌ¬ÊÆ²¿·Ö½ÓÊÕ£¬²»ÓÃ´¦ÀíÖ±½ÓÖÜÆÚ×ª·¢¼´¿É
+
 	//Ä¿±êº½ËÙº½Ïò¼ÆËã
+
 	Send_Message(DDSTables.CCC_DPU_5.niConnectionId, 0, &transaction_id, &CCC_DPU_data_5.tgt_Number, &message_type_id, sizeof(CCC_DPU_data_5), &enRetCode);
 	if(enRetCode==0)
 	{
@@ -12604,8 +13662,8 @@ void send_blk_ccc_ofp_015()
 	}
 	//·¢ËÍ¸øpad new20250620
 	//	Send_Message(DDSTables.CCC_PAD_015.niConnectionId,0,&transaction_id, &CCC_DPU_data_5.tgt_Number,&message_type_id, data_length, &enRetCode);
-}
 
+}
 void init_blk_ccc_ofp_045()
 {
 	load_file.blk_dlr_ccc_045[0].uav_id = UAV1_ID;
@@ -12615,56 +13673,67 @@ void init_blk_ccc_ofp_045()
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.533579;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 160;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 0;
+
 	cnt++;//1
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.2444;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.57;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 550;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//2
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.2;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.57;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//3
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.2;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.533653;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//4
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.32;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.533653;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//5
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.32;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.497;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//6
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.265056;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.497;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//7
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.265056;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.585;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//8
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.24;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.585;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 600;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//9
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.2444;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.57;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 500;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//10
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.24993;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.55793;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].height = 400;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].speed = 30;
+
 	cnt++;//11
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lon = 124.261683;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].lat = 47.533579;
@@ -12673,8 +13742,8 @@ void init_blk_ccc_ofp_045()
 	//test
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].tpye = 1;
 	load_file.blk_dlr_ccc_045[0].normal_point[cnt].circle_time = 5;
-}
 
+}
 void send_blk_ccc_ofp_045()
 {
 	static int hx_cnt = 0;
@@ -12691,6 +13760,7 @@ void send_blk_ccc_ofp_045()
 		//·¢ËÍÍê³ÉÇå¿ÕÅÄÊı¼ÆÊ±
 		hx_cnt = 0;
 	}
+
 }
 
 void send_blk_ccc_ofp_032()
@@ -12698,6 +13768,7 @@ void send_blk_ccc_ofp_032()
 	data_length = sizeof(blk_ccc_ofp_032);
 	Send_Message(DDSTables.CCC_DPU_12.niConnectionId, 0, &transaction_id,
 			&blk_ccc_ofp_032, &message_type_id, data_length, &enRetCode);
+
 }
 
 void send_period_message()
@@ -12729,9 +13800,11 @@ void recv_all_message()
 	recv_SMD_message();
 	/******½ÓÊÕ×ÛÏÔÏûÏ¢****/
 	recv_ofp_message();
+
 	/******½ÓÊÕPADÏûÏ¢****/
 	recv_pad_message();
 }
+
 
 /****************Ä¿±êÈÚºÏ²¿·Ö´¦Àí*******************************************/
 void send_sfs_period_message()
@@ -12776,6 +13849,7 @@ void send_blk_ccc_sfs_001()
 	unsigned short spare;//
 	unsigned short CRC;//Ğ£ÑéºË 0mod 65535
 #endif
+
 	//    KKL_CCC_data_21_2[0].Target1status = 0xffff; //È±ÉÙ¸ÃĞÅÏ¢¶¨Òå£¬
 	//    KKL_CCC_data_21_2[0].Target1Lotnum = 1;//·Ö±æÂÊ1 Ä¿±êÅúºÅ
 	//    KKL_CCC_data_21_2[0].Target1Velocity = 50;//·Ö±æÂÊ0.1KM/H,Ä¿±êº½ËÙ
@@ -12814,12 +13888,17 @@ void send_blk_ccc_sfs_001()
 	//    DPU_CCC_data_0.target_informations[0].tgt_givenby = 1;   /*Ä¿±êÀ´Ô´  0=905;1=jids;2=±¾»úÀ×´ï;3=ÎÀĞÇ;4=×ÛºÏ;*/
 	//    DPU_CCC_data_0.target_informations[0].tgt_course_quality = 1;   /*º½¼£ÖÊÁ¿*/
 	//    DPU_CCC_data_0.target_informations[0].tgt_threat_sn = 1;   /*Ä¿±êÍşĞ²ĞòºÅ*/
+
+
 	/*****************************************************/
+
 	// ½«ÓĞÈË»úÊı¾İÌí¼ÓÍ·ºó£¬·¢¸øÈÚºÏ
 	memcpy(send_array.dataA, &DPU_CCC_data_0,sizeof(manned_aircraft_target_set));// manned_aircraft_target_setÖĞÓĞ°üÍ·
 	send_array.dataA[0] = 0x01; // °üÍ·ÊÇ0x0001,Ğ¡¶Ë£¬Ôòµ¹Ò»ÏÂ
 	send_array.dataA[1] = 0x00; // °üÍ·ÊÇ0x0001,Ğ¡¶Ë£¬Ôòµ¹Ò»ÏÂ
 	sendSfsMsgToQuePort(send_array.dataA, sizeof(manned_aircraft_target_set));
+
+
 	//½«¹âµçÊı¾İÌí¼ÓÍ·ºó£¬·¢¸øÈÚºÏ
 	for(int i = 0; i<UAV_MAX_NUM; i++)
 	{
@@ -12830,7 +13909,9 @@ void send_blk_ccc_sfs_001()
 			memcpy(send_array.dataA +2, &KKL_CCC_data_21_2[i],sizeof(YaoCeDataZiZhen2));// Ìø¹ı°üÍ·
 			sendSfsMsgToQuePort(send_array.dataA, sizeof(YaoCeDataZiZhen2)+2);
 		}
+
 	}
+
 }
 
 /****************************************º½Ïß³åÍ»´¦Àí¿ªÊ¼***********************************************/
@@ -12849,15 +13930,18 @@ void avoidLineCrashJudgeProc()
 	{
 		//³åÍ»¼ì²â
 		avoidLineCrashJudgeDouble();
+
 		//ÎŞÈË»ú2³åÍ»Ïû½â²»ºÏ·¨
 		if(g_lineCrashState[1].hasConflict == 2 )
 		{
 			//¸ø×ÛÏÔ·¢ËÍ£¬¹æ±ÜÊ§°Ü£¬´Ë´Î·¢²¼ÎŞÈË»úÎ»ÖÃÃ»ÓĞ½â£¬ĞèÒªÊÖ¶¯µ÷Õû
 			return;
 		}
+
 		//Ö±½ÓÉú³É¹æ±Üµã²¢·¢²¼
 		// ĞŞ¸Äº½ÏßÎªÅÌĞıµã£¬ĞŞ¸ÄÈÎÎñÎªÅÌĞı
 		avoidLineCrashPanXuanProc();
+
 		for(int drone_index=0;drone_index<UAV_MAX_NUM;drone_index++)
 		{
 			//ÓĞ³åÍ»µÄÎŞÈË»úºÍ¹æ±Üµã·¢ËÍ¸ø×ÛÏÔ£¬³åÍ»ĞÅÏ¢·¢ËÍ¸ø×ÛÏÔ
@@ -12871,8 +13955,10 @@ void avoidLineCrashJudgeProc()
 			}
 		}
 		send_blk_ccc_ofp_159();
+
 		return;
 	}
+
 	// ³åÍ»Ïû½âÖ»ÄÜÍ¨¹ı¾àÀëÅĞ¶ÏÏû½â£¬³åÍ»¼ì²âÒ»µ©ÓĞ³åÍ»£¬Ôò²»ÔÙ¼ì²â³åÍ»
 	for(int drone_index=0;drone_index<UAV_MAX_NUM;drone_index++)
 	{
@@ -12881,6 +13967,7 @@ void avoidLineCrashJudgeProc()
 		{
 			continue;
 		}
+
 		if (g_lineCrashState[drone_index].hasConflict == 0)
 		{
 			// ·¢²¼Ç°Ìí¼Óº½Ïß³åÍ»¼ì²â£¨ÎŞÈË»úµ±Ç°µãµ½µÚÒ»¸öº½Â·µã£¬ºÍÓĞÈË»úµÚÒ»¸öµãºÍµÚ¶ş¸öµÄº½Ïß³åÍ»¼ì²â£©
@@ -12914,15 +14001,15 @@ void avoidLineCrashJudgeProc()
 //
 //			}
 		}
+
+
 	}
 }
-
 void send_blk_ccc_ofp_159()
 {
 	data_length = sizeof(BLK_CCC_OFP_159);
 	Send_Message(DDSTables.CCC_DPU_159.niConnectionId,0,&transaction_id, &blk_ccc_ofp_159, &message_type_id, data_length, &enRetCode);
 }
-
 //Á½¼ÜÎŞÈË»úº½Ïß³åÍ»ÅĞ¶Ï
 void avoidLineCrashJudgeDouble()
 {
@@ -12930,8 +14017,10 @@ void avoidLineCrashJudgeDouble()
 	int uav1_px = 0;//ÎŞÈË»ú1Ñ¡ÔñµÄÅÌĞıµã
 	uav1_px = avoid_uav_manned(0);
 	avoid_uav_manned(1);
+
 	//ÎŞÈË»ú1ÓëÎŞÈË»ú2º½Ïß¶Î±È½Ï
 	avoid_uav1_uav2();
+
 	//ÎŞÈË»ú2×îÖÕÓëÓĞÈË»ú»òÎŞÈË»ú1ÓĞ³åÍ»
 	if(g_lineCrashState[1].hasConflict == 1)
 	{
@@ -12957,16 +14046,20 @@ void avoidLineCrashJudgeDouble()
 		for (int i = 0; i < 4; i++) {
 			rectVer.vertexA[i] = resMabrGeo.vertexA[i];
 		}
+
 		//¿ÕÓòÄÚ°Ë¸öÇøÓò¹Ì¶¨ÇøÓò¼ÆËã
 		Point center;//¿ÕÓòÖĞĞÄµã
 		Point px_center[8];//¹Ì¶¨ÅÌĞıµã
+
 		//Ëş¹ş¿ÕÓòÖĞĞÄµã
 		center.lat = CENTER_LAT;
 		center.lon = CENTER_LON;
+
 		for(int i = 0 ; i < 8 ; i++)
 		{
 			calculate_endpoint(center.lat , center.lon , (45 * i) * M_PI / 180.0 , 9 , &px_center[i].lat , &px_center[i].lon );
 		}
+
 		//ÎŞÈË»ú1ÓĞ¹æ±Üµã£¬º½ÏßÖ»ÓĞÁ½¸öµã£¬Ê¹ÓÃÏß¶Î×÷ÎªÅĞ¾İ
 		if(g_lineCrashState[0].hasConflict == 1)
 		{
@@ -12975,11 +14068,13 @@ void avoidLineCrashJudgeDouble()
 			//¿ªÊ¼µãÎŞÈË»ú2µ±Ç°¾­Î³¶È
 			route1.start.latitude = formationId[1].lat;
 			route1.start.longitude = formationId[1].lon;
+
 			//¿ªÊ¼µãÎŞÈË»ú1µ±Ç°¾­Î³¶È,½áÊøµãÎªÎŞÈË»ú1µÄÅÌĞıµã
 			route2.start.latitude = formationId[0].lat;
 			route2.start.longitude = formationId[0].lon;
 			route2.end.latitude = g_lineCrashState[0].avoidancePoint.latitude;
 			route2.end.longitude = g_lineCrashState[0].avoidancePoint.longitude;
+
 			for(int j = 0; j < 8 ; j ++)
 			{
 				ConflictResult tmp;
@@ -13014,9 +14109,11 @@ void avoidLineCrashJudgeDouble()
 			MabrGeo resMabrGeo_uav1;
 			unsigned int plan;
 			plan = (blk_ofp_ccc_038.Plan_ID) % 3;
+
 			//¿ªÊ¼µãÎŞÈË»ú2µ±Ç°¾­Î³¶È
 			route1.start.latitude = formationId[1].lat;
 			route1.start.longitude = formationId[1].lon;
+
 			// ÎŞÈË»ú1º½ÏßÍâ½Ó¾ØĞÎ
 			polygon_uav1.vertexA[0].longitude = formationId[0].lon;
 			polygon_uav1.vertexA[0].latitude = formationId[0].lat;
@@ -13066,9 +14163,10 @@ void avoidLineCrashJudgeDouble()
 			//ÎŞÈË»ú2Éú³É²»³öÓĞĞ§µÄ¹æ±Üµã£¬·µ»Ø´íÎó
 			g_lineCrashState[1].hasConflict = 2;
 		}
-	}
-}
 
+	}
+
+}
 int avoid_uav1_uav2_period()
 {
 	unsigned int plan;
@@ -13079,14 +14177,17 @@ int avoid_uav1_uav2_period()
 	FlightRoute uav1Route;
 	FlightRoute uav2Route;
 	plan = (blk_ofp_ccc_039.Plan_ID) % 3;
+
 	//±È½ÏÎŞÈË»ú1ºÍÎŞÈË»ú2º½ÏßÓĞÎŞ³åÍ»£¬ÎŞÈË»ú1º½ÏßÊ¹ÓÃÔ­º½Ïß
 //	uav1_point_num = blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.waypoints_number;
 //	uav2_point_num = blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.waypoints_number;
+
 	//ÖÜÆÚ¼ÆËãÎŞÈË»úÊ£Óàº½µãÊıÁ¿£¬ÒÔ¼°´ı·ÉµãË÷Òı
 	uav1_point_num = uav_route[0].hull_number - uav_route[0].waypoint_number - 1;
 	uav1_index = uav_route[0].waypoint_number - 1 - 1;
 	uav2_point_num = uav_route[1].hull_number - uav_route[1].waypoint_number - 1;
 	uav2_index = uav_route[1].waypoint_number - 1 - 1;
+
 	for (int i = 0; i < uav1_point_num; i++)
 	{
 		// ·ÖÀà³õÊ¼»¯ÎŞÈË»ú1º½Ïß¶Î
@@ -13107,6 +14208,7 @@ int avoid_uav1_uav2_period()
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i-1+uav1_index].longitude;
 			uav1Route.start.latitude =
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i-1+uav1_index].latitude;
+
 			// ÎŞÈË»ú1ÖÕµã
 			uav1Route.end.longitude =
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i+uav1_index].longitude;
@@ -13122,11 +14224,13 @@ int avoid_uav1_uav2_period()
 				// ÎŞÈË»ú2ÆğÊ¼µãÊÇÎŞÈË»úµ±Ç°Î»ÖÃ
 				uav2Route.start.longitude = formationId[1].lon;
 				uav2Route.start.latitude = formationId[1].lat;
+
 				// ÎŞÈË»ú2ÖÕµãÊÇÎŞÈË»úº½ÏßµÚÒ»¸öµã
 				uav2Route.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0+uav2_index].longitude;
 				uav2Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0+uav2_index].latitude;
+
 			}
 			else
 			{
@@ -13135,12 +14239,14 @@ int avoid_uav1_uav2_period()
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1+uav2_index].longitude;
 				uav2Route.start.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1+uav2_index].latitude;
+
 				// ÎŞÈË»ú2ÖÕµã
 				uav2Route.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j+uav2_index].longitude;
 				uav2Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j+uav2_index].latitude;
 			}
+
 			// º½¶Î¼ä³åÍ»¼ì²â
 			detectConflict(&uav1Route, &uav2Route, &g_lineCrashState[1]);
 			//¼ì²âµ½³åÍ»ÍË³ö
@@ -13150,9 +14256,9 @@ int avoid_uav1_uav2_period()
 			}
 		}
 	}
+
 	return 0;
 }
-
 //ÎŞÈË»ú1ÓëÎŞÈË»ú2º½Ïß¶Î±È½Ï
 void avoid_uav1_uav2()
 {
@@ -13175,6 +14281,7 @@ void avoid_uav1_uav2()
 		uav1_point_num = blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.waypoints_number;
 		uav2_point_num = blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.waypoints_number;
 	}
+
 	for (int i = 0; i < uav1_point_num; i++)
 	{
 		// ·ÖÀà³õÊ¼»¯ÎŞÈË»ú1º½Ïß¶Î
@@ -13196,6 +14303,7 @@ void avoid_uav1_uav2()
 				uav1Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 			}
+
 		}
 		else
 		{
@@ -13204,6 +14312,7 @@ void avoid_uav1_uav2()
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i-1].longitude;
 			uav1Route.start.latitude =
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i-1].latitude;
+
 			// ÎŞÈË»ú1ÖÕµã
 			uav1Route.end.longitude =
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].longitude;
@@ -13219,11 +14328,13 @@ void avoid_uav1_uav2()
 				// ÎŞÈË»ú2ÆğÊ¼µãÊÇÎŞÈË»úµ±Ç°Î»ÖÃ
 				uav2Route.start.longitude = formationId[1].lon;
 				uav2Route.start.latitude = formationId[1].lat;
+
 				// ÎŞÈË»ú2ÖÕµãÊÇÎŞÈË»úº½ÏßµÚÒ»¸öµã
 				uav2Route.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
 				uav2Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
+
 			}
 			else
 			{
@@ -13232,12 +14343,14 @@ void avoid_uav1_uav2()
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].longitude;
 				uav2Route.start.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].latitude;
+
 				// ÎŞÈË»ú2ÖÕµã
 				uav2Route.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j].longitude;
 				uav2Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j].latitude;
 			}
+
 			// º½¶Î¼ä³åÍ»¼ì²â
 			detectConflict(&uav1Route, &uav2Route, &g_lineCrashState[1]);
 			//¼ì²âµ½³åÍ»ÍË³ö
@@ -13248,7 +14361,6 @@ void avoid_uav1_uav2()
 		}
 	}
 }
-
 //ÎŞÈË»ú1ÓëÎŞÈË»ú2º½Ïß¶ÎµÚ¶ş´Î»Ö¸´±È½Ï
 void avoid_uav1_uav2_second(ConflictResult* tmp)
 {
@@ -13258,9 +14370,12 @@ void avoid_uav1_uav2_second(ConflictResult* tmp)
 	FlightRoute uav1Route;
 	FlightRoute uav2Route;
 	plan = (blk_ofp_ccc_039.Plan_ID) % 3;
+
 	//±È½ÏÎŞÈË»ú1ºÍÎŞÈË»ú2º½ÏßÓĞÎŞ³åÍ»
 	uav1_point_num = blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.waypoints_number;
 	uav2_point_num = blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.waypoints_number;
+
+
 	for (int i = 0; i < uav1_point_num; i++)
 	{
 		// ·ÖÀà³õÊ¼»¯ÎŞÈË»ú1º½Ïß¶Î
@@ -13281,6 +14396,7 @@ void avoid_uav1_uav2_second(ConflictResult* tmp)
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i-1].longitude;
 			uav1Route.start.latitude =
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i-1].latitude;
+
 			// ÎŞÈË»ú1ÖÕµã
 			uav1Route.end.longitude =
 					blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].longitude;
@@ -13296,11 +14412,13 @@ void avoid_uav1_uav2_second(ConflictResult* tmp)
 				// ÎŞÈË»ú2ÆğÊ¼µãÊÇÎŞÈË»úµ±Ç°Î»ÖÃ
 				uav2Route.start.longitude = formationId[1].lon;
 				uav2Route.start.latitude = formationId[1].lat;
+
 				// ÎŞÈË»ú2ÖÕµãÊÇÎŞÈË»úº½ÏßµÚÒ»¸öµã
 				uav2Route.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
 				uav2Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
+
 			}
 			else
 			{
@@ -13309,12 +14427,14 @@ void avoid_uav1_uav2_second(ConflictResult* tmp)
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].longitude;
 				uav2Route.start.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].latitude;
+
 				// ÎŞÈË»ú2ÖÕµã
 				uav2Route.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j].longitude;
 				uav2Route.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j].latitude;
 			}
+
 			// º½¶Î¼ä³åÍ»¼ì²â
 			detectConflict(&uav1Route, &uav2Route, tmp);
 			//¼ì²âµ½³åÍ»ÍË³ö
@@ -13342,10 +14462,12 @@ int  avoid_uav_manned(int drone_index)
 	AreaRectCenter resAreaRectCenter;
 	AreaRectVertex resAreaRectVertex;
 	Geo uavPos;
+
 	// ÅĞ¶ÏÓĞÈË»úº½ÏßµãµÄ¸öÊı
 	if (blk_ofp_ccc_018.airway_point_num < 1) {
 		return -1;
 	}
+
 	plan = (blk_ofp_ccc_038.Plan_ID) % 3;
 	//±È½ÏÓĞÈË»úº½Ïß¶ÎÓëÎŞÈË»ú2º½Ïß¶Î
 	int man_airway_point_num = blk_ofp_ccc_018.airway_point_num;
@@ -13360,6 +14482,7 @@ int  avoid_uav_manned(int drone_index)
 			manRoute.start.latitude = plane_lat;
 			manRoute.end.longitude = blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.longitude;
 			manRoute.end.latitude = blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.latitude;
+
 		}
 		else
 		{
@@ -13377,11 +14500,13 @@ int  avoid_uav_manned(int drone_index)
 				// ÎŞÈË»úÆğÊ¼µãÊÇÎŞÈË»úµ±Ç°Î»ÖÃ
 				uavRoute.start.longitude = formationId[drone_index].lon;
 				uavRoute.start.latitude = formationId[drone_index].lat;
+
 				// ÎŞÈË»úÖÕµãÊÇÎŞÈË»úº½ÏßµÚÒ»¸öµã
 				uavRoute.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
 				uavRoute.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
+
 			}
 			else
 			{
@@ -13390,12 +14515,14 @@ int  avoid_uav_manned(int drone_index)
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].longitude;
 				uavRoute.start.latitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].latitude;
+
 				// ÎŞÈË»úÖÕµã
 				uavRoute.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j].longitude;
 				uavRoute.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j].latitude;
 			}
+
 			// º½¶Î¼ä³åÍ»¼ì²â
 			detectConflict(&manRoute, &uavRoute, &g_lineCrashState[drone_index]);
 			//ÎŞÈË»ú1/2ÓëÓĞÈË»úÓĞ³åÍ»,Éú³É¹æ±Üµã
@@ -13412,15 +14539,22 @@ int  avoid_uav_manned(int drone_index)
 					polygon.vertexA[i + 1].latitude =
 							blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.latitude;
 				}
+
 				resMabrGeo = getMabrGeo(&polygon);
+
 				// ¼ÆËã¹æ±Üµã
 				for (int i = 0; i < 4; i++) {
 					rectVer.vertexA[i] = resMabrGeo.vertexA[i];
 				}
+
 				resAreaRectCenter = getAreaRectCenterByVertex(&rectVer); // ¶¥µãµ½ÖĞĞÄ
+
 				resAreaRectCenter.lenLat += 6000;
 				resAreaRectCenter.lenLng += 6000;
+
 				resAreaRectVertex = getAreaRectVertexByCenter(&resAreaRectCenter);
+
+
 				// ±éÀú×î½ü¶¥µã×÷Îª¹æ±Üµã
 				uavPos.longitude =
 						formationId[drone_index].lon;
@@ -13435,18 +14569,24 @@ int  avoid_uav_manned(int drone_index)
 					}
 				}
 				g_lineCrashState[drone_index].avoidancePoint = resAreaRectVertex.vertexA[pointIndex];
+
 				//ÔÙ´Î¼ÆËã¸üÊÊºÏµÄ¹æ±Üµã
+
 				//¿ÕÓòÄÚ°Ë¸öÇøÓò¹Ì¶¨ÇøÓò¼ÆËã
 				Point center;//¿ÕÓòÖĞĞÄµã
 				Point px_center[8];//¹Ì¶¨ÅÌĞıµã
+
 				//Ëş¹ş¿ÕÓòÖĞĞÄµã
 				center.lat = CENTER_LAT;
 				center.lon = CENTER_LON;
+
 				for(int i = 0 ; i < 8 ; i++)
 				{
 					calculate_endpoint(center.lat , center.lon , (45 * i) * M_PI / 180.0 , 9 , &px_center[i].lat , &px_center[i].lon );
 				}
+
 				//ÅĞ¶ÏÊÇ·ñ´©¹ıÓĞÈË»úµÄÈÎÎñÇøºÍº½Ïß¶Î£¬ÇÒÊÇ×î½üµÄ¹Ì¶¨ÅÌĞıµã
+
 				/* ÓĞÈË»úº½ÏßÍâ½Ó¾ØĞÎ */
 				// ¼ÓÉÏÓĞÈË»ú·É»úÎ»ÖÃ
 				static PolygonGeo polygon_t;
@@ -13468,6 +14608,7 @@ int  avoid_uav_manned(int drone_index)
 					rectVer_hx.vertexA[h].latitude = resMabrGeo_t.vertexA[h].latitude;
 					rectVer_hx.vertexA[h].longitude = resMabrGeo_t.vertexA[h].longitude;
 				}
+
 				// ÕÒµ½µ±Ç°ÈÎÎñÇø
 				int areaId = 0;
 				static AreaRectVertex rectVer_t;
@@ -13486,6 +14627,7 @@ int  avoid_uav_manned(int drone_index)
 								rectVer_t.vertexA[m].longitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lon;
 								rectVer_t.vertexA[m].latitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lat;
 							}
+
 						}
 					}
 				}
@@ -13535,6 +14677,7 @@ int  avoid_uav_manned(int drone_index)
 						{
 							printf("avoidLineCrashIsCrossRect erro\n");
 						}
+
 					}
 					else
 					{
@@ -13575,6 +14718,7 @@ int  avoid_uav_manned(int drone_index)
 						}
 					}
 				}
+
 				//ÕÒµ½ÓĞĞ§µÄ¹Ì¶¨ÅÌĞıµã¸²¸ÇÔ­ÓĞÅÌĞıµã¾­Î³¶È
 				if(min_px_center != -1)
 				{
@@ -13588,7 +14732,6 @@ int  avoid_uav_manned(int drone_index)
 	}
 	return -1;
 }
-
 // µ¥¼Ü»úº½Ïß³åÍ»ÅĞ¶Ï
 void avoidLineCrashJudgeSingle(int drone_index) {
 	// ³åÍ»¼ì²â
@@ -13600,19 +14743,25 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 	MabrGeo resMabrGeo;
 	AreaRectCenter resAreaRectCenter;
 	AreaRectVertex resAreaRectVertex;
+
 	Geo uavPos;
 	double dist;
 	int pointIndex = 0;
 	double distTem;
+
 	// ÅĞ¶ÏÓĞÈË»úº½ÏßµãµÄ¸öÊı
 	if (blk_ofp_ccc_018.airway_point_num < 1) {
 		return;
 	}
+
 	plan = (blk_ofp_ccc_038.Plan_ID) % 3;
+
 	// ³åÍ»¼ì²â(ÓĞÈË»úº½ÏßºÍÎŞÈË»úº½Ïß³ä·Ö¼ì²â)
 	int man_airway_point_num = blk_ofp_ccc_018.airway_point_num;
 	int uav_waypoints_number =blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number;
+
 	for (int i = 0; i < man_airway_point_num+1; i++) { // ¼Ó1ÊÇ¼ÓÉÏÓĞÈË»úµ±Ç°Î»ÖÃ
+
 		// ·ÖÀà³õÊ¼»¯ÓĞÈË»úº½Ïß¶Î
 		if(i==0)
 		{
@@ -13621,6 +14770,7 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 			manRoute.start.latitude = plane_lat;
 			manRoute.end.longitude = blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.longitude;
 			manRoute.end.latitude = blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.latitude;
+
 		}
 		else
 		{
@@ -13629,18 +14779,22 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 			manRoute.end.longitude = blk_ofp_ccc_018.waypoint_informations[i%man_airway_point_num].waypoint_longitude_and_latitude.longitude;// ×îºóÒ»¸öµã»Øµ½ÏÂ±ê0µÄº½µã
 			manRoute.end.latitude = blk_ofp_ccc_018.waypoint_informations[i%man_airway_point_num].waypoint_longitude_and_latitude.latitude;
 		}
+
 		for(int j =0; j<uav_waypoints_number+1; j++){ // ¼Ó1ÊÇ¼ÓÉÏ
+
 			// ·ÖÀà³õÊ¼»¯ÎŞÈË»úº½Ïß¶Î
 			if(j == 0)
 			{
 				// ÎŞÈË»úÆğÊ¼µãÊÇÎŞÈË»úµ±Ç°Î»ÖÃ
 				uavRoute.start.longitude = formationId[drone_index].lon;
 				uavRoute.start.latitude = formationId[drone_index].lat;
+
 				// ÎŞÈË»úÖÕµãÊÇÎŞÈË»úº½ÏßµÚÒ»¸öµã
 				uavRoute.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
 				uavRoute.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
+
 			}
 			else
 			{
@@ -13649,15 +14803,19 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].longitude;
 				uavRoute.start.latitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j-1].latitude;
+
 				// ÎŞÈË»úÖÕµã
 				uavRoute.end.longitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j%uav_waypoints_number].longitude;
 				uavRoute.end.latitude =
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[j%uav_waypoints_number].latitude;
 			}
+
 			// º½¶Î¼ä³åÍ»¼ì²â
 			detectConflict(&manRoute, &uavRoute, &g_lineCrashState[drone_index]);
+
 			if (g_lineCrashState[drone_index].hasConflict == 1) {
+
 				/* ÓĞÈË»úº½ÏßÍâ½Ó¾ØĞÎÍâÀ©µÃµ½¹æ±Ü¾ØĞÎ£¬È»ºóÇó×î½ü¶¥µã×÷ÎªÅÌĞıµã */
 				// ¼ÓÉÏÓĞÈË»ú·É»úÎ»ÖÃ
 				polygon.vertexA[0].longitude = plane_lon;
@@ -13669,15 +14827,22 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 					polygon.vertexA[i + 1].latitude =
 							blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.latitude;
 				}
+
 				resMabrGeo = getMabrGeo(&polygon);
+
 				// ¼ÆËã¹æ±Üµã
 				for (int i = 0; i < 4; i++) {
 					rectVer.vertexA[i] = resMabrGeo.vertexA[i];
 				}
+
 				resAreaRectCenter = getAreaRectCenterByVertex(&rectVer); // ¶¥µãµ½ÖĞĞÄ
+
 				resAreaRectCenter.lenLat += 6000;
 				resAreaRectCenter.lenLng += 6000;
+
 				resAreaRectVertex = getAreaRectVertexByCenter(&resAreaRectCenter);
+
+
 				// ±éÀú×î½ü¶¥µã×÷Îª¹æ±Üµã
 				uavPos.longitude =
 						formationId[drone_index].lon;
@@ -13692,18 +14857,24 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 					}
 				}
 				g_lineCrashState[drone_index].avoidancePoint = resAreaRectVertex.vertexA[pointIndex];
+
 				//ÔÙ´Î¼ÆËã¸üÊÊºÏµÄ¹æ±Üµã
+
 				//¿ÕÓòÄÚ°Ë¸öÇøÓò¹Ì¶¨ÇøÓò¼ÆËã
 				Point center;//¿ÕÓòÖĞĞÄµã
 				Point px_center[8];//¹Ì¶¨ÅÌĞıµã
+
 				//Ëş¹ş¿ÕÓòÖĞĞÄµã
 				center.lat = CENTER_LAT;
 				center.lon = CENTER_LON;
+
 				for(int i = 0 ; i < 8 ; i++)
 				{
 					calculate_endpoint(center.lat , center.lon , (45 * i) * M_PI / 180.0 , 9 , &px_center[i].lat , &px_center[i].lon );
 				}
+
 				//ÅĞ¶ÏÊÇ·ñ´©¹ıÓĞÈË»úµÄÈÎÎñÇøºÍº½Ïß¶Î£¬ÇÒÊÇ×î½üµÄ¹Ì¶¨ÅÌĞıµã
+
 				/* ÓĞÈË»úº½ÏßÍâ½Ó¾ØĞÎ */
 				// ¼ÓÉÏÓĞÈË»ú·É»úÎ»ÖÃ
 				static PolygonGeo polygon_t;
@@ -13725,6 +14896,7 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 					rectVer_hx.vertexA[h].latitude = resMabrGeo_t.vertexA[h].latitude;
 					rectVer_hx.vertexA[h].longitude = resMabrGeo_t.vertexA[h].longitude;
 				}
+
 				// ÕÒµ½µ±Ç°ÈÎÎñÇø
 				int areaId = 0;
 				static AreaRectVertex rectVer_t;
@@ -13743,6 +14915,7 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 								rectVer_t.vertexA[m].longitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lon;
 								rectVer_t.vertexA[m].latitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lat;
 							}
+
 						}
 					}
 				}
@@ -13792,6 +14965,7 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 						{
 							printf("avoidLineCrashIsCrossRect erro\n");
 						}
+
 					}
 					else
 					{
@@ -13832,16 +15006,19 @@ void avoidLineCrashJudgeSingle(int drone_index) {
 						}
 					}
 				}
+
 				//ÕÒµ½ÓĞĞ§µÄ¹Ì¶¨ÅÌĞıµã¸²¸ÇÔ­ÓĞÅÌĞıµã¾­Î³¶È
 				if(min_px_center != -1)
 				{
 					g_lineCrashState[drone_index].avoidancePoint.latitude = px_center[min_px_center].lat;
 					g_lineCrashState[drone_index].avoidancePoint.longitude = px_center[min_px_center].lon;
 				}
+
 				return; // ÕÒµ½Ö±½ÓÍË³ö
 			}
 		}
 	}
+
 	return;
 }
 
@@ -13858,14 +15035,18 @@ void avoidLineCrashPanXuanProc()
 			{
 				return;
 			}
+
 			/***********************ÔİÊ±²»¸ü¸ÄÈÎÎñ**************************/
 			// ĞŞ¸ÄÈÎÎñÀàĞÍ£¨Ö±½Ó¸Ä·¢¸øofpµÄ·½°¸CCC_DPU_data_6_Ofp£¬Ôİ²»¿¼ÂÇĞŞ¸Ä¸¨Öú¾ö²ß·¢ËÍµÄÔ­Ê¼·½°¸ºÍ·´À¡¸ø¸¨Öú¾ö²ß£©
 			// ±¸·İ·½°¸µ½È«¾Ö±äÁ¿£¬ÔÚ³åÍ»Ïû½âÊ±ÓÃ
 			memcpy(&g_lineCrashPlanBak, &CCC_DPU_data_6_Ofp[plan], sizeof(g_lineCrashPlanBak));
 			// Ö»¸ü¸Ä·¢ËÍ¸øofpµÄ·½°¸×´Ì¬£¬±¾µØ´æ´¢²»±ä
 			CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[drone_index+1].task_sequence_informations[global_stage-1].type = 14;
+
+
 			// Çå¿Õº½Â·µãĞÅÏ¢
 			memset(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations, 0,  sizeof(planning_information_waypoint_information));
+
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.mission_type = 14;
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number = 1;// Ö»·¢ÅÌĞıµã£¬ÆäËûµã±£Áô£¬µ«²»·¢ËÍ
 			// ÉèÖÃµÚÒ»¸öµã
@@ -13880,6 +15061,7 @@ void avoidLineCrashPanXuanProc()
 			// ÓÃÈÎÎñµãµÄ¸ß¶È×÷Îªµ±Ç°ĞüÍ£µãµÄ¸ß¶È,Èç¹ûÈÎÎñµã¸ß¶ÈÎŞĞ§£¬ÔòÓÃÄ¬ÈÏ500µÄ¸ß¶È
 			if(blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height > HEIGHT + 100)
 			{
+
 				blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].height = \
 						blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height;
 			}
@@ -13890,6 +15072,7 @@ void avoidLineCrashPanXuanProc()
 			//  ËÙ¶È
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed_validity = 1;
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed = 35.0;
+
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].type =
 					5;
 			// ÅÌĞı
@@ -13904,10 +15087,13 @@ void avoidLineCrashPanXuanProc()
 			// °ë¾¶ 1000m
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_radius_valid_bit = 1;
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_radius = 800;
+
 			//º½Ïß·¢ËÍµ½¸¨Öú¾ö²ßÖØĞÂÉú³É¿ÕÓò
 			send_uav_airway(plan,drone_index);
 		}
 	}
+
+
 	return;
 }
 
@@ -13931,10 +15117,14 @@ void avoidLineCrashSafeTestProc()
 		if (lastPointNum <= 0) {
 			lastPointNum = 1;
 		}
+
+
 		// ÓĞÈË»úµ½´ïÓĞÈË»úÈÎÎñÇøÓòÄÚÔòÌáÊ¾Ïû½â³É¹¦£¬ÇÒÎŞÈË»ú²»ÔÚÎŞÈË»úÈÎÎñÇøÄÚ
 		SubdomainInfo subdomainInfo;
 		avoidLineCrashGetCurrentManRect(&subdomainInfo);
+
 		//Î´ÕÒµ½ÓĞÈË»úÈÎÎñÇø£¬Ê¹ÓÃÓĞÈË»ú´ı·ÉµãµÈĞÅÏ¢ÅĞ¶ÏÏû½âÌõ¼ş
+
 		//ÓĞÈË»úÓëÎŞÈË»úº½µã¶Î×ö±È½Ï,ÎŞ³åÍ»
 		if(0)
 		{
@@ -13944,9 +15134,11 @@ void avoidLineCrashSafeTestProc()
 			//·¢ËÍ³åÍ»Ïû½âÌáÊ¾
 			conflict_reslution = 1;
 		}
+
 		int isInRect =  0;
 		Point* point = (Point*)(&subdomainInfo.signal_FC00[0]);
 		isInRect = pnpoly(point, 4 , manPos);
+
 		// ¼ÆËãÍâÀ©ÈÎÎñÇø
 		AreaRectVertex manned_taskarea;
 		AreaRectCenter manned_taskareaCenter;
@@ -13963,6 +15155,7 @@ void avoidLineCrashSafeTestProc()
 		// µÃµ½ÍâÀ©ºóµÄ¾ØĞÎ
 		resmanned_taskarea = getAreaRectVertexByCenter(
 				&manned_taskareaCenter);
+
 		for(int i = 0 ;i < 2 ;i ++)
 		{
 			Point uav;
@@ -13971,6 +15164,8 @@ void avoidLineCrashSafeTestProc()
 			uav.lon = formationId[i].lon;
 			uav_inside[i] = pnpoly(point_uav, 4 , uav);
 		}
+
+
 		//Ò»¿ØÒ»³¡¾°
 		if(CCC_DPU_data_3.drone_number == 1)
 		{
@@ -14002,6 +15197,7 @@ void avoidLineCrashSafeTestProc()
 				conflict_reslution = 1;
 			}
 		}
+
 	}
 	static int uav_hf = 0;
 	// Èç¹ûÒÑµ½°²È«¾àÀëÔòÌáÊ¾³åÍ»Ïû½â
@@ -14010,6 +15206,8 @@ void avoidLineCrashSafeTestProc()
 		conflict_reslution = 0;
 		g_lineCrashState[0].crashOffTime++;
 		g_lineCrashState[1].crashOffTime++;
+
+
 		//º½Ïß·¢ËÍµ½¸¨Öú¾ö²ßÖØĞÂÉú³É¿ÕÓò
 		unsigned int plan = blk_ofp_ccc_039.Plan_ID % 3;
 		send_uav_airway(plan,0);
@@ -14035,6 +15233,7 @@ void avoidLineCrashSafeTestProc()
 			uav_hf = 2;
 		}
 	}
+
 	static int hf_send_cnt = 0;
 	//·¢ËÍÇĞ»»Ö¸Áî
 	//Ö»ÓĞÒ»¼Ü»úÖ±½ÓÇĞ»»
@@ -14066,6 +15265,7 @@ void avoidLineCrashSafeTestProc()
 			//ÖØÖÃ¾²Ì¬±äÁ¿
 			hf_send_cnt = 0;
 			uav_hf = 0;
+
 			//ÇĞ»»³É¹¦
 			//·¢ËÍµ±Ç°½×¶Î·´À¡ 20250830new
 			send_blk_ccc_ofp_025();
@@ -14142,6 +15342,7 @@ void avoidLineCrashSafeTestProc()
 			//ÖØÖÃ¾²Ì¬±äÁ¿
 			hf_send_cnt = 0;
 			uav_hf = 0;
+
 			//ÇĞ»»³É¹¦
 			//·¢ËÍµ±Ç°½×¶Î·´À¡ 20250830new
 			send_blk_ccc_ofp_025();
@@ -14169,27 +15370,36 @@ void avoidLineCrashFabuProc()
 				// ĞŞ¸Äº½ÏßÎªÅÌĞıµã£¬ĞŞ¸ÄÈÎÎñÎªÅÌĞı
 				avoidLineCrashPanXuanProc();
 			}
+
 			// ÉèÖÃ·¢²¼±äÁ¿ÎªÕæ£¬Ê¹½øÈë·¢²¼Á÷³Ì
 			g_recv_fabuCode[drone_index] = 1;
+
 			// ·¢²¼×´Ì¬Çå¿Õ
 			g_lineCrashState[drone_index].ofpLineCode = 0;
 		}
+
 		// ²»Í¬Òâ·¢²¼ĞüÍ£µã£¬Ö±½Ó·¢²¼Õı³£º½Ïß
 		if(g_lineCrashState[drone_index].hasConflict && g_lineCrashState[drone_index].ofpLineCode == 2)
 		{
 			// ºöÂÔºó³åÍ»×ÔĞĞÏû½â
 			g_lineCrashState[drone_index].hasConflict = 0;
+
 			// ÉèÖÃ·¢²¼±äÁ¿ÎªÕæ£¬Ê¹½øÈë·¢²¼Á÷³Ì
 			g_recv_fabuCode[drone_index] = 1;
+
 			// ·¢²¼×´Ì¬Çå¿Õ
 			g_lineCrashState[drone_index].ofpLineCode = 0;
+
 			g_lineCrashState[drone_index].recv_fabuCode = 0;
+
 		}
+
 		// ³åÍ»Ïû½âÊ±¶ş´Î¹æ»®·À³åÍ»º½Ïß
 		if (g_lineCrashState[drone_index].hasConflict && g_lineCrashState[drone_index].crashOffConfirm == 1)
 		{
 			// ÉèÖÃ·¢²¼±äÁ¿ÎªÕæ£¬Ê¹½øÈë·¢²¼Á÷³Ì
 			g_recv_fabuCode[drone_index] = 1;
+
 			//Ò»¿Ø¶ş³¡¾°,µÚ¶ş´Î·¢²¼´¦Àí
 			if(CCC_DPU_data_3.drone_number == 2)
 			{
@@ -14200,9 +15410,12 @@ void avoidLineCrashFabuProc()
 				// µÚ¶ş´Îº½Ïß¹æ±Ü´¦Àí
 				avoidLineCrashSecondLineProc(drone_index);
 			}
+
+
 			g_lineCrashState[drone_index].crashOffConfirm = 0;
 		}
 	}
+
 }
 
 void avoidLineCrashSecondDoulbe(int drone_index)
@@ -14219,15 +15432,20 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 	int bestVertex = -1;
 	int bestVertex_2 = -1;
 	double pathLength;
+
+
 	unsigned int plan = blk_ofp_ccc_039.Plan_ID % 3;
 	if(blk_ofp_ccc_039.Plan_ID <= 0)
 	{
 		return;
 	}
+
 	//Ò»¿Ø¶ş£¬º½ÏßµÚ¶ş´Î·¢²¼
+
 	//Éú³ÉÓĞÈË»úÈÎÎñÇø¾ØĞÎ
 	//Ê¹ÓÃ±¸·İµÄÈÎÎñ·ÖÅä½á¹û£¬¸³»ØÔ­Öµ
 	memcpy(&CCC_DPU_data_6_Ofp[plan],&g_lineCrashPlanBak , sizeof(g_lineCrashPlanBak));
+
 	// ÕÒµ½µ±Ç°ÈÎÎñÇø
 	areaId = CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[0].task_sequence_informations[global_stage-1].point_or_area_id;// ÕÒµ½µ±Ç°ÓĞÈË»úµÄÈÎÎñÇø
 	for(int i = 0; i< blk_ccc_ofp_005[plan].task_are;i++)
@@ -14242,36 +15460,46 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 					rectVer.vertexA[m].longitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lon;
 					rectVer.vertexA[m].latitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lat;
 				}
+
 				resAreaRectCenter = getAreaRectCenterByVertex(&rectVer); // ¶¥µãµ½ÖĞĞÄ
+
 				// ÍâÀ©Á½¹«Àï
 				resAreaRectCenter.lenLat += 2000;
 				resAreaRectCenter.lenLng += 2000;
+
 				// µÃµ½ÍâÀ©ºóµÄ¾ØĞÎ
 				resAreaRectVertex = getAreaRectVertexByCenter(
 						&resAreaRectCenter);
+
 				// ÔÙÍâÀ©500£¨×öÎª¹ı¶É¶¥µã£©
 				resAreaRectCenter.lenLat += 500;
 				resAreaRectCenter.lenLng += 500;
+
 				// µÃµ½ÍâÀ©ºóµÄ¾ØĞÎ
 				resAreaRectVertexBig = getAreaRectVertexByCenter(
 						&resAreaRectCenter);
+
 			}
 		}
 	}
+
 	BOOL needDetour = false;
 	// ÎŞÈË»úµ±Ç°Î»ÖÃµ½ÈÎÎñº½ÏßÆğÊ¼µã
 	route1.start.latitude = formationId[drone_index].lat;
 	route1.start.longitude = formationId[drone_index].lon;
 	route1.end.latitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 	route1.end.longitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
+
 	// ¼ì²éÆğµãµ½ÖÕµãµÄÏß¶ÎÊÇ·ñ´©¹ıÕı·½ĞÎÄÚ²¿
 	needDetour = avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex);
+
     // Èç¹û²»ĞèÒªÈÆĞĞ£¬Ö±½ÓÊä³öÆğµãµ½ÖÕµã
     if (!needDetour)
     {
     	//¼ÆËãÎŞÈË»úÖ®¼äÊÇ·ñ´æÔÚ³åÍ»
     	ConflictResult tmp;
     	avoid_uav1_uav2_second(&tmp);
+
     	//Á½¼Ü»ú»¥Ïà´æÔÚ³åÍ»
     	if(tmp.hasConflict == 1)
     	{
@@ -14287,15 +15515,18 @@ void avoidLineCrashSecondDoulbe(int drone_index)
     	}
         return ;
     }
+
     // ¼ì²éµ¥¶¥µãÊÇ·ñÂú×ã²»´©¹ıÕı·½ĞÎÄÚ²¿£¬ÇÒÕÒµ½×î½üµÄ¶¥µã¾àÀë
 	route1.start.latitude = formationId[drone_index].lat;
 	route1.start.longitude = formationId[drone_index].lon;
 	route2.end.latitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 	route2.end.longitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
+
 	for (int i = 0; i < 4; i++)
 	{
 		route1.end = resAreaRectVertexBig.vertexA[i];
 		route2.start = resAreaRectVertexBig.vertexA[i];
+
 		if(!avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route2, &resAreaRectVertex))
 		{
@@ -14307,6 +15538,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 			}
 		}
 	}
+
 	if(bestVertex != -1)
 	{
 		// »Ö¸´ÎŞÈË»úº½Ïß
@@ -14326,6 +15558,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 		// Ò»°ãº½Â·µã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_type =
 				1;
+
 		// °ÑºóÃæµÄº½Â·µã¸³Öµ¼´¿É
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1],
 				&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],\
@@ -14333,15 +15566,18 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 		// ÈÎÎñµã¼ÓÒ»
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number = \
 				g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.waypoints_number + 1;
+
 		// µãµÄ Ë÷ÒıÖµĞèÒªÍ³Ò»ÉèÖÃ
 		int waypoints_number = blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number;
 		for(int i =0; i< waypoints_number; i++)
 		{
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].hld_idx = i+1;
 		}
+
 		//¼ÆËãÎŞÈË»úÖ®¼äÊÇ·ñ´æÔÚ³åÍ»
     	ConflictResult tmp;
     	avoid_uav1_uav2_second(&tmp);
+
     	//Á½¼Ü»ú»¥Ïà´æÔÚ³åÍ»
     	if(tmp.hasConflict == 1)
     	{
@@ -14350,6 +15586,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
     	}
 		return;
 	}
+
 	// ¼ì²éË«¶¥µãÊÇ·ñÂú×ã²»´©¹ıÕı·½ĞÎÄÚ²¿£¬ÇÒÕÒµ½×î½üµÄ¶¥µã¾àÀë
 	minLength = 1e20;
 	bestVertex = -1;
@@ -14358,12 +15595,14 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 	route1.start.longitude = formationId[drone_index].lon;
 	route3.end.latitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 	route3.end.longitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
+
 	for (int i = 0; i < 4; i++)
 	{
 		route1.end = resAreaRectVertexBig.vertexA[i];
 		route2.start = resAreaRectVertexBig.vertexA[i];
 		route2.end = resAreaRectVertexBig.vertexA[(i+1)%4];
 		route3.start = resAreaRectVertexBig.vertexA[(i+1)%4];
+
 		if(!avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route2, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route3, &resAreaRectVertex) )
@@ -14378,12 +15617,14 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 			}
 		}
 	}
+
 	for(int i = 0; i < 4; i++)
 	{
 		route1.end = resAreaRectVertexBig.vertexA[(i+1)%4];
 		route2.start = resAreaRectVertexBig.vertexA[(i+1)%4];
 		route2.end = resAreaRectVertexBig.vertexA[i];
 		route3.start = resAreaRectVertexBig.vertexA[i];
+
 		if(!avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route2, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route3, &resAreaRectVertex) )
@@ -14398,6 +15639,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 			}
 		}
 	}
+
 	if(bestVertex != -1 && bestVertex_2 != -1)
 	{
 		// »Ö¸´ÎŞÈË»úº½Ïß
@@ -14417,6 +15659,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 		// Ò»°ãº½Â·µã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_type =
 				1;
+
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1],\
 						&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0], sizeof(planning_information_waypoint_information));
 		// ¸ü¸ÄµÚÒ»¸öµãµÄ¾­Î³¶ÈµÈÎª¶¥µã
@@ -14429,6 +15672,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 		// Ò»°ãº½Â·µã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].standby_type =
 				1;
+
 		// °ÑºóÃæµÄº½Â·µã¸³Öµ¼´¿É
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[2],
 				&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],\
@@ -14436,21 +15680,25 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 		// ÈÎÎñµã¼Ó¶ş
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number = \
 				g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.waypoints_number + 2;
+
 		// µãµÄ Ë÷ÒıÖµĞèÒªÍ³Ò»ÉèÖÃ
 		int waypoints_number = blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number;
 		for(int i =0; i< waypoints_number; i++)
 		{
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].hld_idx = i+1;
 		}
+
 		//¼ÆËãÎŞÈË»úÖ®¼äÊÇ·ñ´æÔÚ³åÍ»
     	ConflictResult tmp;
     	avoid_uav1_uav2_second(&tmp);
+
     	//Á½¼Ü»ú»¥Ïà´æÔÚ³åÍ»
     	if(tmp.hasConflict == 1)
     	{
     		//ÎŞÈË»úÖ®¼ä½øĞĞ¹æ±Ü
     		avoid_doulbe_uav(drone_index,tmp);
     	}
+
 		return;
 	}
 	else
@@ -14458,6 +15706,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 		//¼ÆËãÎŞÈË»úÖ®¼äÊÇ·ñ´æÔÚ³åÍ»
     	ConflictResult tmp;
     	avoid_uav1_uav2_second(&tmp);
+
     	//Á½¼Ü»ú»¥Ïà´æÔÚ³åÍ»
     	if(tmp.hasConflict == 1)
     	{
@@ -14471,6 +15720,7 @@ void avoidLineCrashSecondDoulbe(int drone_index)
 	    	//º½Ïß·¢ËÍµ½¸¨Öú¾ö²ßÖØĞÂÉú³É¿ÕÓò
 			send_uav_airway(plan,drone_index);
 		}
+
 	}
 	return ;
 }
@@ -14492,6 +15742,7 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 		int task_index,avoid_index;
 		int other_index;
 		other_index = (drone_index == 0) ? 1:0;
+
 		//·Ö±ğ¼ÆËãÎŞÈË»úµ½º½Ïß³åÍ»µãµÄ¾àÀë
 		lat1 = formationId[drone_index].lat;
 		lon1 = formationId[drone_index].lon;
@@ -14515,7 +15766,9 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 		{
 			return;
 		}
+
 		//¸øĞèÒª¹æ±ÜµÄÎŞÈË»úÔö¼ÓÒ»¸öÅÌĞıµã
+
 		//¼ÆËã×öÈÎÎñµÄÎŞÈË»úµ½³åÍ»µãµÄÊ±¼ä
 		speed = blk_ccc_ofp_024_cunchu[plan][task_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed;
 		time = (rang1 * 1000) /speed;
@@ -14539,6 +15792,7 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 			= g_lineCrashState[avoid_index].avoidancePoint.latitude;
 		blk_ccc_ofp_024_cunchu[plan][avoid_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude
 			= g_lineCrashState[avoid_index].avoidancePoint.longitude;
+
 		// ÅÌĞı
 		blk_ccc_ofp_024_cunchu[plan][avoid_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_type =
 				2;
@@ -14570,6 +15824,7 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 		double speed;//µ¥Î»£ºm/s
 		double time;//µ¥Î»£ºs
 		int other_index;
+
 		other_index = (drone_index == 0) ? 1:0;
 		lat = formationId[other_index].lat;
 		lon = formationId[other_index].lon;
@@ -14578,6 +15833,7 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 		//¼ÆËãÎŞÈË»ú·É¹ı³åÍ»µãµÄÊ±¼ä
 		speed = blk_ccc_ofp_024_cunchu[plan][other_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed;
 		time = (rang * 1000) /speed;
+
 		//¼ÆËãµ±Ç°ÎŞÈË»úĞèÒªÅÌĞıµÄÈ¦Êı
 		double speed_now;//µ¥Î»£ºm/s
 		double time_now;//µ¥Î»£ºs
@@ -14598,6 +15854,7 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 			= g_lineCrashState[drone_index].avoidancePoint.latitude;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude
 			= g_lineCrashState[drone_index].avoidancePoint.longitude;
+
 		// ÅÌĞı
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_type =
 				2;
@@ -14619,8 +15876,8 @@ void avoid_doulbe_uav(int drone_index,ConflictResult tmp)
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].hld_idx = i+1;
 		}
 	}
-}
 
+}
 // µÚ¶ş´Îº½Ïß¹æ±Ü´¦Àí
 int avoidLineCrashSecondLineProc(int drone_index)
 {
@@ -14636,13 +15893,17 @@ int avoidLineCrashSecondLineProc(int drone_index)
 	int bestVertex = -1;
 	int bestVertex_2 = -1;
 	double pathLength;
+
+
 	unsigned int plan = blk_ofp_ccc_038.Plan_ID % 3;
 	if(blk_ofp_ccc_038.Plan_ID <= 0)
 	{
 		return 0;
 	}
+
 	//Ê¹ÓÃ±¸·İµÄÈÎÎñ·ÖÅä½á¹û£¬¸³»ØÔ­Öµ
 	memcpy(&CCC_DPU_data_6_Ofp[plan],&g_lineCrashPlanBak , sizeof(g_lineCrashPlanBak));
+
 	// ÕÒµ½µ±Ç°ÈÎÎñÇø
 	areaId = CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[0].task_sequence_informations[global_stage-1].point_or_area_id;// ÕÒµ½µ±Ç°ÓĞÈË»úµÄÈÎÎñÇø
 	//ÓĞÈË»ú²»´æÔÚÈÎÎñÇø
@@ -14689,6 +15950,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 				manRoute.end.longitude = blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.longitude;// ×îºóÒ»¸öµã»Øµ½ÏÂ±ê0µÄº½µã
 				manRoute.end.latitude = blk_ofp_ccc_018.waypoint_informations[i].waypoint_longitude_and_latitude.latitude;
 			}
+
 			int rtn = 0;
 			rtn = avoidLineCrashIsCrossRect(&manRoute, &UavTaskArea);
 			if(rtn == 1)
@@ -14712,30 +15974,40 @@ int avoidLineCrashSecondLineProc(int drone_index)
 					rectVer.vertexA[m].longitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lon;
 					rectVer.vertexA[m].latitude = blk_ccc_ofp_005[plan].task_are_hf2[i].signal_FC00[j].signal_FC00[m].Index_Lat;
 				}
+
 				resAreaRectCenter = getAreaRectCenterByVertex(&rectVer); // ¶¥µãµ½ÖĞĞÄ
+
 				// ÍâÀ©Á½¹«Àï
 				resAreaRectCenter.lenLat += 2000;
 				resAreaRectCenter.lenLng += 2000;
+
 				// µÃµ½ÍâÀ©ºóµÄ¾ØĞÎ
 				resAreaRectVertex = getAreaRectVertexByCenter(
 						&resAreaRectCenter);
+
 				// ÔÙÍâÀ©500£¨×öÎª¹ı¶É¶¥µã£©
 				resAreaRectCenter.lenLat += 500;
 				resAreaRectCenter.lenLng += 500;
+
 				// µÃµ½ÍâÀ©ºóµÄ¾ØĞÎ
 				resAreaRectVertexBig = getAreaRectVertexByCenter(
 						&resAreaRectCenter);
+
 			}
 		}
 	}
+
+
 	BOOL needDetour = false;
 	// ÎŞÈË»úµ±Ç°Î»ÖÃµ½ÈÎÎñº½ÏßÆğÊ¼µã
 	route1.start.latitude = formationId[drone_index].lat;
 	route1.start.longitude = formationId[drone_index].lon;
 	route1.end.latitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 	route1.end.longitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
+
 	// ¼ì²éÆğµãµ½ÖÕµãµÄÏß¶ÎÊÇ·ñ´©¹ıÕı·½ĞÎÄÚ²¿
 	needDetour = avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex);
+
     // Èç¹û²»ĞèÒªÈÆĞĞ£¬Ö±½ÓÊä³öÆğµãµ½ÖÕµã
     if (!needDetour)
     {
@@ -14753,6 +16025,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// ÓÃÈÎÎñµãµÄ¸ß¶È×÷Îªµ±Ç°ĞüÍ£µãµÄ¸ß¶È,Èç¹ûÈÎÎñµã¸ß¶ÈÎŞĞ§£¬ÔòÓÃÄ¬ÈÏ500µÄ¸ß¶È
 		if(blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height > HEIGHT + 100)
 		{
+
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].height = \
 					blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height;
 		}
@@ -14763,6 +16036,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		//  ËÙ¶È
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed_validity = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed = 35.0;
+
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].type =
 				5;
 		// ÅÌĞı
@@ -14784,6 +16058,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// ÈÎÎñµã¼ÓÒ»
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number = \
 				g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.waypoints_number + 1;
+
 		// µãµÄ Ë÷ÒıÖµĞèÒªÍ³Ò»ÉèÖÃ
 		int waypoints_number = blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number;
 		for(int i =0; i< waypoints_number; i++)
@@ -14792,16 +16067,19 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		}
         return 0;
     }
+
     // ¼ì²éµ¥¶¥µãÊÇ·ñÂú×ã²»´©¹ıÕı·½ĞÎÄÚ²¿£¬ÇÒÕÒµ½×î½üµÄ¶¥µã¾àÀë
     printf("uav_lati %lf uav_longi %lf\n",formationId[drone_index].lat,formationId[drone_index].lon);
 	route1.start.latitude = formationId[drone_index].lat;
 	route1.start.longitude = formationId[drone_index].lon;
 	route2.end.latitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 	route2.end.longitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
+
 	for (int i = 0; i < 4; i++)
 	{
 		route1.end = resAreaRectVertexBig.vertexA[i];
 		route2.start = resAreaRectVertexBig.vertexA[i];
+
 		if(!avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route2, &resAreaRectVertex))
 		{
@@ -14813,10 +16091,12 @@ int avoidLineCrashSecondLineProc(int drone_index)
 			}
 		}
 	}
+
 	if(bestVertex != -1)
 	{
 		// »Ö¸´ÎŞÈË»úº½Ïß
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index], &g_lineCrashUavBak[drone_index], sizeof(g_lineCrashUavBak[drone_index]));
+
 		// ±£ÁôÅÌĞıµã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].hld_idx = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].validity_of_longitude = 1;
@@ -14829,6 +16109,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// ÓÃÈÎÎñµãµÄ¸ß¶È×÷Îªµ±Ç°ĞüÍ£µãµÄ¸ß¶È,Èç¹ûÈÎÎñµã¸ß¶ÈÎŞĞ§£¬ÔòÓÃÄ¬ÈÏ500µÄ¸ß¶È
 		if(blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height > HEIGHT + 100)
 		{
+
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].height = \
 					blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height;
 		}
@@ -14839,6 +16120,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		//  ËÙ¶È
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed_validity = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed = 35.0;
+
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].type =
 				5;
 		// ÅÌĞı
@@ -14853,6 +16135,8 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// °ë¾¶ 1000m
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_radius_valid_bit = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_radius = 800;
+
+
 		// ¿½±´µÚ¶ş¸öµãµ½ÎŞÈË»úº½Ïß
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1],\
 				&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0], sizeof(planning_information_waypoint_information));
@@ -14866,6 +16150,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// Ò»°ãº½Â·µã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].standby_type =
 				1;
+
 		// °ÑºóÃæµÄº½Â·µã¸³Öµ¼´¿É
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[2],
 				&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],\
@@ -14873,14 +16158,17 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// ÈÎÎñµã¼Ó¶ş
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number = \
 				g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.waypoints_number + 2;
+
 		// µãµÄ Ë÷ÒıÖµĞèÒªÍ³Ò»ÉèÖÃ
 		int waypoints_number = blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number;
 		for(int i =0; i< waypoints_number; i++)
 		{
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].hld_idx = i+1;
 		}
+
 		return 0;
 	}
+
 	// ¼ì²éË«¶¥µãÊÇ·ñÂú×ã²»´©¹ıÕı·½ĞÎÄÚ²¿£¬ÇÒÕÒµ½×î½üµÄ¶¥µã¾àÀë
 	minLength = 1e20;
 	bestVertex = -1;
@@ -14889,12 +16177,14 @@ int avoidLineCrashSecondLineProc(int drone_index)
 	route1.start.longitude = formationId[drone_index].lon;
 	route3.end.latitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].latitude;
 	route3.end.longitude = g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].longitude;
+
 	for (int i = 0; i < 4; i++)
 	{
 		route1.end = resAreaRectVertexBig.vertexA[i];
 		route2.start = resAreaRectVertexBig.vertexA[i];
 		route2.end = resAreaRectVertexBig.vertexA[(i+1)%4];
 		route3.start = resAreaRectVertexBig.vertexA[(i+1)%4];
+
 		if(!avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route2, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route3, &resAreaRectVertex) )
@@ -14909,12 +16199,14 @@ int avoidLineCrashSecondLineProc(int drone_index)
 			}
 		}
 	}
+
 	for(int i = 0; i < 4; i++)
 	{
 		route1.end = resAreaRectVertexBig.vertexA[(i+1)%4];
 		route2.start = resAreaRectVertexBig.vertexA[(i+1)%4];
 		route2.end = resAreaRectVertexBig.vertexA[i];
 		route3.start = resAreaRectVertexBig.vertexA[i];
+
 		if(!avoidLineCrashIsCrossRect(&route1, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route2, &resAreaRectVertex) && \
 		   !avoidLineCrashIsCrossRect(&route3, &resAreaRectVertex) )
@@ -14929,10 +16221,12 @@ int avoidLineCrashSecondLineProc(int drone_index)
 			}
 		}
 	}
+
 	if(bestVertex != -1 && bestVertex_2 != -1)
 	{
 		// »Ö¸´ÎŞÈË»úº½Ïß
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index], &g_lineCrashUavBak[drone_index], sizeof(g_lineCrashUavBak[drone_index]));
+
 		// ±£ÁôÅÌĞıµã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].hld_idx = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].validity_of_longitude = 1;
@@ -14945,6 +16239,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// ÓÃÈÎÎñµãµÄ¸ß¶È×÷Îªµ±Ç°ĞüÍ£µãµÄ¸ß¶È,Èç¹ûÈÎÎñµã¸ß¶ÈÎŞĞ§£¬ÔòÓÃÄ¬ÈÏ500µÄ¸ß¶È
 		if(blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height > HEIGHT + 100)
 		{
+
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].height = \
 					blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].height;
 		}
@@ -14955,6 +16250,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		//  ËÙ¶È
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed_validity = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].speed = 35.0;
+
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].type =
 				5;
 		// ÅÌĞı
@@ -14969,6 +16265,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// °ë¾¶ 1000m
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_radius_valid_bit = 1;
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0].standby_radius = 800;
+
 		// ¿½±´µÚÒ»¸öµãµ½ÎŞÈË»úº½ÏßÇ°Èı¸öµã
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1],\
 				&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1], sizeof(planning_information_waypoint_information));
@@ -14982,6 +16279,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// Ò»°ãº½Â·µã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[1].standby_type =
 				1;
+
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[2],\
 						&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0], sizeof(planning_information_waypoint_information));
 		// ¸ü¸ÄµÚÒ»¸öµãµÄ¾­Î³¶ÈµÈÎª¶¥µã
@@ -14994,6 +16292,7 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// Ò»°ãº½Â·µã
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[2].standby_type =
 				1;
+
 		// °ÑºóÃæµÄº½Â·µã¸³Öµ¼´¿É
 		memcpy(&blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[3],
 				&g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],\
@@ -15001,12 +16300,14 @@ int avoidLineCrashSecondLineProc(int drone_index)
 		// ÈÎÎñµã¼ÓÈı
 		blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number = \
 				g_lineCrashUavBak[drone_index].individual_drone_routing_programs.planning_informations.waypoints_number + 3;
+
 		// µãµÄ Ë÷ÒıÖµĞèÒªÍ³Ò»ÉèÖÃ
 		int waypoints_number = blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.waypoints_number;
 		for(int i =0; i< waypoints_number; i++)
 		{
 			blk_ccc_ofp_024_cunchu[plan][drone_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[i].hld_idx = i+1;
 		}
+
 		return 0;
 	}
 	else
@@ -15026,6 +16327,7 @@ BOOL avoidLineCrashIsCrossRect(FlightRoute* route1, AreaRectVertex* resAreaRectV
 	FlightRoute route2;
 	ConflictResult temConflictResult;// ³åÍ»½á¹û·´À¡£¬ÎŞÒâÒå
 	int temResInt = 0;
+
 	for(int i = 0; i< 4;i++)
 	{
 		route2.start = resAreaRectVertex->vertexA[i];
@@ -15036,6 +16338,7 @@ BOOL avoidLineCrashIsCrossRect(FlightRoute* route1, AreaRectVertex* resAreaRectV
 			needDetour = true;
 		}
 	}
+
 	return needDetour;
 }
 
@@ -15047,6 +16350,7 @@ void avoidLineCrashGetCurrentManRect(SubdomainInfo* subdomainInfo)// ÕÒµ½µ±Ç°ÓĞÈ
 	{
 		return;
 	}
+
 	// ÕÒµ½µ±Ç°ÈÎÎñÇø
 	areaId = CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[0].task_sequence_informations[global_stage-1].point_or_area_id;// ÕÒµ½µ±Ç°ÓĞÈË»úµÄÈÎÎñÇø
 	for(int i = 0; i< blk_ccc_ofp_005[plan].task_are;i++)
@@ -15062,6 +16366,7 @@ void avoidLineCrashGetCurrentManRect(SubdomainInfo* subdomainInfo)// ÕÒµ½µ±Ç°ÓĞÈ
 }
 
 /****************************************º½Ïß³åÍ»´¦Àí½áÊø***********************************************/
+
 /****************************************ÔØºÉÖØ¹æ»®´¦Àí¿ªÊ¼***********************************************/
 //ÔØºÉ×´Ì¬¼ì²â
 void payload_detection()
@@ -15085,6 +16390,7 @@ void payload_detection()
 			}
 		}
 	}
+
 }
 
 //ĞŞ¸ÄÈÎÎñ·ÖÅä½á¹û
@@ -15115,15 +16421,18 @@ void payload_task()
 	scheme_generation_state(1,2, 1, 2); // ·µ»Ø·¢²¼×´Ì¬µ½×ÛÏÔ
 	//ÕÒµ½·½°¸±àºÅË÷Òı
 	unsigned int plan = (blk_ofp_ccc_039.Plan_ID) % 3;
+
 	//³õÊ¼»¯ÎŞÈË»úÊı¾İ,½ÓÊÕ±êÖ¾
 	for (int i = 0; i < 4; i++) {
 		memset(&uav_send[i], 0, sizeof(UAV_SEND));
 		memset(&s4D_frame_40[i], 0, sizeof(int));
 		memset(&s4D_frame_38[i], 0, sizeof(int));
 	}
+
 	for (unsigned int i = 0; i < 4; i++) {
 		uav_send[i].drone_id =
 				CCC_DPU_data_6[plan].formation_synergy_mission_programs[i + 1].platform_code;
+
 		//ÕÒµ½ÈÎÎñÀàĞÍ²ÎÊıË÷Òı
 		for (int j = 0; j < 8; j++) {
 			if (task_param[j].type_id
@@ -15145,6 +16454,8 @@ void payload_task()
 					sizeof(planning_information_waypoint_information)
 					* uav_send[i].waypoints_number);
 		}
+
+
 		//·¢ËÍ×¼±¸
 		uav_send[i].send_ready = 1;
 		uav_send[i].first_flag = 0;
@@ -15182,15 +16493,18 @@ void payload_listen()
 			}
 		}
 	}
-}
 
+}
 /****************************************ÔØºÉÖØ¹æ»®´¦Àí½áÊø***********************************************/
+
+
 /*************************ÊÕ¸¨Öú¾ö²ß·½°¸ºÍº½ÏßµÈÌØÊâ´¦ÀíÎ´Óë×ÛÏÔÍ¨ĞÅicd¸ñÊ½£º**********************/
 /*** ÒòÎª¸¨Öú¾ö²ßÊÇ½ôÃÜÅÅÁĞ£¬µ«ÊÇ¶àÎŞÈË»úÇé¿öÏÂ£¬ÒªÇóÍ¬ÎŞÈË»úÒ»´ÎÈÎÎñÄÚ£¬±à¶Ó±àºÅºÍ´æ´¢Î»ÖÃ¶ÔÓ¦ÇÒ²»±ä¡£ËùÒÔ»á³öÏÖ
  * ÓĞÒ»¼Ü»úÊ±£¬²»ÔÙÊı×éµÚÒ»¸öÎ»ÖÃ£¬ËùÒÔ£¬ĞèÒª½«¸¨Öú¾ö²ßÉú³ÉµÄ·½°¸¸ù¾İ±à¶Ó±àºÅµ÷Õûµ½ÏàÓ¦Êı×éÏÂ±êÏÂ£¨×ÛÏÔÊÇ¸ù¾İÏÂ±êÈ¡µÃ£©******
  * ************************************************/
 void castCtasToOfpPlan(BLK_CCC_OFP_019* p_blk_ccc_ofp_019)
 {
+
 	// ²»´æÔÚ·Ç½ôÃÜ±à¶ÓÇé¿ö
 	if(!castCtasToOfpIsNeeded())
 	{
@@ -15199,13 +16513,16 @@ void castCtasToOfpPlan(BLK_CCC_OFP_019* p_blk_ccc_ofp_019)
 		memcpy(&CCC_DPU_data_6_Ofp[plan],p_blk_ccc_ofp_019,sizeof(BLK_CCC_OFP_019));
 		return;
 	}
+
 	// ÌØÊâ´¦Àí£¬ÔÚÓĞ1006µÄÇé¿öÏÂ£¬µ«ÊÇÃ»ÓĞ1005Ê±£¬½«1006·ÖÅäµÄÄÚÈİ¶¼·ÅÔÚÊı×éµÚ¶ş¸öÉÏ
 	memcpy(&p_blk_ccc_ofp_019->formation_synergy_mission_programs[2], &p_blk_ccc_ofp_019->formation_synergy_mission_programs[1], \
 			sizeof(p_blk_ccc_ofp_019->formation_synergy_mission_programs[1]));
 	p_blk_ccc_ofp_019->formation_synergy_mission_programs[2].platform_sn = 2;// ¸ü¸Ä±àºÅ£¨Ò»¸öÈÎÎñÄÚÎŞÈË»ú¶¼¹Ì¶¨£©
+
 	// Çå¿ÕÊı×éµÚÒ»¸ö
 	memset(&p_blk_ccc_ofp_019->formation_synergy_mission_programs[1], 0, \
 				sizeof(p_blk_ccc_ofp_019->formation_synergy_mission_programs[1]));
+
 	// µ÷Õûºó±£´æµ½·¢ËÍ¸øofpµÄ±£´æ·½°¸ÖĞ
 	unsigned int plan = blk_ccc_ofp_019.plan_id % 3;
 	memcpy(&CCC_DPU_data_6_Ofp[plan],p_blk_ccc_ofp_019,sizeof(BLK_CCC_OFP_019));
@@ -15213,13 +16530,16 @@ void castCtasToOfpPlan(BLK_CCC_OFP_019* p_blk_ccc_ofp_019)
 
 void castCtasToOfpLine(BLK_CCC_OFP_024* p_blk_ccc_ofp_024)
 {
+
 	// ²»´æÔÚ·Ç½ôÃÜ±à¶ÓÇé¿ö
 	if(!castCtasToOfpIsNeeded())
 	{
 		return;
 	}
+
 	// ½«1006µÄº½ÏßÄÚµÄ±àºÅ¸Ä³É2
 	p_blk_ccc_ofp_024->individual_drone_routing_programs.drone_serial_number = 2;
+
 }
 
 // ·µ»Øµ±Ç°±à¶ÓÊÇ·ñ´æÔÚ·Ç½ôÃÜÅÅÁĞ£¬£¨ÕâÖÖÇé¿öĞèÒªÌØÊâ´¦Àí£©
@@ -15230,10 +16550,14 @@ BOOL castCtasToOfpIsNeeded()
 	{
 		return TRUE;
 	}
+
 	return FALSE;
 }
 
+
+
 /*************************ÊÕ¸¨Öú¾ö²ß·½°¸ºÍº½ÏßµÈÌØÊâ´¦ÀíÎ´Óë×ÛÏÔÍ¨ĞÅicd¸ñ½áÊø**********************/
+
 // ÕÒµ½µ±Ç°±àºÅ·É»úµÄµ±Ç°ÈÎÎñ
 int getUavCurrentTask(int drone_index)
 {
@@ -15242,8 +16566,16 @@ int getUavCurrentTask(int drone_index)
 	{
 		return;
 	}
+
 	// µ±Ç°ÈÎÎñÀàĞÍ
 	int type = CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[drone_index].task_sequence_informations[global_stage-1].type;
 	return type;
 }
+
+
+
+
+
+
+
 
