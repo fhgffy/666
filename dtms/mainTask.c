@@ -285,6 +285,10 @@ void BDFX_double_rtn()
 	//×¢Èëº½Ïß0x30
 	if(BDFX_double_status == 1)
 	{
+		bdon_uav = 0;
+		bdon_done[0] = 0;
+		bdon_done[1] = 0;
+		bdon_inited = 0;
 		for(int uav = 0 ; uav < 2 ; uav++)
 			double_uav_BDFX(uav);
 	}
