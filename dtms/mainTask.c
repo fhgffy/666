@@ -391,7 +391,15 @@ void BDFX_rtn()
 		static int timeout_BDQH = 0;
 		timeout_BDQH ++ ;
 		int uav_index = DPU_CCC_data_11.drone_num -1;
+		//修复逻辑: 强制添加编队状态检查
+		if (s4D_frame.data[0] == 0x28)
+		{
+		    //仅在双机或单机编队切换等待回报阶段记录
+		    if(BDFX_double_status == 3 || BDFX_status == 3)
+		    {
 		if(s4D_frame_40[uav_index] == 1)
+		    }
+		}
 		{
 			//发布成功
 			s4D_frame_40[uav_index] = 0;
@@ -11101,7 +11109,15 @@ void parseYaoCeZiZhen4D(int uav_index)
 	{
 		if(s4D_frame.result.result == 0)
 		{
+			//修复逻辑: 强制添加检查
+			if (s4D_frame.data[0] == 0x28)
+			{
+			    //仅在双机或单机编队切换等待回报阶段记录
+			    if(BDFX_double_status == 3 || BDFX_status == 3)
+			    {
 			s4D_frame_40[uav_index] = 1;//00=执行成功 | 01=响应条件不满足执行失败 10=设置参数不合理执行失败 | 11=其他原因执行失败
+			    }
+			}
 		}
 		else
 		{
