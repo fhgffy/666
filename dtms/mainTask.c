@@ -278,15 +278,25 @@ void uav_hx()
 }
 
 //双机编队
+static char bdfx_double_hx_point[2] = {0,0};
+static int bdfx_double_cnt_0x30[2] = {4,4};
+static unsigned char bdfx_double_done[2] = {0,0};
 void BDFX_double_rtn()
 {
 	/* Double-UAV BDON(0x40 route switch) fix: send_index can target only one UAV per cycle.
 	 * Old code sent BDON to UAV0 and UAV1 in the same cycle, so the second overwrote the first.
 	 * We now send BDON sequentially across cycles (3 sends per UAV) before waiting for ACK.
 	 */
+	static unsigned char bdfx_inited = 0;
 	static unsigned char bdon_uav = 0;
 	static unsigned char bdon_done[2] = {0,0};
 	static unsigned char bdon_inited = 0;
+
+	// reset helper state when leaving BDFX state
+	if(BDFX_double_status != 1)
+	{
+		bdfx_inited = 0;
+	}
 
 	// reset helper state when leaving BDON state
 	if(BDFX_double_status != 2)
@@ -297,12 +307,29 @@ void BDFX_double_rtn()
 	//注入航线0x30
 	if(BDFX_double_status == 1)
 	{
+		if(!bdfx_inited)
+		{
+			for(int uav = 0 ; uav < 2 ; uav++)
+			{
+				bdfx_double_hx_point[uav] = 0;
+				bdfx_double_cnt_0x30[uav] = 4;
+				bdfx_double_done[uav] = 0;
+			}
+			bdfx_inited = 1;
+		}
+
 		bdon_uav = 0;
 		bdon_done[0] = 0;
 		bdon_done[1] = 0;
 		bdon_inited = 0;
 		for(int uav = 0 ; uav < 2 ; uav++)
 			double_uav_BDFX(uav);
+
+		if(bdfx_double_done[0] && bdfx_double_done[1])
+		{
+			BDFX_double_status = 2;
+			bdfx_inited = 0;
+		}
 	}
 	//编队航点切换0x14
 	else if(BDFX_double_status == 2)
@@ -5576,21 +5603,33 @@ void single_uav_BDON()
 
 void double_uav_BDFX(int uav_index)
 {
+	if(uav_index < 0 || uav_index >= 2)
+	{
+		return;
+	}
+	if(bdfx_double_done[uav_index])
+	{
+		return;
+	}
 
 	//发送九个航点(新增倒数第二个计算点 20251019new，中点与解散点之间新增一个点)，每个航点发送四次
-	static char hx_point = 0;
-	static int cnt_0x30 = 4;
+	char *hx_point = &bdfx_double_hx_point[uav_index];
+	int *cnt_0x30 = &bdfx_double_cnt_0x30[uav_index];
 	if(b2_frame_30[uav_index] != 0)
 	{
 		//发布失败
 		BDFX_double_status = 0;
-		//回收变量
-		hx_point = 0;
-		cnt_0x30 = 4;
+		for(int i = 0 ; i < 2 ; i++)
+		{
+			bdfx_double_hx_point[i] = 0;
+			bdfx_double_cnt_0x30[i] = 4;
+			bdfx_double_done[i] = 0;
+		}
 		//发送发布失败状态到综显
 		sprintf(CCC_DPU_data_0.failreason, "发送编队航线装订指令返回失败");
 		scheme_generation_state(0,2, 3, 2);
 		memset(CCC_DPU_data_0.failreason, 0, 200);
+		return;
 	}
 
 	//航路点基础信息赋值
@@ -5609,21 +5648,21 @@ void double_uav_BDFX(int uav_index)
 	}
 
 	//机场点赋值
-	if(hx_point == 0 || hx_point == 8)
+	if((*hx_point) == 0 || (*hx_point) == 8)
 	{
 		//高度速度
 		temp.height = 25 / gaodu_scale;
 		temp.speed = 0/ speed_scale;
-		temp.hd = hx_point+1;
+		temp.hd = (*hx_point)+1;
 		temp.lat = get_airport_lat(uav_index) / lat_scale;//260201
 		temp.lon = get_airport_lon(uav_index) / lon_scale;//260201
 		temp.group_id = 5;//群组
 		temp.team_id = 3;//队形
 		//机场点
 		temp.tezhenzi[0] = 0x07;
-		cnt_0x30--;
+		(*cnt_0x30)--;
 	}
-	else if(hx_point == 7)
+	else if((*hx_point) == 7)
 	{
 		//高度速度
 		if(CCC_DPU_data_3.drone_specific_informations[uav_index].platform_num == load_file.lead_uav_id)
@@ -5633,7 +5672,7 @@ void double_uav_BDFX(int uav_index)
 		temp.speed = 25/ speed_scale;
 
 		//倒数第二个计算点，第八个点
-		temp.hd = hx_point+1;
+		temp.hd = (*hx_point)+1;
 		temp.tezhenzi[0] = 0;
 		temp.group_id = 5;//群组
 		temp.team_id = 3;//队形
@@ -5642,33 +5681,35 @@ void double_uav_BDFX(int uav_index)
 		Point last_second;
 		//260201
 		last_second = last_second_point(get_airport_lat(uav_index),get_airport_lon(uav_index),
-				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[hx_point -2].latitude,
-				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[hx_point -2].longitude);
+				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -2].latitude,
+				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -2].longitude);
 		temp.lat = last_second.lat / lat_scale;
 		temp.lon = last_second.lon / lon_scale;
-		cnt_0x30--;
+		(*cnt_0x30)--;
 	}
-	else if(hx_point == 9)
+	else if((*hx_point) == 9)
 	{
 		//发送完毕退出装订
-		hx_point = 0;
-		BDFX_double_status = 2;
+		(*hx_point) = 0;
+		(*cnt_0x30) = 4;
+		bdfx_double_done[uav_index] = 1;
+		return;
 	}
 	else
 	{
-		temp.hd = hx_point+1;
+		temp.hd = (*hx_point)+1;
 		unsigned int plan = blk_ofp_ccc_039.Plan_ID % 3;
 		temp.lat =
-				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[hx_point -1].latitude / lat_scale;
+				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -1].latitude / lat_scale;
 		temp.lon =
-				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[hx_point -1].longitude / lon_scale;
+				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -1].longitude / lon_scale;
 		//编队飞行高度：长机460，僚机660（按平台号判断，不依赖数组顺序）
 		if(CCC_DPU_data_3.drone_specific_informations[uav_index].platform_num == load_file.lead_uav_id)
 			temp.height = 460 / gaodu_scale;
 		else
 			temp.height = 660 / gaodu_scale;
 		temp.speed = 35/ speed_scale;
-		if(hx_point == 1)
+		if((*hx_point) == 1)
 		{
 			//第二个航点，盘旋点
 			temp.tezhenzi[0] = 0x02;
@@ -5684,7 +5725,7 @@ void double_uav_BDFX(int uav_index)
 			temp.group_id = 5;//群组
 			temp.team_id = 3;//队形
 		}
-		else if(hx_point == 2)
+		else if((*hx_point) == 2)
 		{
 			//第三个航点，过顶点
 			temp.tezhenzi[0] = 0x01;
@@ -5692,14 +5733,14 @@ void double_uav_BDFX(int uav_index)
 			temp.team_id = 3;//队形
 			temp.task_type = 0x1;//过顶点
 		}
-		else if(hx_point == 3 || hx_point == 4 || hx_point == 5)
+		else if((*hx_point) == 3 || (*hx_point) == 4 || (*hx_point) == 5)
 		{
 			//第四~六个航点 队形保持点
 			temp.tezhenzi[0] = 0;
 			temp.group_id = 5;//群组
 			temp.team_id = 3;//队形
 		}
-		else if(hx_point == 6)
+		else if((*hx_point) == 6)
 		{
 			//第七个航点
 			temp.tezhenzi[0] = 0x02;
@@ -5716,19 +5757,18 @@ void double_uav_BDFX(int uav_index)
 			temp.team_id = 3;//队形
 			temp.task_type = 0x03;//恢复航线，编队解散点
 		}
-		cnt_0x30--;
+		(*cnt_0x30)--;
 	}
 	//每个点发四次
-	if(cnt_0x30 < 0)
+	if((*cnt_0x30) < 0)
 	{
-		hx_point++;
-		cnt_0x30 = 4;
+		(*hx_point)++;
+		(*cnt_0x30) = 4;
 	}
 	//赋值后拷贝进数据库帧中
 	memcpy(&blk_ccc_kkl_008_026_027_028[uav_index].tail.dataBase.order_data,&temp ,sizeof(tail_0x30));
 
 }
-
 void double_uav_BDON(int uav_index)
 {
 	//无人机编队指令帧临时定义 100~143 数据库管理帧
@@ -8228,7 +8268,7 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 //领航
 	if(start_lh_flag[uav_index] == 1)
 	{
-		static int lh_send_cnt = 0;
+		static int lh_send_cnt[UAV_MAX_NUM] = {0,0,0,0};
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[0] = 0x16;
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[1] = 0x16;
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[2] = 0x16;
@@ -8239,16 +8279,16 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 		memcpy(&blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data,&temp,sizeof(temp));
 
 		//发送5拍
-		lh_send_cnt ++;
-		if(lh_send_cnt > 5)
+		lh_send_cnt[uav_index] ++;
+		if(lh_send_cnt[uav_index] > 5)
 		{
-			lh_send_cnt = 0;
+			lh_send_cnt[uav_index] = 0;
 			start_lh_flag[uav_index] = 2;
 		}
 	}
 	if(start_tclh_flag[uav_index] == 1)
 	{
-		static int tclh_send_cnt = 0;
+		static int tclh_send_cnt[UAV_MAX_NUM] = {0,0,0,0};
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[0] = 0x14;
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[1] = 0x14;
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_code[2] = 0x14;
@@ -8273,10 +8313,10 @@ void init_blk_ccc_kkl_008_026_027_028_tail(int uav_index)
 		blk_ccc_kkl_008_026_027_028[uav_index].tail.baseControl.yt_order_data[1] = exit_point;
 
 		//发送5拍
-		tclh_send_cnt ++;
-		if(tclh_send_cnt > 5)
+		tclh_send_cnt[uav_index] ++;
+		if(tclh_send_cnt[uav_index] > 5)
 		{
-			tclh_send_cnt = 0;
+			tclh_send_cnt[uav_index] = 0;
 			start_tclh_flag[uav_index] = 2;
 		}
 	}
