@@ -7193,6 +7193,11 @@ void uav_simulation() {
 					b2_frame_14[uav] = 0;
 					s4D_frame_40[uav] = 0;
 				}
+				// flush stale CTAS feedback to prevent false failure after success
+				dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_011.niConnectionId);
+				dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_009.niConnectionId);
+				g_fabu_active = 0;
+				uav_hl_confirm = 0;
 				scheme_generation_state(2,2, 1, 2); // 返回发布状态到综显
 				BDFX_double_status = 1;
 				g_bdfx_double_plan_id = blk_ofp_ccc_039.Plan_ID;

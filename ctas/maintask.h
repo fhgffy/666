@@ -124,7 +124,7 @@ void single_area_CTSS();//单任务区磁探搜索
 void single_area_GDSS();//单任务区光电搜索
 void single_uav_FBZS();//单无人机浮标帧收规划
 void single_uav_BDFX();//单无人机编队飞行规划
-void double_uav_BDFX();//双机编队飞行规划
+int double_uav_BDFX();//双机编队飞行规划
 void single_uav_CTGZ();//单无人机磁探跟踪规划
 void single_uav_CTSS();//单无人机磁探搜索规划
 void single_uav_GDSS();//单无人机光电搜索规划

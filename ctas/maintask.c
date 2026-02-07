@@ -4638,14 +4638,14 @@ void signal_moduel()
 			//双机编队
 			else if(blk_dtms_ctas_002.task_type == 9)
 			{
-				double_uav_BDFX();
+				int bdfx_ret = double_uav_BDFX();
 				//解算完成反馈
 				data_length = sizeof(int);
-				int rtn = 9527;
+				int rtn = (bdfx_ret == 0) ? 9527 : bdfx_ret;
 				Send_Message(DDSTables.BLK_CTAS_DTMS_009.niConnectionId, 0, &transaction_id, &rtn, &message_type_id, data_length, &enRetCode);
 				if(enRetCode == 0)
 				{
-					printf("BDFX jie suan success\n");
+					printf("BDFX jie suan %s ret=%d\n", (bdfx_ret==0)?"success":"FAILED", bdfx_ret);
 				}
 			}
 			//磁探跟踪
@@ -6138,7 +6138,7 @@ void single_uav_BDFX()
 
 }
 //双机编队
-void double_uav_BDFX()
+int double_uav_BDFX()
 {
 	//将收到的战术战法指令赋值给规划所需使用的任务区、有无人机等数据
 	init_zhanshutuijians_single();
@@ -6230,11 +6230,8 @@ void double_uav_BDFX()
 			message_type_id = 0;
 			data_length = sizeof(int);
 			Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &rtn, &message_type_id, data_length, &enRetCode);
-			if(enRetCode == 0)
-			{
-				printf("BDFX erro\n");
-				return;
-			}
+			printf("BDFX erro distance<50\n");
+			return -6;
 		}
 		double dist_start_to_assembly = calculate_distances(goal_point1.Lat,goal_point1.Lon,UAV_aircraft.Lat,UAV_aircraft.Lon);
 		//无人机位置与集结点位置小于2km,260129
@@ -6244,11 +6241,8 @@ void double_uav_BDFX()
 			message_type_id = 0;
 			data_length = sizeof(int);
 			Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &rtn, &message_type_id, data_length, &enRetCode);
-			if(enRetCode == 0)
-			{
-				printf("BDFX erro\n");
-				return;
-			}
+			printf("BDFX erro dist<2km\n");
+			return -7;
 		}
 		//无人机位置与集结点位置大于15km,260131
 		if(dist_start_to_assembly > 15)
@@ -6257,11 +6251,8 @@ void double_uav_BDFX()
 			message_type_id = 0;
 			data_length = sizeof(int);
 			Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &rtn, &message_type_id, data_length, &enRetCode);
-			if(enRetCode == 0)
-			{
-				printf("BDFX erro\n");
-				return;
-			}
+			printf("BDFX erro dist>15km\n");
+			return -8;
 		}
 		//编队飞行算法
 		BDFX_double_init(UAV_aircraft,goal_point1,goal_point2,uav_index);
@@ -6280,11 +6271,8 @@ void double_uav_BDFX()
 				//异常反馈
 				data_length = sizeof(int);
 				Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
-				if(enRetCode == 0)
-				{
-					printf("airway_area erro\n");
-					return;
-				}
+				printf("airway_area erro ret=%d\n", area_rtn);
+				return area_rtn;
 			}
 		}
 	}
@@ -6308,6 +6296,7 @@ void double_uav_BDFX()
 		//航线发送,下标为1防止多加入无人机当前航路点
 		send_drone_route_confirmation(uav_index,1);
 	}
+	return 0;
 }
 //应召磁探跟踪
 void yz_CTGZ()
