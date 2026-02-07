@@ -67,6 +67,9 @@ static unsigned char g_fabu_active = 0;
 static unsigned int g_fabu_plan_id = 0;
 static unsigned int g_fabu_route_type = 0;
 static unsigned int g_fabu_stage_id = 0;
+static int g_fabu_send_uav_num = 0;
+static int g_fabu_switch_timeout = 0;
+static int g_fabu_switch_ack_cnt = 0;
 
 static float get_bdfx_double_target_height(unsigned int plan, int uav_index)
 {
@@ -5566,6 +5569,9 @@ void cover_inject(int uav_index)
 	frame_count = 1;
 	track_point_count = -1;
 	send_count = 0;
+	g_fabu_send_uav_num = 0;
+	g_fabu_switch_timeout = 0;
+	g_fabu_switch_ack_cnt = 0;
 	single_uav_flag = 33;
 }
 void single_uav_BDFX()
@@ -6808,9 +6814,12 @@ void faBuProc()
 		frame_count = 1;
 		track_point_count = -1;
 		send_count = 0;
+		g_fabu_send_uav_num = 0;
+		g_fabu_switch_timeout = 0;
+		g_fabu_switch_ack_cnt = 0;
 	}
 
-	static int send_uav_num = 0;				//发送的有效无人机数量
+	//发送的有效无人机数量（全局复位变量）
 	//判断无人机信息是否都录入完成并且队列中有还未发送的数据
 	if (uav_hl_confirm == 0) {
 		for (int i = 0; i < 4; i++) {
@@ -6818,7 +6827,7 @@ void faBuProc()
 				//进入发送，保存索引（每次发一架无人机的相关信息，不交叉发）
 				uav_hl_confirm = 1;
 				send_index = i;
-				send_uav_num++;
+				g_fabu_send_uav_num++;
 				//20250818new 加入首尾机场点和计算点
 				uav_send[send_index].waypoints_number += 3;
 				break;
@@ -6847,7 +6856,7 @@ void faBuProc()
 				scheme_generation_state(1,2, 3, 2);
 			}
 			memset(CCC_DPU_data_0.failreason, 0, 200);
-				send_uav_num = 0;
+				g_fabu_send_uav_num = 0;
 				g_fabu_active = 0;
 				printf("0x38 failed! %d\n", s4D_frame_38[send_index]);
 
@@ -6880,10 +6889,10 @@ void faBuProc()
 	}
 	//等待切换成功
 	else if (uav_hl_confirm == 2) {
-		static int timeout = 0;
-		timeout++;
+
+		g_fabu_switch_timeout++;
 		for (int i = 0; i < 4; i++) {
-			static int cnt = 0;
+
 			//装订成功
 			if (s4D_frame_40[i] == 1 && send_area[i] == 0) {
 				//找到方案编号索引
@@ -6912,16 +6921,16 @@ void faBuProc()
 				//无人机注入成功，可应用空域
 				send_area[i] = 1;
 
-				cnt++;
+				g_fabu_switch_ack_cnt++;
 				s4D_frame_40[i] = 0;
 				//切换成功数量与发送的有效无人机数量一致
-				if (cnt == send_uav_num) {
+				if (g_fabu_switch_ack_cnt == g_fabu_send_uav_num) {
 					//保存注入成功的无人机数量
-					uav_success = send_uav_num;
+					uav_success = g_fabu_send_uav_num;
 					//初始化变量
-					cnt = 0;
-					send_uav_num = 0;
-					timeout = 0;
+					g_fabu_switch_ack_cnt = 0;
+					g_fabu_send_uav_num = 0;
+					g_fabu_switch_timeout = 0;
 					uav_hl_confirm = 0;
 					//保存运行方案id
 					planning_id = fabu_plan_id;
@@ -7054,9 +7063,9 @@ void faBuProc()
 				//装订出错后初始化
 				s4D_frame_40[i] = 0;
 				//初始化变量
-				cnt = 0;
-				send_uav_num = 0;
-				timeout = 0;
+				g_fabu_switch_ack_cnt = 0;
+				g_fabu_send_uav_num = 0;
+				g_fabu_switch_timeout = 0;
 				uav_hl_confirm = 0;
 
 //				for(int j = 0 ; j < UAV_MAX_NUM; j ++)
@@ -7080,7 +7089,7 @@ void faBuProc()
 
 				//退出函数
 				return;
-			} else if (timeout > 200) {
+			} else if (g_fabu_switch_timeout > 200) {
 				//初始化无人机数据
 				for (int i = 0; i < 4; i++) {
 					memset(&uav_send[i], 0, sizeof(UAV_SEND));
@@ -7106,9 +7115,9 @@ void faBuProc()
 				//装订出错后初始化
 				s4D_frame_40[i] = 0;
 				//初始化变量
-				cnt = 0;
-				send_uav_num = 0;
-				timeout = 0;
+				g_fabu_switch_ack_cnt = 0;
+				g_fabu_send_uav_num = 0;
+				g_fabu_switch_timeout = 0;
 				uav_hl_confirm = 0;
 
 //				for(int j = 0 ; j < UAV_MAX_NUM; j ++)
@@ -7187,17 +7196,34 @@ void uav_simulation() {
 			if(restart_bdfx == 1)
 			{
 				//初始化双机编队回报
-				for(int uav = 0 ; uav < 2 ; uav ++)
+				for(int uav = 0 ; uav < 4 ; uav ++)
 				{
 					b2_frame_30[uav] = 0;
 					b2_frame_14[uav] = 0;
-					s4D_frame_40[uav] = 0;
+                    s4D_frame_40[uav] = 0;
+                    memset(&uav_send[uav], 0, sizeof(UAV_SEND));
+                    s4D_frame_38[uav] = 0;
+                    send_area[uav] = 0;
+                    hx_change_uav_id[uav] = 0;
 				}
 				// flush stale CTAS feedback to prevent false failure after success
 				dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_011.niConnectionId);
 				dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_009.niConnectionId);
 				g_fabu_active = 0;
-				uav_hl_confirm = 0;
+                g_fabu_plan_id = 0;
+                g_fabu_route_type = 0;
+                g_fabu_stage_id = 0;
+                g_fabu_send_uav_num = 0;
+                g_fabu_switch_timeout = 0;
+                g_fabu_switch_ack_cnt = 0;
+                uav_hl_confirm = 0;
+                uav_change = 0;
+                send_flag = 0;
+                count = 0;
+                frame_count = 1;
+                track_point_count = -1;
+                send_count = 0;
+                BDFX_status = 0;
 				scheme_generation_state(2,2, 1, 2); // 返回发布状态到综显
 				BDFX_double_status = 1;
 				g_bdfx_double_plan_id = blk_ofp_ccc_039.Plan_ID;
@@ -12360,7 +12386,7 @@ void parse_blk_piu_ccc_006_key03(int uav_index)
 void parseYaoCeZiZhen4D(int uav_index)
 {
 	// 同步码判断 待确认大小端转换是否正确
-	if(s4D_frame.syn_code_0 != 0x55 && s4D_frame.syn_code_1 != 0xAA)
+	if(s4D_frame.syn_code_0 != 0x55 || s4D_frame.syn_code_1 != 0xAA)
 	{
 		return;
 	}
@@ -16805,6 +16831,9 @@ void payload_task()
 	frame_count = 1;
 	track_point_count = -1;
 	send_count = 0;
+	g_fabu_send_uav_num = 0;
+	g_fabu_switch_timeout = 0;
+	g_fabu_switch_ack_cnt = 0;
 }
 
 //监测正在飞行的无人机载荷是否失效
