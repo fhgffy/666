@@ -42,9 +42,9 @@
 #define LON_A_UAV2  108.772173    // 1006机机场经度20260201
 #define LAT_A_UAV2  19.143703     // 1006机机场纬度20260201
 
-//塔哈空域中心
-#define	CENTER_LAT 47.533611
-#define	CENTER_LON 124.2644
+//空域中心（与当前机场中心一致）
+#define CENTER_LAT LAT_A
+#define CENTER_LON LON_A
 //TODO 4架无人机？
 
 //设备定义

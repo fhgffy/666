@@ -11,6 +11,22 @@
 #include "comm_func_crc16.h"//20260201
 
 #define CONTROLTEM 0
+#define PIU_VIEW_GAIN 10
+#define PIU_CMD_RESEND_CYCLES 2
+
+static short clamp_int_to_short(int value)
+{
+	if(value > 32767)
+	{
+		return 32767;
+	}
+	if(value < -32768)
+	{
+		return -32768;
+	}
+	return (short)value;
+}
+
 /* flush all pending DDS samples on a topic (avoid using stale samples after failure) */
 static void dtms_flush_dds_topic(int conn_id)
 {
@@ -41,6 +57,95 @@ static void dtms_flush_dds_topic(int conn_id)
 // 目标融合相关函数
 int sendSfsMsgToQuePort(unsigned char* msgA, long int const lenSend);// 向融合发送目标信息
 extern int sendVoiceMsgToDtps(unsigned char* msgA, long int const lenSend);//转发给DTPS
+
+// 双机编队发布上下文（避免发布过程中被新的039覆盖）
+static unsigned int g_bdfx_double_plan_id = 0;
+static int g_bdfx_double_busy_cnt = 0;
+
+// 普通/反潜发布上下文（避免重复039导致反复重置）
+static unsigned char g_fabu_active = 0;
+static unsigned int g_fabu_plan_id = 0;
+static unsigned int g_fabu_route_type = 0;
+static unsigned int g_fabu_stage_id = 0;
+
+static float get_bdfx_double_target_height(unsigned int plan, int uav_index)
+{
+	unsigned int drone_id = 0;
+	if(plan < 3 && uav_index >= 0 && uav_index < UAV_MAX_NUM)
+	{
+		drone_id = blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.drone_num;
+	}
+	if(drone_id == 0 && uav_index >= 0 && uav_index < UAV_MAX_NUM)
+	{
+		drone_id = CCC_DPU_data_3.drone_specific_informations[uav_index].platform_num;
+	}
+
+	if(load_file.lead_uav_id != 0 && drone_id == load_file.lead_uav_id)
+	{
+		return 460.0f;
+	}
+	if(load_file.lead_uav_id != 0 && drone_id != 0)
+	{
+		return 660.0f;
+	}
+	return (uav_index == 0) ? 460.0f : 660.0f;
+}
+
+static void sync_bdfx_double_plan_height(unsigned int plan)
+{
+	if(plan >= 3)
+	{
+		return;
+	}
+	for(int uav_index = 0; uav_index < 2; uav_index++)
+	{
+		planning_informations *p_plan =
+				&blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations;
+		unsigned short point_num = p_plan->waypoints_number;
+		if(point_num == 0)
+		{
+			continue;
+		}
+		if(point_num > 250)
+		{
+			point_num = 250;
+		}
+
+		float target_height = get_bdfx_double_target_height(plan, uav_index);
+		p_plan->mission_height = (unsigned int)target_height;
+		for(unsigned short point_index = 0; point_index < point_num; point_index++)
+		{
+			p_plan->planning_information_waypoint_informations[point_index].height_validity = 1;
+			p_plan->planning_information_waypoint_informations[point_index].height = target_height;
+		}
+	}
+}
+static int should_sync_bdfx_double_plan_height(unsigned int plan)
+{
+	if(plan >= 3)
+	{
+		return 0;
+	}
+	if(CCC_DPU_data_6_Ofp[plan].plan_release_mode == 6)
+	{
+		return 1;
+	}
+
+	planning_informations *p_plan0 =
+			&blk_ccc_ofp_024_cunchu[plan][0].individual_drone_routing_programs.planning_informations;
+	planning_informations *p_plan1 =
+			&blk_ccc_ofp_024_cunchu[plan][1].individual_drone_routing_programs.planning_informations;
+	if(p_plan0->waypoints_number == 0 || p_plan1->waypoints_number == 0)
+	{
+		return 0;
+	}
+
+	if(p_plan0->mission_type == 9 && p_plan1->mission_type == 9)
+	{
+		return 1;
+	}
+	return 0;
+}
 
 /********************************************** 仿真完整功能封装模块 ***********************************/
 // 周期接收有人机导航书数据 模拟检测综显上线
@@ -383,16 +488,48 @@ void BDFX_double_rtn()
 			BDFX_double_status = 0;
 			timeout_BDQH = 0;
 			//找到方案编号索引，没有运行中的方案plan为零
-			unsigned int plan = blk_ofp_ccc_039.Plan_ID % 3;
+				unsigned int plan = g_bdfx_double_plan_id % 3;
+				sync_bdfx_double_plan_height(plan);
+				planning_id = g_bdfx_double_plan_id;
+				//双机编队发布成功后，优先以发送给OFP的方案为准，避免重启后运行方案不同步导致航线消失
+			CCC_DPU_data_6_Ofp[plan].plan_release_mode = 6;
+			memcpy(&CCC_DPU_data_6[plan],&CCC_DPU_data_6_Ofp[plan],sizeof(BLK_CCC_OFP_019));
+			// sync double-uav task info for DPU task type/time display
+			for(int uav = 0; uav < 2; uav++)
+			{
+				int points_number =
+						blk_ccc_ofp_024_cunchu[plan][uav].individual_drone_routing_programs.planning_informations.waypoints_number;
+				int max_points = (int)(sizeof(uav_route[uav].waypoint) / sizeof(uav_route[uav].waypoint[0]));
+				if(points_number <= 0)
+				{
+					uav_route[uav].tasking = 0;
+					continue;
+				}
+				if(points_number > max_points)
+				{
+					points_number = max_points;
+				}
+
+				uav_route[uav].tasking = 1;
+				uav_route[uav].task_type =
+						blk_ccc_ofp_024_cunchu[plan][uav].individual_drone_routing_programs.planning_informations.mission_type;
+				uav_route[uav].task_id =
+						blk_ccc_ofp_024_cunchu[plan][uav].individual_drone_routing_programs.planning_informations.subtask_ID_number;
+				uav_route[uav].hull_number = points_number + 3;
+				memcpy(&uav_route[uav].waypoint[0],
+						&blk_ccc_ofp_024_cunchu[plan][uav].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],
+						sizeof(planning_information_waypoint_information) * points_number);
+			}
 			// 发送运行分配结果
-			memcpy(&blk_ccc_ofp_017, &CCC_DPU_data_6[plan],
+			memcpy(&blk_ccc_ofp_017, &CCC_DPU_data_6_Ofp[plan],
 					sizeof(BLK_CCC_OFP_017));
 //			if(blk_ccc_ofp_019.platform_num>=2){//双机编队判断
 			blk_ccc_ofp_017.plan_release_mode = 6;
 //			}
 
 			send_blk_ccc_ofp_017();
-			// 再次发送无人机航线（运行方案）
+				printf("BDFX finish plan=%u mode=%u\n",g_bdfx_double_plan_id,blk_ccc_ofp_017.plan_release_mode);
+				// 再次发送无人机航线（运行方案）
 			send_blk_ccc_ofp_024(plan);
 			scheme_generation_state(2,2, 2, 2);            //发送发布完成状态到综显
 		}
@@ -448,6 +585,9 @@ void BDFX_rtn()
 			unsigned int plan = (planning_id) % 3;
 			//存入任务分配结果
 			memcpy(&CCC_DPU_data_6[plan],&blk_ccc_ofp_019,sizeof(BLK_CCC_OFP_019));
+			//单无人机编队发布成功后，固化运行方案模式
+			CCC_DPU_data_6[plan].plan_release_mode = 1;
+			CCC_DPU_data_6_Ofp[plan].plan_release_mode = 1;
 			//存入单无人机航线
 			memcpy(&blk_ccc_ofp_024_cunchu[plan][uav_index],&blk_ccc_ofp_024_single[uav_index],sizeof(BLK_CCC_OFP_024_cunchu));
 			// 发送单无人机务运行分配结果
@@ -2242,6 +2382,7 @@ void send_blk_ccc_ofp_021()
 void send_blk_ccc_ofp_017()
 {
 	data_length = sizeof(BLK_CCC_OFP_017);
+	printf("send017 plan_id=%u mode=%u platform_num=%u\n",blk_ccc_ofp_017.plan_id,blk_ccc_ofp_017.plan_release_mode,blk_ccc_ofp_017.platform_num);
 	// 综显发送预览方案信息
 	Send_Message(DDSTables.CCC_DPU_6.niConnectionId,0,&transaction_id,&(blk_ccc_ofp_017.plan_id), &message_type_id, data_length, &enRetCode);
 	if(enRetCode == 0){
@@ -2592,6 +2733,10 @@ void send_blk_ccc_ofp_024(unsigned int plan)
 		// 注 PAD_send_UDPsocket.writeDatagram(send_array,PAD_send_IPadress,PAD_send_Port);
 	}else{
 		// // printf("pad 未在线 无法发送";
+	}
+	if(should_sync_bdfx_double_plan_height(plan))
+	{
+		sync_bdfx_double_plan_height(plan);
 	}
 	for(int i = 0 ; i < 4 ; i ++)
 	{
@@ -5677,8 +5822,8 @@ void double_uav_BDFX(int uav_index)
 		temp.group_id = 5;//群组
 		temp.team_id = 3;//队形
 		//计算倒数第二个点
-		unsigned int plan = blk_ofp_ccc_039.Plan_ID % 3;
-		Point last_second;
+			unsigned int plan = g_bdfx_double_plan_id % 3;
+			Point last_second;
 		//260201
 		last_second = last_second_point(get_airport_lat(uav_index),get_airport_lon(uav_index),
 				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -2].latitude,
@@ -5698,8 +5843,8 @@ void double_uav_BDFX(int uav_index)
 	else
 	{
 		temp.hd = (*hx_point)+1;
-		unsigned int plan = blk_ofp_ccc_039.Plan_ID % 3;
-		temp.lat =
+			unsigned int plan = g_bdfx_double_plan_id % 3;
+			temp.lat =
 				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -1].latitude / lat_scale;
 		temp.lon =
 				blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[(*hx_point) -1].longitude / lon_scale;
@@ -5932,6 +6077,8 @@ void single_uav_lhcs(unsigned short uav_index)
 //    }
 //}
 void single_mission_target_plan(){
+	static int ctas004_recv_total = 0;
+	static int ctas004_idle_cnt = 0;
 
 	/* 单任务区/目标规划信息 */
 	message_size = RECV_MAX_SIZE;
@@ -5947,6 +6094,8 @@ void single_mission_target_plan(){
 		// reset state for new planning request, and flush related CTAS feedback topics
 		single_mission_target_flag = 0;
 		ctas_calc = 0;
+		ctas004_recv_total = 0;
+		ctas004_idle_cnt = 0;
 		memset(&CCC_DPU_data_0.failreason,0,sizeof CCC_DPU_data_0.failreason);
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_011.niConnectionId);
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_007.niConnectionId);
@@ -6084,6 +6233,8 @@ void single_mission_target_plan(){
 				scheme_generation_state(2,2,0,3);// 返回方案编辑状态到综显，生成失败 20260130
 				// keep failreason until next request reset to avoid stale DDS timing
 				single_uav_flag = 0;
+				ctas004_recv_total = 0;
+				ctas004_idle_cnt = 0;
 				single_mission_target_flag = 0;
 				dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_011.niConnectionId);
 				dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_007.niConnectionId);
@@ -6151,49 +6302,62 @@ void single_mission_target_plan(){
 				}
 			}
 			single_mission_target_flag = 3;
+			ctas004_recv_total = 0;
+			ctas004_idle_cnt = 0;
 		}
 	}
 	//接收无人机航线保存、转发
 	else if(single_mission_target_flag == 3)
-	{
-		//接收三个方案的航线
-		for(int j = 0 ; j < 3 ; j ++)
 		{
-			//接收攻击安全区
-			recv_blk_ctas_dtms_047();		   // 攻击安全区
-			for(int i = 0 ; i < 2 ; i ++)
+			int recv_cnt_this_cycle = 0;
+			//接收三个方案的航线
+			for(int j = 0 ; j < 3 ; j ++)
 			{
-				BLK_CCC_OFP_024 temp;
-				message_size = RECV_MAX_SIZE;
-				Receive_Message(DDSTables.BLK_CTAS_DTMS_004.niConnectionId, 0, &transaction_id, &temp, &message_type_id, &message_size, &enRetCode);
-				if(enRetCode==0){
-					castCtasToOfpLine(&temp);
-					unsigned int plan = (temp.program_number) % 3;
-					unsigned int id = (temp.individual_drone_routing_programs.drone_serial_number - 1);
-					unsigned int index = temp.individual_drone_routing_programs.planning_informations.packet_id *25;
-					// 保存信息
-					memcpy(&blk_ccc_ofp_024_cunchu[plan][id],&temp,9 + 10 + 26);
-					// 保存航路点信息
-					memcpy(&blk_ccc_ofp_024_cunchu[plan][id].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index]
-							,&temp.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0]
-						  ,sizeof(planning_information_waypoint_information)*25);
-					//发送航线
-					send_blk_ccc_ofp_024(plan); // 发送无人机信息，航线生成完成
+				//接收攻击安全区
+				recv_blk_ctas_dtms_047();		   // 攻击安全区
+				for(int i = 0 ; i < 2 ; i ++)
+				{
+					BLK_CCC_OFP_024 temp;
+					message_size = RECV_MAX_SIZE;
+					Receive_Message(DDSTables.BLK_CTAS_DTMS_004.niConnectionId, 0, &transaction_id, &temp, &message_type_id, &message_size, &enRetCode);
+					if(enRetCode==0){
+						castCtasToOfpLine(&temp);
+						unsigned int plan = (temp.program_number) % 3;
+						unsigned int id = (temp.individual_drone_routing_programs.drone_serial_number - 1);
+						unsigned int index = temp.individual_drone_routing_programs.planning_informations.packet_id *25;
+						// 保存信息
+						memcpy(&blk_ccc_ofp_024_cunchu[plan][id],&temp,9 + 10 + 26);
+						// 保存航路点信息
+						memcpy(&blk_ccc_ofp_024_cunchu[plan][id].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[index]
+								,&temp.individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0]
+							  ,sizeof(planning_information_waypoint_information)*25);
+						//发送航线
+						send_blk_ccc_ofp_024(plan); // 发送无人机信息，航线生成完成
+						recv_cnt_this_cycle++;
+					}
 				}
 			}
-			//发送航线
-//				unsigned int plan = blk_ccc_ofp_019.plan_id % 3;
-//				//保存有人机航路信息
-//				for(int i = 0 ; i < 16 ; i ++)
-//				{
-//					receive_zhanfa_hl(); //完成对航路信息的文件保存
-//				}
-//				send_blk_ccc_ofp_018(DDSTables.CCC_DPU_7.niConnectionId,plan,0); // 发送有人机通航点 通用航路点分两次发送 第1包40个航点 和 第2包35个航点
-		}
 
-		single_mission_target_flag = 4;
-	}
-	else if(single_mission_target_flag == 4)
+			if(recv_cnt_this_cycle > 0)
+			{
+				ctas004_recv_total += recv_cnt_this_cycle;
+				ctas004_idle_cnt = 0;
+			}
+			else
+			{
+				ctas004_idle_cnt++;
+			}
+
+			// 有接收后等待若干空闲周期再结束，确保预览航线能稳定显示
+			if((ctas004_recv_total > 0 && ctas004_idle_cnt > 2) || ctas004_idle_cnt > 80)
+			{
+				printf("CTAS004 done recv=%d idle=%d\n",ctas004_recv_total,ctas004_idle_cnt);
+				single_mission_target_flag = 4;
+				ctas004_recv_total = 0;
+				ctas004_idle_cnt = 0;
+			}
+		}
+		else if(single_mission_target_flag == 4)
 	{
 		memset(&CCC_DPU_data_0.failreason,0,sizeof CCC_DPU_data_0.failreason);
 		if(DPU_CCC_data_12.mission_type == 15)
@@ -6204,6 +6368,8 @@ void single_mission_target_plan(){
 		{
 			scheme_generation_state(2,2,0,2);// 返回方案编辑状态到综显，航线发布中
 		}
+		ctas004_recv_total = 0;
+		ctas004_idle_cnt = 0;
 		single_mission_target_flag = 0;
 	}
 }
@@ -6552,9 +6718,11 @@ void recv_blk_ofp_ccc_041()
 // 发布处理
 void faBuProc()
 {
+	unsigned int fabu_plan_id = (g_fabu_active == 1) ? g_fabu_plan_id : blk_ofp_ccc_039.Plan_ID;
+	unsigned int fabu_route_type = (g_fabu_active == 1) ? g_fabu_route_type : blk_ofp_ccc_039.routeType;
+	unsigned int fabu_stage_id = (g_fabu_active == 1) ? g_fabu_stage_id : blk_ofp_ccc_039.stage_id;
 	// 冲突时发布前处理
 //	avoidLineCrashFabuProc();
-
 	if ((g_recv_fabuCode[0] == 1) ||(g_recv_fabuCode[1] == 1) ||(g_recv_fabuCode[2] == 1) ||(g_recv_fabuCode[3] == 1)) {
 		// 清空发布标记
 		g_recv_fabuCode[0] = 0;
@@ -6562,24 +6730,33 @@ void faBuProc()
 		g_recv_fabuCode[2] = 0;
 		g_recv_fabuCode[3] = 0;
 
-		//发布航线时停止查询
+			g_fabu_active = 1;
+			g_fabu_plan_id = blk_ofp_ccc_039.Plan_ID;
+			g_fabu_route_type = blk_ofp_ccc_039.routeType;
+			g_fabu_stage_id = blk_ofp_ccc_039.stage_id;
+			fabu_plan_id = g_fabu_plan_id;
+			fabu_route_type = g_fabu_route_type;
+			fabu_stage_id = g_fabu_stage_id;
+			printf("FABU start plan=%u route=%u stage=%u\n",fabu_plan_id,fabu_route_type,fabu_stage_id);
+
+			//发布航线时停止查询
 		hx_cx_flag = 0;
 		//是否为攻击
-		if(blk_ofp_ccc_039.routeType == 2)
+		if(fabu_route_type == 2)
 		{
 			scheme_generation_state(2,2, 1, 2); // 返回发布状态到综显
 
 			//重新生成攻击航线空域
 			for(int i = 0 ; i < 2 ; i ++)
-				send_uav_airway(blk_ofp_ccc_039.Plan_ID % 3,i);
+				send_uav_airway(fabu_plan_id % 3,i);
 		}
-		else if(blk_ofp_ccc_039.routeType == 1)
+		else if(fabu_route_type == 1)
 		{
 			scheme_generation_state(1,2, 1, 2); // 返回发布状态到综显
 		}
 
 		//找到方案编号索引
-		unsigned int plan = (blk_ofp_ccc_039.Plan_ID) % 3;
+		unsigned int plan = fabu_plan_id % 3;
 
 		//初始化无人机数据,接收标志,空域应用标志清空
 		for (int i = 0; i < 4; i++) {
@@ -6602,7 +6779,7 @@ void faBuProc()
 			//找到任务类型参数索引
 			for (int j = 0; j < 8; j++) {
 				if (task_param[j].type_id
-						== CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[i + 1].task_sequence_informations[blk_ofp_ccc_039.stage_id].type) {
+						== CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[i + 1].task_sequence_informations[fabu_stage_id].type) {
 					//找到索引退出
 					uav_send[i].task_index = j;
 					break;
@@ -6661,16 +6838,18 @@ void faBuProc()
 			//发送发布失败状态到综显
 			sprintf(CCC_DPU_data_0.failreason, "发送航线装订指令返回失败");
 			//是否为攻击
-			if(blk_ofp_ccc_039.routeType == 2)
+			if(fabu_route_type == 2)
 			{
 				scheme_generation_state(2,2, 3, 2);
 			}
-			else if(blk_ofp_ccc_039.routeType == 1)
+			else if(fabu_route_type == 1)
 			{
 				scheme_generation_state(1,2, 3, 2);
 			}
 			memset(CCC_DPU_data_0.failreason, 0, 200);
-			printf("0x38 failed! %d\n", s4D_frame_38[send_index]);
+				send_uav_num = 0;
+				g_fabu_active = 0;
+				printf("0x38 failed! %d\n", s4D_frame_38[send_index]);
 
 			//退出函数
 			return;
@@ -6708,7 +6887,7 @@ void faBuProc()
 			//装订成功
 			if (s4D_frame_40[i] == 1 && send_area[i] == 0) {
 				//找到方案编号索引
-				unsigned int plan = (blk_ofp_ccc_039.Plan_ID) % 3;
+				unsigned int plan = fabu_plan_id % 3;
 				/*****存储发布航线 20250702new*****/
 				//注入任务
 				uav_route[i].tasking = 1;
@@ -6745,16 +6924,20 @@ void faBuProc()
 					timeout = 0;
 					uav_hl_confirm = 0;
 					//保存运行方案id
-					planning_id = blk_ofp_ccc_039.Plan_ID;
+					planning_id = fabu_plan_id;
+					g_fabu_active = 0;
 					//是否为单无人机注入
 					if (single_uav_flag == 33) {
 						// 发送单无人机务运行分配结果
 						blk_ccc_ofp_019.plan_release_mode = 1;            //已发布
 						send_blk_ccc_ofp_021();
 					} else {
+						//普通/反潜发布成功后，固化运行方案模式，避免017模式异常为0
+						CCC_DPU_data_6_Ofp[plan].plan_release_mode = 1;
+						CCC_DPU_data_6[plan].plan_release_mode = 1;
 						//取出保存的方案，发送运行方案到综显
 						memcpy(&blk_ccc_ofp_017, &CCC_DPU_data_6_Ofp[plan],
-								sizeof(BLK_CCC_OFP_017));
+							sizeof(BLK_CCC_OFP_017));
 
 						send_blk_ccc_ofp_017();
 						formulate_single = 1;
@@ -6791,7 +6974,7 @@ void faBuProc()
 
 
 					//是否为攻击
-					if(blk_ofp_ccc_039.routeType == 2)
+					if(fabu_route_type == 2)
 					{
 						memcpy(&blk_ccc_ofp_047,&blk_ccc_ofp_047_save[plan],sizeof(BLK_CCC_OFP_047));
 						//转发到综显
@@ -6799,7 +6982,7 @@ void faBuProc()
 
 						scheme_generation_state(2,2, 2, 2);      //发送发布完成状态到综显
 					}
-					else if(blk_ofp_ccc_039.routeType == 1)
+					else if(fabu_route_type == 1)
 					{
 						scheme_generation_state(1,2, 2, 2);      //发送发布完成状态到综显
 					}
@@ -6853,16 +7036,17 @@ void faBuProc()
 				//发送发布失败状态到综显
 				sprintf(CCC_DPU_data_0.failreason, "发送航线切换指令返回失败");
 				//是否为攻击
-				if(blk_ofp_ccc_039.routeType == 2)
+				if(fabu_route_type == 2)
 				{
 					scheme_generation_state(2,2, 3, 2);
 				}
-				else if(blk_ofp_ccc_039.routeType == 1)
+				else if(fabu_route_type == 1)
 				{
 					scheme_generation_state(1,2, 3, 2);
 				}
 				memset(CCC_DPU_data_0.failreason, 0, 200);
-				if (single_uav_flag == 33) {
+					g_fabu_active = 0;
+					if (single_uav_flag == 33) {
 					//单无人机注入结束
 					single_uav_flag = 0;
 				}
@@ -6904,16 +7088,17 @@ void faBuProc()
 				//发送发布失败状态到综显
 				sprintf(CCC_DPU_data_0.failreason, "发送航线切换指令超时");
 				//是否为攻击
-				if(blk_ofp_ccc_039.routeType == 2)
+				if(fabu_route_type == 2)
 				{
 					scheme_generation_state(2,2, 3, 2);
 				}
-				else if(blk_ofp_ccc_039.routeType == 1)
+				else if(fabu_route_type == 1)
 				{
 					scheme_generation_state(1,2, 3, 2);
 				}
 				memset(CCC_DPU_data_0.failreason, 0, 200);
-				printf("0x40 timeout! %d\n", s4D_frame_40[i]);
+					g_fabu_active = 0;
+					printf("0x40 timeout! %d\n", s4D_frame_40[i]);
 				if (single_uav_flag == 33) {
 					//单无人机注入结束
 					single_uav_flag = 0;
@@ -6958,6 +7143,14 @@ void faBuProc()
  * 完成无人机航路规划功能后，综显对我们规划好的航线进行选择，将选定的航线返回来，将这个航线根据无人机id发给相应的无人机
  */
 void uav_simulation() {
+	if(BDFX_double_status == 0)
+	{
+		g_bdfx_double_busy_cnt = 0;
+	}
+	else
+	{
+		g_bdfx_double_busy_cnt++;
+	}
 
 	// 接收综显航线发布命令
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_29.niConnectionId,
@@ -6974,26 +7167,71 @@ void uav_simulation() {
 	{
 		if(blk_ofp_ccc_039.routeType == 3)
 		{
-			//初始化双机编队回报
-			for(int uav = 0 ; uav < 2 ; uav ++)
+			int restart_bdfx = 0;
+			//空闲态可直接启动
+			if(BDFX_double_status == 0)
 			{
-				b2_frame_30[uav] = 0;
-				b2_frame_14[uav] = 0;
-				s4D_frame_40[uav] = 0;
+				restart_bdfx = 1;
 			}
-			scheme_generation_state(2,2, 1, 2); // 返回发布状态到综显
-			BDFX_double_status = 1;
+			//收到新方案号，允许重启双机发布
+			else if(blk_ofp_ccc_039.Plan_ID != g_bdfx_double_plan_id)
+			{
+				restart_bdfx = 1;
+			}
+			//同方案长时间卡住时，允许通过再次发布触发重启
+			else if(g_bdfx_double_busy_cnt > 300)
+			{
+				restart_bdfx = 1;
+			}
+
+			if(restart_bdfx == 1)
+			{
+				//初始化双机编队回报
+				for(int uav = 0 ; uav < 2 ; uav ++)
+				{
+					b2_frame_30[uav] = 0;
+					b2_frame_14[uav] = 0;
+					s4D_frame_40[uav] = 0;
+				}
+				scheme_generation_state(2,2, 1, 2); // 返回发布状态到综显
+				BDFX_double_status = 1;
+				g_bdfx_double_plan_id = blk_ofp_ccc_039.Plan_ID;
+				g_bdfx_double_busy_cnt = 0;
+				printf("BDFX start/restart plan=%u status=%d\n",blk_ofp_ccc_039.Plan_ID,BDFX_double_status);
+			}
+			else
+			{
+				printf("BDFX ignore duplicate plan=%u status=%d busy=%d\n",blk_ofp_ccc_039.Plan_ID,BDFX_double_status,g_bdfx_double_busy_cnt);
+			}
 			return;
 		}
-		for(int drone_index = 0;drone_index<4;drone_index++)
-		{
-			g_recv_fabuCode[drone_index] = 1;
 
-//			if(g_lineCrashState[drone_index].PayloadReplan == 2)
-//			{
-//              payload_task();
-//              g_recv_fabuCode[drone_index] = 0;
-//			}
+		if(blk_ofp_ccc_039.routeType == 1 || blk_ofp_ccc_039.routeType == 2)
+		{
+			int same_fabu = 0;
+			if(g_fabu_active == 1
+				&& blk_ofp_ccc_039.Plan_ID == g_fabu_plan_id
+				&& blk_ofp_ccc_039.routeType == g_fabu_route_type
+				&& blk_ofp_ccc_039.stage_id == g_fabu_stage_id)
+			{
+				same_fabu = 1;
+			}
+
+			if(same_fabu == 1)
+			{
+				printf("FABU ignore duplicate plan=%u route=%u stage=%u hl=%d\n",blk_ofp_ccc_039.Plan_ID,blk_ofp_ccc_039.routeType,blk_ofp_ccc_039.stage_id,uav_hl_confirm);
+			}
+			else
+			{
+				for(int drone_index = 0;drone_index<4;drone_index++)
+				{
+					g_recv_fabuCode[drone_index] = 1;
+				}
+			}
+		}
+		else
+		{
+			// 非航线发布命令，忽略
 		}
 
 		// 发布时需要做冲突检测
@@ -11642,47 +11880,90 @@ void recv_DPU_CCC_MFD() {
 	}
 
 	static int send_count_gd = 0;
+	int recv_mfd_ok = 0;
 	// 前后舱都能控制光电，根据前舱综显指令判断接收哪边的控制指令更新
 	if(DPU_CCC_data_15.uav_kongzhiquanshezhi == 2)//后舱任务发出
 	{
-		// 接收从任务发来的无人机光电视频MFD控制
-		message_size = RECV_MAX_SIZE;
-		Receive_Message(DDSTables.DPM_CCC_2.niConnectionId, 0, &transaction_id, &DPU_CCC_data_14, &message_type_id, &message_size, &enRetCode);
+		// 接收从任务发来的无人机光电视频MFD控制，取队列最新值避免旧包延迟
+		for(int guard = 0; guard < 64; guard++)
+		{
+			message_size = RECV_MAX_SIZE;
+			Receive_Message(DDSTables.DPM_CCC_2.niConnectionId, 0, &transaction_id, &DPU_CCC_data_14, &message_type_id, &message_size, &enRetCode);
+			if(enRetCode != 0)
+			{
+				break;
+			}
+			recv_mfd_ok = 1;
+		}
 	}
 	else
 	{
-		// 接收从综显发来的无人机光电视频MFD控制
-		message_size = RECV_MAX_SIZE;
-		recv_dpu1_dpu2(DDSTables.DPU_CCC_14.niConnectionId,DDSTables.DPU2_CCC_14.niConnectionId,&DPU_CCC_data_14,sizeof DPU_CCC_data_14);
-		//收不到就收PAD new20250620
-		if(enRetCode != 0)
+		// 接收从综显发来的无人机光电视频MFD控制，取队列最新值避免旧包延迟
+		uav_photoic_video_MFD latest_mfd;
+		memset(&latest_mfd,0,sizeof(latest_mfd));
+		for(int guard = 0; guard < 64; guard++)
 		{
-			Receive_Message(DDSTables.PAD_CCC_028.niConnectionId, 0, &transaction_id, &DPU_CCC_data_14, &message_type_id, &message_size, &enRetCode);
+			message_size = RECV_MAX_SIZE;
+			recv_dpu1_dpu2(DDSTables.DPU_CCC_14.niConnectionId,DDSTables.DPU2_CCC_14.niConnectionId,&latest_mfd,sizeof(latest_mfd));
+			if(enRetCode != 0)
+			{
+				break;
+			}
+			memcpy(&DPU_CCC_data_14,&latest_mfd,sizeof(DPU_CCC_data_14));
+			recv_mfd_ok = 1;
+		}
+		//收不到就收PAD new20250620
+		if(recv_mfd_ok == 0)
+		{
+			for(int guard = 0; guard < 64; guard++)
+			{
+				message_size = RECV_MAX_SIZE;
+				Receive_Message(DDSTables.PAD_CCC_028.niConnectionId, 0, &transaction_id, &DPU_CCC_data_14, &message_type_id, &message_size, &enRetCode);
+				if(enRetCode != 0)
+				{
+					break;
+				}
+				recv_mfd_ok = 1;
+			}
 		}
 	}
 
-
-
 	// 接收成功，将收到的数据填入对应的结构体
-	if(enRetCode == 0) {
-		send_count_gd = 6;
+	if(recv_mfd_ok == 1) {
+		send_count_gd = PIU_CMD_RESEND_CYCLES;
 	}
-	if(send_count_gd-- > 0 )
+	if(send_count_gd > 0)
 	{
+		send_count_gd--;
 		//找到无人机索引
 		int uav_index = DPU_CCC_data_14.video_source_type - 2;
 		// 切换无人机的视频源
-		init_drone_information_Azhen(uav_index);         // 机载，更新任务遥控数据A帧
+		if(uav_index >= 0 && uav_index < UAV_MAX_NUM)
+		{
+			init_drone_information_Azhen(uav_index);         // 机载，更新任务遥控数据A帧
+		}
 	}
-	//接收PIU的光电控制手柄信息
+
+	//接收PIU的光电控制手柄信息（取队列最新值避免控制延迟）
 	char piu_buf[256];
-	message_size = RECV_MAX_SIZE;
+	unsigned int piu_msg_size = 0;
+	int piu_recv_ok = 0;
 	memset(&blk_piu_ccc_006,0,sizeof(BLK_PIU_CCC_006));
-	Receive_Message(DDSTables.PIU_CCC_0.niConnectionId, 0, &transaction_id, &piu_buf, &message_type_id, &message_size, &enRetCode);
-	if(enRetCode == 0)
+	for(int piu_guard = 0; piu_guard < 64; piu_guard++)
+	{
+		message_size = sizeof(piu_buf);
+		Receive_Message(DDSTables.PIU_CCC_0.niConnectionId, 0, &transaction_id, &piu_buf, &message_type_id, &message_size, &enRetCode);
+		if(enRetCode != 0)
+		{
+			break;
+		}
+		piu_recv_ok = 1;
+		piu_msg_size = message_size;
+	}
+	if(piu_recv_ok == 1)
 	{
 		//    	printf("dtms %d\n",message_size);
-		int block_num = message_size / 4;
+		int block_num = piu_msg_size / 4;
 		int flag[4] = {0,0,0,0};
 		for(int i = 0 ; i < block_num ; i ++)
 		{
@@ -12053,7 +12334,8 @@ void parse_blk_piu_ccc_006_key02(int uav_index)
 	//    }
 	//    fangwei += blk_piu_ccc_006.joy_key_02.integer /** (5/20/32768)*/;
 	fangwei = blk_piu_ccc_006.joy_key_02.integer;
-	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.dangan_fangwei = fangwei * 5;
+	int scaled_fangwei = (int)fangwei * PIU_VIEW_GAIN;
+	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.dangan_fangwei = clamp_int_to_short(scaled_fangwei);
 }
 
 void parse_blk_piu_ccc_006_key03(int uav_index)
@@ -12066,7 +12348,8 @@ void parse_blk_piu_ccc_006_key03(int uav_index)
 	//    }
 	//    fuyang += blk_piu_ccc_006.joy_key_03.integer /** (5/20/32768)*/;
 	fuyang = blk_piu_ccc_006.joy_key_03.integer;
-	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.dangan_fuyang = fuyang * 5;
+	int scaled_fuyang = (int)fuyang * PIU_VIEW_GAIN;
+	CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.dangan_fuyang = clamp_int_to_short(scaled_fuyang);
 }
 /// 解析遥测数据帧子帧4D  uav_index:无人机序号（0-3）
 void parseYaoCeZiZhen4D(int uav_index)
@@ -12115,22 +12398,25 @@ void parseYaoCeZiZhen4D(int uav_index)
 	//航线切换
 	if(s4D_frame.zhiLingHuiBao == 0x40)
 	{
-
-		if(s4D_frame.result.result == 0)
+		//仅在航线切换流程中记录0x40回报，避免误触发
+		int waiting_track_change = 0;
+		if((uav_hl_confirm == 2 && send_area[uav_index] == 0) ||
+		   (BDFX_double_status == 2 || BDFX_double_status == 3 || BDFX_status == 2 || BDFX_status == 3))
 		{
-			//修复逻辑: 强制添加检查
-			if (s4D_frame.data[0] == 0x28)
-			{
-			    //仅在双机或单机编队切换等待回报阶段记录
-			    if(BDFX_double_status == 3 || BDFX_status == 3)
-			    {
-			s4D_frame_40[uav_index] = 1;//00=执行成功 | 01=响应条件不满足执行失败 10=设置参数不合理执行失败 | 11=其他原因执行失败
-			    }
-			}
+			waiting_track_change = 1;
 		}
-		else
+
+		if(waiting_track_change == 1)
 		{
-			s4D_frame_40[uav_index] = -1;//00=执行成功 | 01=响应条件不满足执行失败 10=设置参数不合理执行失败 | 11=其他原因执行失败
+			printf("0x40 ack uav=%d result=%d data0=%d hl=%d bdfx2=%d bdfx=%d send_area=%d\n",uav_index,s4D_frame.result.result,(unsigned char)s4D_frame.data[0],uav_hl_confirm,BDFX_double_status,BDFX_status,send_area[uav_index]);
+			if(s4D_frame.result.result == 0)
+			{
+				s4D_frame_40[uav_index] = 1;//00=执行成功 | 01=响应条件不满足执行失败 10=设置参数不合理执行失败 | 11=其他原因执行失败
+			}
+			else
+			{
+				s4D_frame_40[uav_index] = -1;//00=执行成功 | 01=响应条件不满足执行失败 10=设置参数不合理执行失败 | 11=其他原因执行失败
+			}
 		}
 
 	}
