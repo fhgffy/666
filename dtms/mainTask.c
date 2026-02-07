@@ -13516,16 +13516,21 @@ void recv_blk_ofp_ccc_053()
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_048.niConnectionId,DDSTables.DPU2_CCC_048.niConnectionId,&blk_ofp_ccc_053,sizeof blk_ofp_ccc_053);
 	if(enRetCode == 0)
 	{
-		int uav_index = (load_file.lead_uav_id == 0x1005) ? 1 : 2;
 		if(blk_ofp_ccc_053.cmd == 1)
 		{
-			start_lh_flag[uav_index-1] = 1;
-//			single_uav_lhcs(blk_ofp_ccc_053.uavSn-1);
+			//双机编队领航：两架无人机都要跟随有人机
+			start_lh_flag[0] = 1;
+			start_lh_flag[1] = 1;
+			printf("LH start both uav lead=0x%X
+", load_file.lead_uav_id);
 		}
 		else if(blk_ofp_ccc_053.cmd == 2)
 		{
-			start_tclh_flag[uav_index-1] = 1;
-//			single_uav_pxlh(blk_ofp_ccc_053.uavSn-1);
+			//双机编队退出领航：两架无人机都要退出
+			start_tclh_flag[0] = 1;
+			start_tclh_flag[1] = 1;
+			printf("LH exit both uav lead=0x%X
+", load_file.lead_uav_id);
 		}
 	}
 }
