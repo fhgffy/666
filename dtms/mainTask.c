@@ -5478,6 +5478,7 @@ void recv_blk_kkl_ccc_000_008_010_011()
 void single_uav_plan()
 {
 	static int single_uav_004_idle_cnt = 0;
+	static unsigned int single_uav_stage_index = 0;
 	//单无人机指控指令
 	message_size = RECV_MAX_SIZE;
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_11.niConnectionId,DDSTables.DPU2_CCC_11.niConnectionId,&DPU_CCC_data_11,sizeof DPU_CCC_data_11);
@@ -5491,6 +5492,7 @@ void single_uav_plan()
 		scheme_generation_state(0,1,0,1);// 返回方案编辑状态到综显，方案生成中
 		formulate_single = 0;
 		single_uav_004_idle_cnt = 0;
+		single_uav_stage_index = (global_stage > 0) ? (global_stage - 1) : 0;
 		//如果未加载返航航线，则生成失败
 		int normal_cnt = 0;
 		for(int i = 0 ; i < 4 ; i ++)
@@ -5593,7 +5595,8 @@ void single_uav_plan()
 			//方案中的无人机位置与收到的方案的无人机索引不一样，需要计算
 			int plan_uav = DPU_CCC_data_11.drone_num;//无人机序号加有人机位置加一再减一，得到方案的无人机索引下标
 			//找到当前运行的阶段对应的任务下标
-			unsigned int num = global_stage -1;
+			unsigned int num = (global_stage > 0) ? (global_stage - 1) : 0;
+			single_uav_stage_index = num;
 			//索引无人机,CTAS内部无人机是紧凑排列，如果有无人机下线，需要重新查找下标，找到无人机对应关系
 			for(int i = 1 ; i < 5 ; i ++)
 			{
@@ -5648,7 +5651,7 @@ void single_uav_plan()
 				}
 
 				//无人机任务序号为0
-				temp.individual_drone_routing_programs.subtask_index = 0;
+				temp.individual_drone_routing_programs.subtask_index = single_uav_stage_index;
 				// 保存头信息
 				memcpy(&blk_ccc_ofp_024_single[id],&temp,9 + 10 + 26);
 				// 保存航路点信息
