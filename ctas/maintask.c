@@ -5717,6 +5717,9 @@ void single_uav_FBZS()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
@@ -6206,6 +6209,9 @@ void single_uav_BDFX()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
@@ -6854,6 +6860,9 @@ void single_uav_CTGZ()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
@@ -6971,6 +6980,9 @@ void single_uav_CTSS()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
@@ -7127,6 +7139,9 @@ void single_uav_GDSS()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
@@ -7556,6 +7571,9 @@ void single_uav_GDGZ()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
@@ -7673,6 +7691,9 @@ void single_uav_XT()
 	//索引异常
 	if(uav_index > 4)
 	{
+		int area_rtn = -6;
+		data_length = sizeof(int);
+		Send_Message(DDSTables.BLK_CTAS_DTMS_011.niConnectionId, 0, &transaction_id, &area_rtn, &message_type_id, data_length, &enRetCode);
 		return;
 	}
 	//方案编号获取
