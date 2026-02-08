@@ -1,5 +1,6 @@
 #include "maintask.h"
 #include "math.h"
+#include <float.h>
 #include "../libSourceCode/commDas/geoGrid.h"
 #define EARTH_RADIUS 6371000.0
 #define DEG_TO_RAD (3.1415926535897932/180.0)
@@ -1519,6 +1520,131 @@ OutAirwayLibDas citanGeneration(area_information area,GeoLibDas position){
 /*
  * 3.8 无人机航路规划方案生成
  * */
+static GeoLibDas getNearestPolygonVertexForUav(GeoLibDas uavPosition, area_information area)
+{
+	GeoLibDas nearestVertex = uavPosition;
+	if(area.area_shape != 2 || area.polygonals.point_number == 0) return nearestVertex;
+
+	double minVertexDist = DBL_MAX;
+	for(int i = 0; i < area.polygonals.point_number; i++) {
+		GeoLibDas vertex;
+		vertex.longitude = area.polygonals.point_coordinates[i].longitude;
+		vertex.latitude = area.polygonals.point_coordinates[i].latitude;
+		double dist = getDistanceGeoLibDas(&uavPosition, &vertex);
+		if(dist < minVertexDist) {
+			minVertexDist = dist;
+			nearestVertex = vertex;
+		}
+	}
+	return nearestVertex;
+}
+
+static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information areaA[2], GeoLibDas inPointA[2])
+{
+	if(areaA[0].area_shape != 2 || areaA[1].area_shape != 2) return;
+	if(areaA[0].polygonals.point_number == 0 || areaA[1].polygonals.point_number == 0) return;
+
+	double bestNoConflictDist = DBL_MAX;
+	double bestAnyDist = DBL_MAX;
+	GeoLibDas bestNoConflictA = inPointA[0];
+	GeoLibDas bestNoConflictB = inPointA[1];
+	GeoLibDas bestAnyA = inPointA[0];
+	GeoLibDas bestAnyB = inPointA[1];
+	int foundNoConflict = 0;
+
+	for(int i = 0; i < areaA[0].polygonals.point_number; i++) {
+		GeoLibDas vertexA;
+		vertexA.longitude = areaA[0].polygonals.point_coordinates[i].longitude;
+		vertexA.latitude = areaA[0].polygonals.point_coordinates[i].latitude;
+
+		for(int j = 0; j < areaA[1].polygonals.point_number; j++) {
+			GeoLibDas vertexB;
+			vertexB.longitude = areaA[1].polygonals.point_coordinates[j].longitude;
+			vertexB.latitude = areaA[1].polygonals.point_coordinates[j].latitude;
+
+			double totalDist = getDistanceGeoLibDas(&uavPositionA[0], &vertexA) +
+							   getDistanceGeoLibDas(&uavPositionA[1], &vertexB);
+			if(totalDist < bestAnyDist) {
+				bestAnyDist = totalDist;
+				bestAnyA = vertexA;
+				bestAnyB = vertexB;
+			}
+
+			FlightRoute routeA, routeB;
+			routeA.start.longitude = uavPositionA[0].longitude;
+			routeA.start.latitude = uavPositionA[0].latitude;
+			routeA.end.longitude = vertexA.longitude;
+			routeA.end.latitude = vertexA.latitude;
+			routeB.start.longitude = uavPositionA[1].longitude;
+			routeB.start.latitude = uavPositionA[1].latitude;
+			routeB.end.longitude = vertexB.longitude;
+			routeB.end.latitude = vertexB.latitude;
+
+			if(detectConflict(&routeA, &routeB) == 0 && totalDist < bestNoConflictDist) {
+				bestNoConflictDist = totalDist;
+				bestNoConflictA = vertexA;
+				bestNoConflictB = vertexB;
+				foundNoConflict = 1;
+			}
+		}
+	}
+
+	if(foundNoConflict) {
+		inPointA[0] = bestNoConflictA;
+		inPointA[1] = bestNoConflictB;
+	} else {
+		inPointA[0] = bestAnyA;
+		inPointA[1] = bestAnyB;
+	}
+}
+
+void setZoneInPoint(GeoLibDas *inPoint)
+{
+	int droneNum = integrated_postures.drone_num;
+	if(droneNum > 4) droneNum = 4;
+
+	GeoLibDas uavPositionA[4];
+	area_information areaA[4];
+	int hasArea[4] = {0};
+
+	for(int i = 0; i < droneNum; i++) {
+		uavPositionA[i].longitude = integrated_postures.integrated_posture_drone_informations[i].drone_longitude_and_latitude.longitude;
+		uavPositionA[i].latitude = integrated_postures.integrated_posture_drone_informations[i].drone_longitude_and_latitude.latitude;
+		inPoint[i] = uavPositionA[i];
+
+		for(int j = 0; j < information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1].number_of_subtasks; j++) {
+			unsigned short taskType = information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1].task_sequence_informations[j].sequence_type;
+			if(taskType != 5 && taskType != 7) continue;
+
+			unsigned int targetAreaCode =
+					information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1].task_sequence_informations[j].target_number;
+			for(int k = 0; k < area_sky_informations.area_number; k++) {
+				if(targetAreaCode == area_sky_informations.area_informations[k].area_code) {
+					areaA[i] = area_sky_informations.area_informations[k];
+					hasArea[i] = 1;
+					break;
+				}
+			}
+			if(hasArea[i]) break;
+		}
+	}
+
+	for(int i = 0; i < droneNum; i++) {
+		if(hasArea[i]) {
+			inPoint[i] = getNearestPolygonVertexForUav(uavPositionA[i], areaA[i]);
+		}
+	}
+
+	if(droneNum == 2 && hasArea[0] && hasArea[1]) {
+		GeoLibDas dualUavPos[2] = {uavPositionA[0], uavPositionA[1]};
+		area_information dualArea[2] = {areaA[0], areaA[1]};
+		GeoLibDas dualInPoint[2] = {inPoint[0], inPoint[1]};
+		optimizeDualUavInPoints(dualUavPos, dualArea, dualInPoint);
+		inPoint[0] = dualInPoint[0];
+		inPoint[1] = dualInPoint[1];
+	}
+}
+
 void UAVRouteGeneration(){
 
 	area_information area;
@@ -1526,6 +1652,8 @@ void UAVRouteGeneration(){
 	memset(&CTAS_DTMS_data_UAVRoute,0,sizeof(drone_route_confirmation));
 	//方案编号
 	CTAS_DTMS_data_UAVRoute.program_number = information_on_the_results_of_taskings.program_number;
+	GeoLibDas inPointA[4];
+	setZoneInPoint(inPointA);
 
 	//单个无人机的航路方案
 	for(int i = 0;i < integrated_postures.drone_num;i++) {
@@ -1651,7 +1779,7 @@ void UAVRouteGeneration(){
 				//                if(outAirwayLibDas.sumAwp%25)
 				//                    CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[i].planning_informations[j].total_packet++;
 				OutSearchRadarPhoto outSearchRadarPhoto;
-				outSearchRadarPhoto = commonRouteGeneration(area,UAV_position,600);
+				outSearchRadarPhoto = commonRouteGeneration(area,inPointA[i],600);
 
 				//最多75个点 20250611new
 				if(outSearchRadarPhoto.sumAwp > 75) outSearchRadarPhoto.sumAwp = 75;
@@ -1710,7 +1838,7 @@ void UAVRouteGeneration(){
 			}else if(information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1].task_sequence_informations[j].sequence_type == 7){
 				//subtask:光电搜索
 				OutSearchRadarPhoto outSearchRadarPhoto;
-				outSearchRadarPhoto = commonRouteGeneration(area,UAV_position,12000);
+				outSearchRadarPhoto = commonRouteGeneration(area,inPointA[i],12000);
 
 				//最多75个点 20250611new
 				if(outSearchRadarPhoto.sumAwp > 75) outSearchRadarPhoto.sumAwp = 75;
@@ -4883,6 +5011,27 @@ void single_area_CTSS()
 	information_on_the_results_of_taskings.program_attributes = 0;//方案属性---待定
 
 	information_on_the_results_of_taskings.number_of_mission_platforms = integrated_postures.drone_num;
+	int droneNum = integrated_postures.drone_num;
+	if(droneNum > 4) droneNum = 4;
+
+	GeoLibDas uavPositionA[4];
+	GeoLibDas searchOriginA[4];
+	area_information areaA[4];
+	for(int i = 0; i < droneNum; i++) {
+		uavPositionA[i].longitude = integrated_postures.integrated_posture_drone_informations[i].drone_longitude_and_latitude.longitude;
+		uavPositionA[i].latitude = integrated_postures.integrated_posture_drone_informations[i].drone_longitude_and_latitude.latitude;
+		areaA[i] = area_sky_informations.area_informations[i];
+		searchOriginA[i] = getNearestPolygonVertexForUav(uavPositionA[i], areaA[i]);
+	}
+	if(droneNum == 2) {
+		GeoLibDas dualUavPos[2] = {uavPositionA[0], uavPositionA[1]};
+		area_information dualArea[2] = {areaA[0], areaA[1]};
+		GeoLibDas dualInPoint[2] = {searchOriginA[0], searchOriginA[1]};
+		optimizeDualUavInPoints(dualUavPos, dualArea, dualInPoint);
+		searchOriginA[0] = dualInPoint[0];
+		searchOriginA[1] = dualInPoint[1];
+	}
+
 	for(int uav_index = 0; uav_index < integrated_postures.drone_num ; uav_index ++)
 	{
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[uav_index + 1].platform_model = 2;//平台型号--无人机
@@ -4914,12 +5063,9 @@ void single_area_CTSS()
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].AtomicTimeUpper = 1;
 		CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].AtomicHighlyUpper = 1;
 		//找到无人机位置
-		GeoLibDas UAV_position;
-		UAV_position.longitude = integrated_postures.integrated_posture_drone_informations[uav_index].drone_longitude_and_latitude.longitude;
-		UAV_position.latitude = integrated_postures.integrated_posture_drone_informations[uav_index].drone_longitude_and_latitude.latitude;
 		//subtask:磁探搜索(光电搜索暂时替代)
 		OutSearchRadarPhoto outSearchRadarPhoto;
-		outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[uav_index],UAV_position,1000);
+		outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[uav_index],searchOriginA[uav_index],1000);
 
 		//最多75个点 20250611new
 		if(outSearchRadarPhoto.sumAwp > 75) outSearchRadarPhoto.sumAwp = 75;

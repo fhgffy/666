@@ -92,22 +92,6 @@ static uint16_t htons(uint16_t val)
 // Absolute time log (ms, system time)
 // 绝对时间打印（毫秒，系统时间）
 
-static void print_time_hhmmss_mmmuuu(const char *tag, SYSTEM_TIME_TYPE ts)
-{
-	long long us = (long long)(ts / 1000);
-	long long us_of_day = us % (86400LL * 1000000LL);
-	if(us_of_day < 0) us_of_day += (86400LL * 1000000LL);
-
-	int hh = (int)(us_of_day / 3600000000LL);
-	int mm = (int)((us_of_day % 3600000000LL) / 60000000LL);
-	int ss = (int)((us_of_day % 60000000LL) / 1000000LL);
-	int mmm = (int)((us_of_day % 1000000LL) / 1000LL);
-	int uuu = (int)(us_of_day % 1000LL);
-
-	printf("[TIME] %s: %02d:%02d:%02d.%03d%03d\n", tag, hh, mm, ss, mmm, uuu);
-}
-
-
 void speechMainProc() { speechRecv(); }
 
 void speechXunFeiMainProc() { speechXunfeiRecv(); }
@@ -386,55 +370,9 @@ void speechXunfeiRecv()
 		else if ((g_pcie_buffer[3] == 0x03))
 
 		{
-
-			long long hwCostNs = 0;
-			long long swCostNs = 0;
-			long long totalMs = 0;
-
-			SYSTEM_TIME_TYPE timeSoftwareStart, timeSoftwareEnd;
-			SYSTEM_TIME_TYPE timeRecoStart = 0;
-			SYSTEM_TIME_TYPE timeRecoEnd = 0;
-
-
-
-
-
-			if(timeStart > 0) {
-
-				timeRecoStart = timeStart;
-				GET_TIME(&timeNow, &retT);
-				hwCostNs = (long long)(timeNow - timeStart);
-
-			}
-
-
-
 			timeStart = 0;
-
 			blk_xunfei_ccc_002.recgState = 0x03;
-
-
-
-			GET_TIME(&timeSoftwareStart, &retT);
-
-
-
 			speechProc();
-
-
-
-			GET_TIME(&timeSoftwareEnd, &retT);
-			swCostNs = (long long)(timeSoftwareEnd - timeSoftwareStart);
-			if(swCostNs < 0) swCostNs = 0;
-			if(hwCostNs < 0) hwCostNs = 0;
-
-			if(timeRecoStart == 0) timeRecoStart = timeSoftwareStart;
-			timeRecoEnd = timeSoftwareEnd;
-			totalMs = (hwCostNs + swCostNs) / 1000000;
-
-			print_time_hhmmss_mmmuuu("Start", timeRecoStart);
-			print_time_hhmmss_mmmuuu("End", timeRecoEnd);
-			printf("[TIME] Total: %lld ms\n", totalMs);
 		}
 
 		else

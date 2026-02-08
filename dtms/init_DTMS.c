@@ -78,6 +78,20 @@ signed long long getSysTimeNs(void)
 	return timeSys;
 }
 
+static void print_voice_time_hhmmss_mmmuuu(const char *tag, SYSTEM_TIME_TYPE ts)
+{
+	long long us = (long long)(ts / 1000);
+	long long us_of_day = us % (86400LL * 1000000LL);
+	if(us_of_day < 0) us_of_day += (86400LL * 1000000LL);
+
+	int hh = (int)(us_of_day / 3600000000LL);
+	int mm = (int)((us_of_day % 3600000000LL) / 60000000LL);
+	int ss = (int)((us_of_day % 60000000LL) / 1000000LL);
+	int mmm = (int)((us_of_day % 1000000LL) / 1000LL);
+	int uuu = (int)(us_of_day % 1000LL);
+
+	printf("[VOICE_TIME] %s: %02d:%02d:%02d.%03d%03d\n", tag, hh, mm, ss, mmm, uuu);
+}
 static QUEUING_PORT_ID_TYPE gIdQuePortRecvMids01;
 static QUEUING_PORT_ID_TYPE gIdQuePortRecvMids02;/// 预加载流数据处理
 static QUEUING_PORT_ID_TYPE gIdQuePortRecvSfs01;
@@ -533,7 +547,11 @@ void USER2(void) {
 void RecvVoiceDtps()
 {
 	RETURN_CODE_TYPE ret = NO_ERROR;
+	RETURN_CODE_TYPE timeRet = NO_ERROR;
 	MESSAGE_SIZE_TYPE lenRecv;
+	SYSTEM_TIME_TYPE nowTime = 0;
+	static SYSTEM_TIME_TYPE recgStartTime = 0;
+	static unsigned char recgTimingStarted = 0;
 	RECEIVE_QUEUING_MESSAGE(gIdQuePortRecvVoiceDtps,
 							0,
 							&blk_dtps_dtms_043,
@@ -542,6 +560,28 @@ void RecvVoiceDtps()
 	//接收到DTPS返回的板卡信息,转发给综显
 	if(ret == 0)
 	{
+		GET_TIME(&nowTime, &timeRet);
+		if(blk_dtps_dtms_043.voiceRecognizeSta == 1)
+		{
+			if(recgTimingStarted == 0)
+			{
+				recgStartTime = nowTime;
+				recgTimingStarted = 1;
+				print_voice_time_hhmmss_mmmuuu("Start", recgStartTime);
+			}
+		}
+		else if((blk_dtps_dtms_043.voiceRecognizeSta == 2) || (blk_dtps_dtms_043.voiceRecognizeSta == 3))
+		{
+			if((recgTimingStarted == 1) && (recgStartTime > 0) && (nowTime >= recgStartTime))
+			{
+				print_voice_time_hhmmss_mmmuuu("End", nowTime);
+				long long deltaMs = (long long)((nowTime - recgStartTime) / 1000000);
+				printf("[VOICE_TIME] Delta: %lld ms\n", deltaMs);
+			}
+			recgStartTime = 0;
+			recgTimingStarted = 0;
+		}
+
 //		printf("recv blk_dtps_dtms_043 len %d\n",lenRecv);
 		data_length = sizeof(BLK_CCC_OFP_043);
 		Send_Message(DDSTables.CCC_DPU_043.niConnectionId,0,&transaction_id, &blk_dtps_dtms_043, &message_type_id, data_length, &enRetCode);
