@@ -357,7 +357,8 @@ void dispel_manned_strategy()
 	int rtn = 0;
 	rtn = detectConflict(&uav_route[0],&uav_route[1]);
 	//存在冲突,交换任务区
-	if(rtn == 1)
+	if(rtn == 1 || (fabs(uav_route[0].end.latitude  - uav_route[1].end.latitude)  < 1e-7 &&
+					fabs(uav_route[0].end.longitude - uav_route[1].end.longitude) < 1e-7))
 	{
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[1].task_sequence_informations[0].target_number = area_sky_informations.area_informations[1].area_code;
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[2].task_sequence_informations[0].target_number = area_sky_informations.area_informations[0].area_code;
@@ -1551,6 +1552,7 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 	GeoLibDas bestAnyA = inPointA[0];
 	GeoLibDas bestAnyB = inPointA[1];
 	int foundNoConflict = 0;
+	int foundAnyNonSame = 0;
 
 	for(int i = 0; i < areaA[0].polygonals.point_number; i++) {
 		GeoLibDas vertexA;
@@ -1562,12 +1564,15 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 			vertexB.longitude = areaA[1].polygonals.point_coordinates[j].longitude;
 			vertexB.latitude = areaA[1].polygonals.point_coordinates[j].latitude;
 
+			int isSamePoint = (fabs(vertexA.longitude - vertexB.longitude) < 1e-7 &&
+							   fabs(vertexA.latitude  - vertexB.latitude)  < 1e-7);
 			double totalDist = getDistanceGeoLibDas(&uavPositionA[0], &vertexA) +
 							   getDistanceGeoLibDas(&uavPositionA[1], &vertexB);
-			if(totalDist < bestAnyDist) {
+			if(!isSamePoint && totalDist < bestAnyDist) {
 				bestAnyDist = totalDist;
 				bestAnyA = vertexA;
 				bestAnyB = vertexB;
+				foundAnyNonSame = 1;
 			}
 
 			FlightRoute routeA, routeB;
@@ -1580,7 +1585,7 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 			routeB.end.longitude = vertexB.longitude;
 			routeB.end.latitude = vertexB.latitude;
 
-			if(detectConflict(&routeA, &routeB) == 0 && totalDist < bestNoConflictDist) {
+			if(!isSamePoint && detectConflict(&routeA, &routeB) == 0 && totalDist < bestNoConflictDist) {
 				bestNoConflictDist = totalDist;
 				bestNoConflictA = vertexA;
 				bestNoConflictB = vertexB;
@@ -1592,7 +1597,7 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 	if(foundNoConflict) {
 		inPointA[0] = bestNoConflictA;
 		inPointA[1] = bestNoConflictB;
-	} else {
+	} else if(foundAnyNonSame) {
 		inPointA[0] = bestAnyA;
 		inPointA[1] = bestAnyB;
 	}
@@ -5138,7 +5143,8 @@ void single_area_CTSS()
 		int rtn = 0;
 		rtn = detectConflict(&route_uav1,&route_uav2);
 		//有冲突
-		if(rtn == 1)
+		if(rtn == 1 || (fabs(route_uav1.end.latitude  - route_uav2.end.latitude)  < 1e-7 &&
+						fabs(route_uav1.end.longitude - route_uav2.end.longitude) < 1e-7))
 		{
 			//任务区交换
 			information_on_the_results_of_taskings.formation_synergy_mission_programs[1].task_sequence_informations[0].target_number =
@@ -5192,6 +5198,27 @@ void single_area_GDSS()
 	information_on_the_results_of_taskings.program_attributes = 0;//方案属性---待定
 
 	information_on_the_results_of_taskings.number_of_mission_platforms = integrated_postures.drone_num;
+	int droneNum = integrated_postures.drone_num;
+	if(droneNum > 4) droneNum = 4;
+
+	GeoLibDas uavPositionA[4];
+	GeoLibDas searchOriginA[4];
+	area_information areaA[4];
+	for(int i = 0; i < droneNum; i++) {
+		uavPositionA[i].longitude = integrated_postures.integrated_posture_drone_informations[i].drone_longitude_and_latitude.longitude;
+		uavPositionA[i].latitude = integrated_postures.integrated_posture_drone_informations[i].drone_longitude_and_latitude.latitude;
+		areaA[i] = area_sky_informations.area_informations[i];
+		searchOriginA[i] = getNearestPolygonVertexForUav(uavPositionA[i], areaA[i]);
+	}
+	if(droneNum == 2) {
+		GeoLibDas dualUavPos[2] = {uavPositionA[0], uavPositionA[1]};
+		area_information dualArea[2] = {areaA[0], areaA[1]};
+		GeoLibDas dualInPoint[2] = {searchOriginA[0], searchOriginA[1]};
+		optimizeDualUavInPoints(dualUavPos, dualArea, dualInPoint);
+		searchOriginA[0] = dualInPoint[0];
+		searchOriginA[1] = dualInPoint[1];
+	}
+
 	for(int uav_index = 0; uav_index < integrated_postures.drone_num ; uav_index ++)
 	{
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[uav_index + 1].platform_model = 2;//平台型号--无人机
@@ -5228,7 +5255,7 @@ void single_area_GDSS()
 		UAV_position.latitude = integrated_postures.integrated_posture_drone_informations[uav_index].drone_longitude_and_latitude.latitude;
 		//subtask:磁探搜索(光电搜索暂时替代)
 		OutSearchRadarPhoto outSearchRadarPhoto;
-		outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[uav_index],UAV_position,12000);
+		outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[uav_index],searchOriginA[uav_index],12000);
 
 		//最多75个点 20250611new
 		if(outSearchRadarPhoto.sumAwp > 75) outSearchRadarPhoto.sumAwp = 75;
@@ -5301,7 +5328,8 @@ void single_area_GDSS()
 		int rtn = 0;
 		rtn = detectConflict(&route_uav1,&route_uav2);
 		//有冲突
-		if(rtn == 1)
+		if(rtn == 1 || (fabs(route_uav1.end.latitude  - route_uav2.end.latitude)  < 1e-7 &&
+						fabs(route_uav1.end.longitude - route_uav2.end.longitude) < 1e-7))
 		{
 			//任务区交换
 			information_on_the_results_of_taskings.formation_synergy_mission_programs[1].task_sequence_informations[0].target_number =
@@ -5890,7 +5918,8 @@ void single_area_FBZS()
 		int rtn = 0;
 		rtn = detectConflict(&route_uav1,&route_uav2);
 		//有冲突
-		if(rtn == 1)
+		if(rtn == 1 || (fabs(route_uav1.end.latitude  - route_uav2.end.latitude)  < 1e-7 &&
+						fabs(route_uav1.end.longitude - route_uav2.end.longitude) < 1e-7))
 		{
 			//任务区交换
 			information_on_the_results_of_taskings.formation_synergy_mission_programs[1].task_sequence_informations[0].target_number =
@@ -6993,7 +7022,8 @@ void single_uav_CTSS()
 	UAV_position.latitude = integrated_postures.integrated_posture_drone_informations[uav_index].drone_longitude_and_latitude.latitude;
 	//subtask:磁探搜索(光电搜索暂时替代)
 	OutSearchRadarPhoto outSearchRadarPhoto;
-	outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[0],UAV_position,1000);
+	outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[0],
+												getNearestPolygonVertexForUav(UAV_position, area_sky_informations.area_informations[0]),1000);
 
 	//最多75个点 20250611new
 	if(outSearchRadarPhoto.sumAwp > 75) outSearchRadarPhoto.sumAwp = 75;
@@ -7148,7 +7178,8 @@ void single_uav_GDSS()
 	UAV_position.latitude = integrated_postures.integrated_posture_drone_informations[uav_index].drone_longitude_and_latitude.latitude;
 	//subtask:光电搜索
 	OutSearchRadarPhoto outSearchRadarPhoto;
-	outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[0],UAV_position,12000);
+	outSearchRadarPhoto = commonRouteGeneration(area_sky_informations.area_informations[0],
+												getNearestPolygonVertexForUav(UAV_position, area_sky_informations.area_informations[0]),12000);
 
 	//最多75个点 20250611new
 	if(outSearchRadarPhoto.sumAwp > 75) outSearchRadarPhoto.sumAwp = 75;
@@ -8096,6 +8127,73 @@ void hx_avoid(int stage)
 /*
  * 单任务区划分
  * */
+static void normalizeRectVertices(GeoLibDas vertexA[4])
+{
+	const double eps = 1e-9;
+	double cLat = 0.0, cLon = 0.0;
+	int order[4] = {0, 1, 2, 3};
+	GeoLibDas sorted[4];
+
+	for(int i = 0; i < 4; i++) {
+		cLat += vertexA[i].latitude;
+		cLon += vertexA[i].longitude;
+	}
+	cLat /= 4.0;
+	cLon /= 4.0;
+
+	for(int i = 0; i < 3; i++) {
+		for(int j = i + 1; j < 4; j++) {
+			int idxI = order[i];
+			int idxJ = order[j];
+			double dxI = vertexA[idxI].longitude - cLon;
+			double dyI = vertexA[idxI].latitude - cLat;
+			double dxJ = vertexA[idxJ].longitude - cLon;
+			double dyJ = vertexA[idxJ].latitude - cLat;
+			double angI = atan2(dyI, dxI);
+			double angJ = atan2(dyJ, dxJ);
+			double dist2I = dxI * dxI + dyI * dyI;
+			double dist2J = dxJ * dxJ + dyJ * dyJ;
+
+			if(angJ < angI - eps || (fabs(angJ - angI) < eps && dist2J < dist2I)) {
+				int tmp = order[i];
+				order[i] = order[j];
+				order[j] = tmp;
+			}
+		}
+	}
+
+	for(int i = 0; i < 4; i++) {
+		sorted[i] = vertexA[order[i]];
+	}
+
+	double area2 = 0.0;
+	for(int i = 0; i < 4; i++) {
+		int j = (i + 1) % 4;
+		area2 += sorted[i].longitude * sorted[j].latitude - sorted[j].longitude * sorted[i].latitude;
+	}
+	if(area2 < 0.0) {
+		GeoLibDas tmp = sorted[0];
+		sorted[0] = sorted[3];
+		sorted[3] = tmp;
+		tmp = sorted[1];
+		sorted[1] = sorted[2];
+		sorted[2] = tmp;
+	}
+
+	int startIdx = 0;
+	for(int i = 1; i < 4; i++) {
+		if(sorted[i].latitude < sorted[startIdx].latitude - eps ||
+		   (fabs(sorted[i].latitude - sorted[startIdx].latitude) < eps &&
+			sorted[i].longitude < sorted[startIdx].longitude)) {
+			startIdx = i;
+		}
+	}
+
+	for(int i = 0; i < 4; i++) {
+		vertexA[i] = sorted[(startIdx + i) % 4];
+	}
+}
+
 void task_area_division(region_info * area,int divi_num)
 {
 	//区域形状为圆形
@@ -8306,10 +8404,17 @@ void task_area_division(region_info * area,int divi_num)
 			area_sky_informations.area_informations[i].upper_height_limit = blk_dtms_ctas_001.region_infos[0].top_of_hei;//区域高度上限
 			area_sky_informations.area_informations[i].lower_height_limit = blk_dtms_ctas_001.region_infos[0].down_of_hei;//区域高度下限
 
+			GeoLibDas tempVertices[4];
 			for(int j = 0 ; j < 4 ; j ++)
 			{
-				area_sky_informations.area_informations[i].polygonals.point_coordinates[j].latitude = resAreaRectZone.rectA[i].vertexA[j].latitude;
-				area_sky_informations.area_informations[i].polygonals.point_coordinates[j].longitude = resAreaRectZone.rectA[i].vertexA[j].longitude;
+				tempVertices[j].latitude = resAreaRectZone.rectA[i].vertexA[j].latitude;
+				tempVertices[j].longitude = resAreaRectZone.rectA[i].vertexA[j].longitude;
+			}
+			normalizeRectVertices(tempVertices);
+			for(int j = 0 ; j < 4 ; j ++)
+			{
+				area_sky_informations.area_informations[i].polygonals.point_coordinates[j].latitude = tempVertices[j].latitude;
+				area_sky_informations.area_informations[i].polygonals.point_coordinates[j].longitude = tempVertices[j].longitude;
 			}
 		}
 	}
