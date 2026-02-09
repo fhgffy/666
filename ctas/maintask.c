@@ -1521,6 +1521,62 @@ OutAirwayLibDas citanGeneration(area_information area,GeoLibDas position){
 /*
  * 3.8 无人机航路规划方案生成
  * */
+static void normalizeRectVertices(GeoLibDas vertexA[4]);
+
+static int isSameGeoPoint(const GeoLibDas *pointA, const GeoLibDas *pointB)
+{
+	return (fabs(pointA->longitude - pointB->longitude) < 1e-6 &&
+			fabs(pointA->latitude  - pointB->latitude)  < 1e-6);
+}
+
+static int findSharedVertexPairs(const GeoLibDas rectVertexA[4], const GeoLibDas rectVertexB[4], int sharedA[2], int sharedB[2])
+{
+	typedef struct {
+		int idxA;
+		int idxB;
+		double distM;
+	} VertexPairDist;
+
+	VertexPairDist pairDistA[16];
+	int index = 0;
+	for(int i = 0; i < 4; i++) {
+		for(int j = 0; j < 4; j++) {
+			pairDistA[index].idxA = i;
+			pairDistA[index].idxB = j;
+			pairDistA[index].distM = getDistanceGeoLibDas(&rectVertexA[i], &rectVertexB[j]);
+			index++;
+		}
+	}
+
+	for(int i = 0; i < 15; i++) {
+		for(int j = i + 1; j < 16; j++) {
+			if(pairDistA[j].distM < pairDistA[i].distM) {
+				VertexPairDist temp = pairDistA[i];
+				pairDistA[i] = pairDistA[j];
+				pairDistA[j] = temp;
+			}
+		}
+	}
+
+	int usedA[4] = {0, 0, 0, 0};
+	int usedB[4] = {0, 0, 0, 0};
+	int sharedCount = 0;
+
+	for(int i = 0; i < 16; i++) {
+		int idxA = pairDistA[i].idxA;
+		int idxB = pairDistA[i].idxB;
+		if(usedA[idxA] || usedB[idxB]) continue;
+		sharedA[sharedCount] = idxA;
+		sharedB[sharedCount] = idxB;
+		usedA[idxA] = 1;
+		usedB[idxB] = 1;
+		sharedCount++;
+		if(sharedCount == 2) break;
+	}
+
+	return sharedCount;
+}
+
 static GeoLibDas getNearestPolygonVertexForUav(GeoLibDas uavPosition, area_information area)
 {
 	GeoLibDas nearestVertex = uavPosition;
@@ -1554,6 +1610,186 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 	int foundNoConflict = 0;
 	int foundAnyNonSame = 0;
 
+	// For split rectangles, evaluate same-boundary-side candidates first.
+	if(areaA[0].polygonals.point_number == 4 && areaA[1].polygonals.point_number == 4) {
+		GeoLibDas rectVertexA[4];
+		GeoLibDas rectVertexB[4];
+		for(int i = 0; i < 4; i++) {
+			rectVertexA[i].longitude = areaA[0].polygonals.point_coordinates[i].longitude;
+			rectVertexA[i].latitude = areaA[0].polygonals.point_coordinates[i].latitude;
+			rectVertexB[i].longitude = areaA[1].polygonals.point_coordinates[i].longitude;
+			rectVertexB[i].latitude = areaA[1].polygonals.point_coordinates[i].latitude;
+		}
+		normalizeRectVertices(rectVertexA);
+		normalizeRectVertices(rectVertexB);
+
+		int sharedA[2] = {-1, -1};
+		int sharedB[2] = {-1, -1};
+		int sharedCount = findSharedVertexPairs(rectVertexA, rectVertexB, sharedA, sharedB);
+		if(sharedCount == 2) {
+			double sharedDist0 = getDistanceGeoLibDas(&rectVertexA[sharedA[0]], &rectVertexB[sharedB[0]]);
+			double sharedDist1 = getDistanceGeoLibDas(&rectVertexA[sharedA[1]], &rectVertexB[sharedB[1]]);
+			double minEdgeA = DBL_MAX;
+			double minEdgeB = DBL_MAX;
+			for(int i = 0; i < 4; i++) {
+				int j = (i + 1) % 4;
+				double edgeA = getDistanceGeoLibDas(&rectVertexA[i], &rectVertexA[j]);
+				double edgeB = getDistanceGeoLibDas(&rectVertexB[i], &rectVertexB[j]);
+				if(edgeA < minEdgeA) minEdgeA = edgeA;
+				if(edgeB < minEdgeB) minEdgeB = edgeB;
+			}
+			double edgeRef = (minEdgeA < minEdgeB) ? minEdgeA : minEdgeB;
+			double sharedThreshold = edgeRef * 0.35;
+			if(sharedThreshold < 20.0) sharedThreshold = 20.0;
+
+			int diffA = (sharedA[0] > sharedA[1]) ? (sharedA[0] - sharedA[1]) : (sharedA[1] - sharedA[0]);
+			int diffB = (sharedB[0] > sharedB[1]) ? (sharedB[0] - sharedB[1]) : (sharedB[1] - sharedB[0]);
+			int adjacentA = (diffA == 1 || diffA == 3);
+			int adjacentB = (diffB == 1 || diffB == 3);
+			if(!(adjacentA && adjacentB) || sharedDist0 > sharedThreshold || sharedDist1 > sharedThreshold) {
+				sharedCount = 0;
+			}
+		}
+
+		if(sharedCount == 2) {
+			int outerA[2];
+			int outerB[2];
+			int outerCountA = 0;
+			int outerCountB = 0;
+			for(int i = 0; i < 4; i++) {
+				if(i != sharedA[0] && i != sharedA[1]) {
+					outerA[outerCountA++] = i;
+				}
+			}
+			for(int i = 0; i < 4; i++) {
+				if(i != sharedB[0] && i != sharedB[1]) {
+					outerB[outerCountB++] = i;
+				}
+			}
+
+			if(outerCountA == 2 && outerCountB == 2) {
+				GeoLibDas sharedOrigin = rectVertexA[sharedA[0]];
+				double dirLon = rectVertexA[sharedA[1]].longitude - sharedOrigin.longitude;
+				double dirLat = rectVertexA[sharedA[1]].latitude - sharedOrigin.latitude;
+				double dirNorm = sqrt(dirLon * dirLon + dirLat * dirLat);
+				if(dirNorm > 1e-12) {
+					dirLon /= dirNorm;
+					dirLat /= dirNorm;
+
+					double outerAProj0 = (rectVertexA[outerA[0]].longitude - sharedOrigin.longitude) * dirLon +
+										 (rectVertexA[outerA[0]].latitude - sharedOrigin.latitude) * dirLat;
+					double outerAProj1 = (rectVertexA[outerA[1]].longitude - sharedOrigin.longitude) * dirLon +
+										 (rectVertexA[outerA[1]].latitude - sharedOrigin.latitude) * dirLat;
+					if(outerAProj1 < outerAProj0) {
+						int temp = outerA[0];
+						outerA[0] = outerA[1];
+						outerA[1] = temp;
+					}
+
+					double outerBProj0 = (rectVertexB[outerB[0]].longitude - sharedOrigin.longitude) * dirLon +
+										 (rectVertexB[outerB[0]].latitude - sharedOrigin.latitude) * dirLat;
+					double outerBProj1 = (rectVertexB[outerB[1]].longitude - sharedOrigin.longitude) * dirLon +
+										 (rectVertexB[outerB[1]].latitude - sharedOrigin.latitude) * dirLat;
+					if(outerBProj1 < outerBProj0) {
+						int temp = outerB[0];
+						outerB[0] = outerB[1];
+						outerB[1] = temp;
+					}
+
+					for(int side = 0; side < 2; side++) {
+						GeoLibDas sideVertexA[2] = {rectVertexA[sharedA[side]], rectVertexA[outerA[side]]};
+						GeoLibDas sideVertexB[2] = {rectVertexB[sharedB[side]], rectVertexB[outerB[side]]};
+						for(int a = 0; a < 2; a++) {
+							for(int b = 0; b < 2; b++) {
+								GeoLibDas vertexA = sideVertexA[a];
+								GeoLibDas vertexB = sideVertexB[b];
+								if(isSameGeoPoint(&vertexA, &vertexB)) continue;
+
+								double totalDist = getDistanceGeoLibDas(&uavPositionA[0], &vertexA) +
+												   getDistanceGeoLibDas(&uavPositionA[1], &vertexB);
+								if(totalDist < bestAnyDist) {
+									bestAnyDist = totalDist;
+									bestAnyA = vertexA;
+									bestAnyB = vertexB;
+									foundAnyNonSame = 1;
+								}
+
+								FlightRoute routeA, routeB;
+								routeA.start.longitude = uavPositionA[0].longitude;
+								routeA.start.latitude = uavPositionA[0].latitude;
+								routeA.end.longitude = vertexA.longitude;
+								routeA.end.latitude = vertexA.latitude;
+								routeB.start.longitude = uavPositionA[1].longitude;
+								routeB.start.latitude = uavPositionA[1].latitude;
+								routeB.end.longitude = vertexB.longitude;
+								routeB.end.latitude = vertexB.latitude;
+
+								if(detectConflict(&routeA, &routeB) == 0 && totalDist < bestNoConflictDist) {
+									bestNoConflictDist = totalDist;
+									bestNoConflictA = vertexA;
+									bestNoConflictB = vertexB;
+									foundNoConflict = 1;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Shared-edge identification failed: keep same-side constraint by index-matched edges.
+		if(!foundAnyNonSame) {
+			for(int side = 0; side < 4; side++) {
+				GeoLibDas sideVertexA[2] = {rectVertexA[side], rectVertexA[(side + 1) % 4]};
+				GeoLibDas sideVertexB[2] = {rectVertexB[side], rectVertexB[(side + 1) % 4]};
+				for(int a = 0; a < 2; a++) {
+					for(int b = 0; b < 2; b++) {
+						GeoLibDas vertexA = sideVertexA[a];
+						GeoLibDas vertexB = sideVertexB[b];
+						if(isSameGeoPoint(&vertexA, &vertexB)) continue;
+
+						double totalDist = getDistanceGeoLibDas(&uavPositionA[0], &vertexA) +
+										   getDistanceGeoLibDas(&uavPositionA[1], &vertexB);
+						if(totalDist < bestAnyDist) {
+							bestAnyDist = totalDist;
+							bestAnyA = vertexA;
+							bestAnyB = vertexB;
+							foundAnyNonSame = 1;
+						}
+
+						FlightRoute routeA, routeB;
+						routeA.start.longitude = uavPositionA[0].longitude;
+						routeA.start.latitude = uavPositionA[0].latitude;
+						routeA.end.longitude = vertexA.longitude;
+						routeA.end.latitude = vertexA.latitude;
+						routeB.start.longitude = uavPositionA[1].longitude;
+						routeB.start.latitude = uavPositionA[1].latitude;
+						routeB.end.longitude = vertexB.longitude;
+						routeB.end.latitude = vertexB.latitude;
+
+						if(detectConflict(&routeA, &routeB) == 0 && totalDist < bestNoConflictDist) {
+							bestNoConflictDist = totalDist;
+							bestNoConflictA = vertexA;
+							bestNoConflictB = vertexB;
+							foundNoConflict = 1;
+						}
+					}
+				}
+			}
+		}
+
+		if(foundNoConflict) {
+			inPointA[0] = bestNoConflictA;
+			inPointA[1] = bestNoConflictB;
+			return;
+		}
+		if(foundAnyNonSame) {
+			inPointA[0] = bestAnyA;
+			inPointA[1] = bestAnyB;
+			return;
+		}
+	}
+
 	for(int i = 0; i < areaA[0].polygonals.point_number; i++) {
 		GeoLibDas vertexA;
 		vertexA.longitude = areaA[0].polygonals.point_coordinates[i].longitude;
@@ -1564,8 +1800,7 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 			vertexB.longitude = areaA[1].polygonals.point_coordinates[j].longitude;
 			vertexB.latitude = areaA[1].polygonals.point_coordinates[j].latitude;
 
-			int isSamePoint = (fabs(vertexA.longitude - vertexB.longitude) < 1e-7 &&
-							   fabs(vertexA.latitude  - vertexB.latitude)  < 1e-7);
+			int isSamePoint = isSameGeoPoint(&vertexA, &vertexB);
 			double totalDist = getDistanceGeoLibDas(&uavPositionA[0], &vertexA) +
 							   getDistanceGeoLibDas(&uavPositionA[1], &vertexB);
 			if(!isSamePoint && totalDist < bestAnyDist) {
@@ -4912,7 +5147,7 @@ void single_CT()
 	{
 		information_on_the_results_of_taskings.program_number = blk_dtms_ctas_002.planning_id;
 	}
-	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---首次生成
+	information_on_the_results_of_taskings.tasking_release = 2;//任务分配方案发布---首次生成
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无
@@ -5009,7 +5244,7 @@ void single_area_CTSS()
 	//单任务区指控
 	information_on_the_results_of_taskings.program_number = 3;//3为假定值
 
-	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---修改
+	information_on_the_results_of_taskings.tasking_release = 3;//任务分配方案发布---修改
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无
@@ -5191,7 +5426,7 @@ void single_area_GDSS()
 	//单任务区指控
 	information_on_the_results_of_taskings.program_number = 3;//3为假定值
 
-	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---修改
+	information_on_the_results_of_taskings.tasking_release = 3;//任务分配方案发布---修改
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无
@@ -5835,7 +6070,7 @@ void single_area_FBZS()
 	//单任务区指控
 	information_on_the_results_of_taskings.program_number = 3;//3为假定值
 
-	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---修改
+	information_on_the_results_of_taskings.tasking_release = 3;//任务分配方案发布---修改
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无

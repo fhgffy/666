@@ -69,6 +69,7 @@ static int g_fabu_send_uav_num = 0;
 static int g_fabu_switch_timeout = 0;
 static int g_fabu_switch_ack_cnt = 0;
 static unsigned int g_single_request_planning_id = 0;
+static unsigned int g_single_uav_request_plan_id = 0;
 static unsigned int alloc_single_request_plan_id(void)
 {
 	if(g_single_request_planning_id < planning_id)
@@ -416,6 +417,8 @@ static char bdfx_double_hx_point[2] = {0,0};
 static int bdfx_double_cnt_0x30[2] = {4,4};
 static unsigned char bdfx_double_done[2] = {0,0};
 static int bdfx_double_expect_route[2] = {0, 0};
+static int bdfx_single_expect_route[UAV_MAX_NUM] = {0,0,0,0};
+static int bdfx_single_uav_index = -1;
 static int build_bdfx_double_air_area(unsigned int plan, int uav_index, double half_width_km, area_information *out_area);
 void BDFX_double_rtn()
 {
@@ -659,15 +662,36 @@ void BDFX_rtn()
 	{
 		static int timeout_BDQH = 0;
 		timeout_BDQH ++ ;
-		int uav_index = DPU_CCC_data_11.drone_num -1;
+		int uav_index = bdfx_single_uav_index;
+		if(uav_index < 0 || uav_index >= UAV_MAX_NUM)
+		{
+			uav_index = DPU_CCC_data_11.drone_num -1;
+		}
+		if(uav_index < 0 || uav_index >= UAV_MAX_NUM)
+		{
+			return;
+		}
+		if(s4D_frame_40[uav_index] != 1
+				&& bdfx_single_expect_route[uav_index] > 0
+				&& uav_route[uav_index].route_number == bdfx_single_expect_route[uav_index])
+		{
+			s4D_frame_40[uav_index] = 1;
+			printf("BDFX single infer success uav=%d route=%d\n",uav_index,bdfx_single_expect_route[uav_index]);
+		}
 		if(s4D_frame_40[uav_index] == 1)
 		{
 			//发布成功
 			s4D_frame_40[uav_index] = 0;
+			bdfx_single_expect_route[uav_index] = 0;
 			BDFX_status = 0;
+			bdfx_single_uav_index = -1;
 			timeout_BDQH = 0;
 			//找到方案编号索引，没有运行中的方案plan为零
-			unsigned int plan_id = get_single_request_plan_id();
+			unsigned int plan_id = g_single_uav_request_plan_id;
+			if(plan_id == 0)
+			{
+				plan_id = get_single_request_plan_id();
+			}
 			unsigned int plan = plan_id % 3;
 			planning_id = plan_id;
 			//存入任务分配结果
@@ -682,16 +706,18 @@ void BDFX_rtn()
 			send_blk_ccc_ofp_021();
 			// 再次发送无人机航线（运行方案）
 			send_blk_ccc_ofp_024(plan);
-			scheme_generation_state(2,2, 2, 2);            //发送发布完成状态到综显
+			scheme_generation_state(0,2, 2, 2);            //发送发布完成状态到综显
 		}
 		else if(s4D_frame_40[uav_index] == -1)
 		{
 			//发布失败
 			BDFX_status = 0;
+			bdfx_single_uav_index = -1;
+			bdfx_single_expect_route[uav_index] = 0;
 			timeout_BDQH = 0;
 			//发送发布失败状态到综显
 			sprintf(CCC_DPU_data_0.failreason, "发送航线切换指令返回失败");
-			scheme_generation_state(2,2, 3, 2);
+			scheme_generation_state(0,2, 3, 2);
 //			scheme_generation_state(2,2, 3, 2);//260130
 			memset(CCC_DPU_data_0.failreason, 0, 200);
 		}
@@ -699,10 +725,12 @@ void BDFX_rtn()
 		{
 			//发布超时
 			BDFX_status = 0;
+			bdfx_single_uav_index = -1;
+			bdfx_single_expect_route[uav_index] = 0;
 			timeout_BDQH = 0;
 			//发送发布失败状态到综显
 			sprintf(CCC_DPU_data_0.failreason, "发送航线切换指令超时");
-			scheme_generation_state(2,2, 3, 2);
+			scheme_generation_state(0,2, 3, 2);
 			memset(CCC_DPU_data_0.failreason, 0, 200);
 		}
 	}
@@ -5487,12 +5515,16 @@ void single_uav_plan()
 	{
 		//		Receive_Message(DDSTables.PAD_CCC_025.niConnectionId, 0, &transaction_id, &DPU_CCC_data_11, &message_type_id, &message_size, &enRetCode);
 	}
+	if(enRetCode == 0 && (single_uav_flag == 2 || single_uav_flag == 3))
+	{
+		enRetCode = -1;
+	}
 	if(enRetCode == 0)
 	{
 		scheme_generation_state(0,1,0,1);// 返回方案编辑状态到综显，方案生成中
 		formulate_single = 0;
 		single_uav_004_idle_cnt = 0;
-		single_uav_stage_index = (global_stage > 0) ? (global_stage - 1) : 0;
+		single_uav_stage_index = 0;
 		//如果未加载返航航线，则生成失败
 		int normal_cnt = 0;
 		for(int i = 0 ; i < 4 ; i ++)
@@ -5518,10 +5550,17 @@ void single_uav_plan()
 			single_uav_flag = 1;
 			return;
 		}
-		alloc_single_request_plan_id();
+		g_single_uav_request_plan_id = alloc_single_request_plan_id();
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_011.niConnectionId);
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_002.niConnectionId);
 		dtms_flush_dds_topic(DDSTables.BLK_CTAS_DTMS_004.niConnectionId);
+		dtms_flush_dds_topic(DDSTables.DPU_CCC_35.niConnectionId);
+		dtms_flush_dds_topic(DDSTables.DPU2_CCC_35.niConnectionId);
+		int selected_uav_index = DPU_CCC_data_11.drone_num - 1;
+		if(selected_uav_index >= 0 && selected_uav_index < UAV_MAX_NUM)
+		{
+			memset(&blk_ccc_ofp_024_single[selected_uav_index],0,sizeof(blk_ccc_ofp_024_single[selected_uav_index]));
+		}
 		if(DPU_CCC_data_11.mission_object_type == 1)//任务区
 		{
 			uav_insert_cover = DPU_CCC_data_11.mission_approach;
@@ -5585,7 +5624,11 @@ void single_uav_plan()
 		if(enRetCode == 0)
 		{
 			memcpy(&blk_ccc_ofp_019,dds_data_rece.dataA,sizeof blk_ccc_ofp_019);
-			unsigned int expected_plan_id = get_single_request_plan_id();
+			unsigned int expected_plan_id = g_single_uav_request_plan_id;
+			if(expected_plan_id == 0)
+			{
+					expected_plan_id = (planning_id != 0) ? planning_id : 3;
+			}
 			if(blk_ccc_ofp_019.plan_id != expected_plan_id)
 			{
 				printf("ignore single_uav result plan_id=%u expected=%u\n",blk_ccc_ofp_019.plan_id,expected_plan_id);
@@ -5596,7 +5639,7 @@ void single_uav_plan()
 			int plan_uav = DPU_CCC_data_11.drone_num;//无人机序号加有人机位置加一再减一，得到方案的无人机索引下标
 			//找到当前运行的阶段对应的任务下标
 			unsigned int num = (global_stage > 0) ? (global_stage - 1) : 0;
-			single_uav_stage_index = num;
+			single_uav_stage_index = 0;
 			//索引无人机,CTAS内部无人机是紧凑排列，如果有无人机下线，需要重新查找下标，找到无人机对应关系
 			for(int i = 1 ; i < 5 ; i ++)
 			{
@@ -5623,6 +5666,7 @@ void single_uav_plan()
 			single_uav_flag = 3;
 		}
 	}
+	}
 	if(single_uav_flag == 3)
 	{
 		int route_recv_ok = 0;
@@ -5634,21 +5678,27 @@ void single_uav_plan()
 			Receive_Message(DDSTables.BLK_CTAS_DTMS_004.niConnectionId, 0, &transaction_id, &temp, &message_type_id, &message_size, &enRetCode);
 			if(enRetCode==0)
 			{
-				unsigned int expected_plan_id = get_single_request_plan_id();
-				if(temp.program_number != expected_plan_id)
+				unsigned int expected_plan_id = g_single_uav_request_plan_id;
+				if(expected_plan_id == 0)
+				{
+					expected_plan_id = (planning_id != 0) ? planning_id : 3;
+				}
+				if(temp.program_number != expected_plan_id && temp.uav_plan_id != expected_plan_id)
 				{
 					continue;
 				}
-				unsigned int id = (temp.individual_drone_routing_programs.drone_serial_number - 1);
-				unsigned int index = temp.individual_drone_routing_programs.planning_informations.packet_id *25;
-				
-
-				// 非紧密编队时，id为0，则把序号加1（及ctas的序号0（无人机1）起始是ofp编队内的1（无人机2））
-				if(castCtasToOfpIsNeeded() && id == 0)
+				// Normalize ids for DPU preview/update matching across multiple single-uav runs.
+				temp.program_number = expected_plan_id;
+				temp.uav_plan_id = expected_plan_id;
+				int selected_uav_index = DPU_CCC_data_11.drone_num - 1;
+				if(selected_uav_index < 0 || selected_uav_index >= UAV_MAX_NUM)
 				{
-					temp.individual_drone_routing_programs.drone_serial_number+=1;
-					id+=1;
+					continue;
 				}
+				unsigned int id = (unsigned int)selected_uav_index;
+				unsigned int index = temp.individual_drone_routing_programs.planning_informations.packet_id *25;
+				temp.individual_drone_routing_programs.drone_serial_number = (unsigned int)(selected_uav_index + 1);
+				temp.individual_drone_routing_programs.drone_num = DPU_CCC_data_11.drone_id;
 
 				//无人机任务序号为0
 				temp.individual_drone_routing_programs.subtask_index = single_uav_stage_index;
@@ -5695,6 +5745,8 @@ void single_uav_plan()
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_35.niConnectionId,DDSTables.DPU2_CCC_35.niConnectionId,&blk_ofp_ccc_043,sizeof blk_ofp_ccc_043);
 	if(enRetCode == 0)
 	{
+		if(single_uav_flag != 2 && single_uav_flag != 3)
+		{
 		//发布申请
 		if(blk_ofp_ccc_043.plan_state == 4)
 		{
@@ -5704,6 +5756,7 @@ void single_uav_plan()
 		else if(blk_ofp_ccc_043.plan_state == 3)
 		{
 			single_uav_flag = 22;
+			}
 		}
 	}
 	//航线注入
@@ -5721,6 +5774,9 @@ void single_uav_plan()
 			b2_frame_30[uav_index] = 0;
 			b2_frame_14[uav_index] = 0;
 			s4D_frame_40[uav_index] = 0;
+			bdfx_single_expect_route[uav_index] = 0;
+			bdfx_single_uav_index = uav_index;
+			send_cnt2[uav_index] = 0;
 			//开始装订航线
 			BDFX_status = 1;
 			scheme_generation_state(0,2, 1, 2); // 返回发布状态到综显
@@ -5756,7 +5812,6 @@ void single_uav_plan()
 		send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,2,NULL);
 		single_uav_flag = 0;
 	}
-}
 }
 void edit_uav_route(int i)
 {
@@ -5812,7 +5867,11 @@ void cover_inject(int uav_index)
 {
 	scheme_generation_state(0,2,1,2);// 返回发布状态到综显
 	//找到方案编号索引，没有运行中的方案plan为零
-	unsigned int plan_id = get_single_request_plan_id();
+	unsigned int plan_id = g_single_uav_request_plan_id;
+	if(plan_id == 0)
+	{
+		plan_id = get_single_request_plan_id();
+	}
 	unsigned int plan = plan_id % 3;
 	//单无人机插入，复用航线注入模块，改变方案变量
 	blk_ofp_ccc_039.Plan_ID = plan_id;
@@ -5870,7 +5929,15 @@ void cover_inject(int uav_index)
 void single_uav_BDFX()
 {
 	//无人机编队指令帧临时定义 100~143 数据库管理帧
-	int uav_index = DPU_CCC_data_11.drone_num -1;
+	int uav_index = bdfx_single_uav_index;
+	if(uav_index < 0 || uav_index >= UAV_MAX_NUM)
+	{
+		uav_index = DPU_CCC_data_11.drone_num -1;
+	}
+	if(uav_index < 0 || uav_index >= UAV_MAX_NUM)
+	{
+		return;
+	}
 	//发送七个航点(新增倒数第二个计算点 20251019new，中点与解散点之间新增一个点)，每个航点发送四次
 	static char hx_point = 0;
 	static int cnt_0x30 = 10;
@@ -5927,7 +5994,7 @@ void single_uav_BDFX()
 		temp.tezhenzi[0] = 0;
 
 		//计算倒数第二个点
-		unsigned int id = DPU_CCC_data_11.drone_num - 1;
+		unsigned int id = (unsigned int)uav_index;
 		Point last_second;
 		//260201  06机使用新机场点
 		last_second = last_second_point(get_airport_lat(uav_index),get_airport_lon(uav_index),
@@ -5946,7 +6013,7 @@ void single_uav_BDFX()
 	else
 	{
 		temp.hd = hx_point+1;
-		unsigned int id = DPU_CCC_data_11.drone_num - 1;
+		unsigned int id = (unsigned int)uav_index;
 		temp.lat =
 				blk_ccc_ofp_024_single[id].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[hx_point -1].latitude / lat_scale;
 		temp.lon =
@@ -6018,7 +6085,15 @@ void single_uav_BDON()
 {
 	//无人机编队指令帧临时定义 100~143 数据库管理帧
 	//航路点基础信息赋值  //0924调试修改
-	int uav_index = DPU_CCC_data_11.drone_num -1;
+	int uav_index = bdfx_single_uav_index;
+	if(uav_index < 0 || uav_index >= UAV_MAX_NUM)
+	{
+		uav_index = DPU_CCC_data_11.drone_num -1;
+	}
+	if(uav_index < 0 || uav_index >= UAV_MAX_NUM)
+	{
+		return;
+	}
 	int route_number = 48;
 	if(uav_route[uav_index].route_number == 48)
 	{
@@ -6026,6 +6101,7 @@ void single_uav_BDON()
 	}
 	if(send_cnt2[uav_index] < 3)
 	{
+		bdfx_single_expect_route[uav_index] = route_number;
 		order_data_frames.track_point_chage_orders.track_line_id = route_number;
 		order_data_frames.track_point_chage_orders.track_point_id = 2;
 		track_threat_frames.order_code[0] = 0x40;
@@ -6827,7 +6903,14 @@ void init_single_uav_zhanfa()
 {
 
 	memset(&blk_dtms_ctas_002,0,sizeof(BLK_DTMS_CTAS_002));
+	if(g_single_uav_request_plan_id != 0)
+	{
+		blk_dtms_ctas_002.planning_id = g_single_uav_request_plan_id;//单任务请求方案id
+	}
+	else
+	{
 	blk_dtms_ctas_002.planning_id = get_single_request_plan_id();//单任务请求方案id
+	}
 	blk_dtms_ctas_002.uav_id = DPU_CCC_data_11.drone_id;//单无人机编号
 	blk_dtms_ctas_002.solider_num = 1 + CCC_DPU_data_3.drone_number;   //todo：按有人机和无人机总数量赋值
 	blk_dtms_ctas_002.solider_infos[0].solider_type = 1; // 类别  1 有人 2 无人
@@ -9409,6 +9492,12 @@ void send_blk_ccc_ofp_018(int k, unsigned int plan, unsigned int task)
 		send_blk_ccc_kdl_018();
 		// send_array.clear();//清空
 	}
+}
+
+/***中间件时间*****/
+void recv_mids_time_message()
+{
+	Receive_Message(DDSTables.MIDS_CCC_001.niConnectionId, 0, &transaction_id, &blk_mids_ccc_time, &message_type_id, &message_size, &enRetCode);
 }
 
 /******************************** PAD交互模块 ******************************/
@@ -14638,6 +14727,9 @@ void recv_all_message()
 
 	/******接收PAD消息****/
 	recv_pad_message();
+
+	/***中间件时间*****/
+	recv_mids_time_message();
 }
 
 
