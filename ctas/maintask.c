@@ -5147,7 +5147,7 @@ void single_CT()
 	{
 		information_on_the_results_of_taskings.program_number = blk_dtms_ctas_002.planning_id;
 	}
-	information_on_the_results_of_taskings.tasking_release = 2;//任务分配方案发布---首次生成
+	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---首次生成
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无
@@ -5244,7 +5244,7 @@ void single_area_CTSS()
 	//单任务区指控
 	information_on_the_results_of_taskings.program_number = 3;//3为假定值
 
-	information_on_the_results_of_taskings.tasking_release = 3;//任务分配方案发布---修改
+	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---修改
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无
@@ -5426,7 +5426,7 @@ void single_area_GDSS()
 	//单任务区指控
 	information_on_the_results_of_taskings.program_number = 3;//3为假定值
 
-	information_on_the_results_of_taskings.tasking_release = 3;//任务分配方案发布---修改
+	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---修改
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无
@@ -6070,7 +6070,7 @@ void single_area_FBZS()
 	//单任务区指控
 	information_on_the_results_of_taskings.program_number = 3;//3为假定值
 
-	information_on_the_results_of_taskings.tasking_release = 3;//任务分配方案发布---修改
+	information_on_the_results_of_taskings.tasking_release = 6;//任务分配方案发布---修改
 	information_on_the_results_of_taskings.manual_modification = 2;//是否人工修改---未修改
 	information_on_the_results_of_taskings.emphasize_planning = 2;//是否重规划---否
 	information_on_the_results_of_taskings.modification_method = 0;//修改方式---无

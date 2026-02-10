@@ -420,6 +420,7 @@ static int bdfx_double_expect_route[2] = {0, 0};
 static int bdfx_single_expect_route[UAV_MAX_NUM] = {0,0,0,0};
 static int bdfx_single_uav_index = -1;
 static int build_bdfx_double_air_area(unsigned int plan, int uav_index, double half_width_km, area_information *out_area);
+static int build_bdfx_single_air_area(unsigned int plan, int uav_index, double half_width_km, area_information *out_area);
 void BDFX_double_rtn()
 {
 	/* Double-UAV BDON(0x40 route switch) fix: send_index can target only one UAV per cycle.
@@ -706,6 +707,21 @@ void BDFX_rtn()
 			send_blk_ccc_ofp_021();
 			// 再次发送无人机航线（运行方案）
 			send_blk_ccc_ofp_024(plan);
+            area_information tmp_area;
+            if (build_bdfx_single_air_area(plan, uav_index, 1.5, &tmp_area))
+            {
+                memcpy(&air_area.area_informations[uav_index + 1], &tmp_area, sizeof(area_information));
+                send_area[uav_index] = 1;
+                init_blk_ctas_dtms_010();
+                send_blk_ccc_ofp_033();
+                printf("BDFX single local area uav=%d code=%u width=3.0km\n", uav_index, tmp_area.area_code);
+            }
+            else
+            {
+                printf("BDFX single local area skip uav=%d points=%u\n",
+                       uav_index,
+                       blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.waypoints_number);
+            }
 			scheme_generation_state(0,2, 2, 2);            //发送发布完成状态到综显
 		}
 		else if(s4D_frame_40[uav_index] == -1)
@@ -948,6 +964,87 @@ void send_blk_ccc_ofp_047()
 static int build_bdfx_double_air_area(unsigned int plan, int uav_index, double half_width_km, area_information *out_area)
 {
 	if (out_area == NULL || uav_index < 0 || uav_index >= 2)
+	{
+		return 0;
+	}
+	planning_informations *p_plan =
+		&blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations;
+	unsigned short point_num = p_plan->waypoints_number;
+	if (point_num < 2)
+	{
+		return 0;
+	}
+	int start_index = 0;
+	int end_index = point_num - 1;
+	while (end_index > start_index)
+	{
+		double start_lat = p_plan->planning_information_waypoint_informations[start_index].latitude;
+		double start_lon = p_plan->planning_information_waypoint_informations[start_index].longitude;
+		double end_lat = p_plan->planning_information_waypoint_informations[end_index].latitude;
+		double end_lon = p_plan->planning_information_waypoint_informations[end_index].longitude;
+		if (fabs(start_lat - end_lat) > 1e-7 || fabs(start_lon - end_lon) > 1e-7)
+		{
+			break;
+		}
+		end_index--;
+	}
+	if (end_index <= start_index)
+	{
+		return 0;
+	}
+	double start_lat = p_plan->planning_information_waypoint_informations[start_index].latitude;
+	double start_lon = p_plan->planning_information_waypoint_informations[start_index].longitude;
+	double end_lat = p_plan->planning_information_waypoint_informations[end_index].latitude;
+	double end_lon = p_plan->planning_information_waypoint_informations[end_index].longitude;
+	double azimuth = calculate_azimuth(start_lat, start_lon, end_lat, end_lon);
+	double left_azimuth = azimuth + (M_PI / 2.0);
+	if (left_azimuth >= 2 * M_PI)
+	{
+		left_azimuth -= 2 * M_PI;
+	}
+	double right_azimuth = azimuth - (M_PI / 2.0);
+	if (right_azimuth < 0)
+	{
+		right_azimuth += 2 * M_PI;
+	}
+	double s_left_lat = 0.0;
+	double s_left_lon = 0.0;
+	double e_left_lat = 0.0;
+	double e_left_lon = 0.0;
+	double e_right_lat = 0.0;
+	double e_right_lon = 0.0;
+	double s_right_lat = 0.0;
+	double s_right_lon = 0.0;
+	calculate_endpoint(start_lat, start_lon, left_azimuth, half_width_km, &s_left_lat, &s_left_lon);
+	calculate_endpoint(end_lat, end_lon, left_azimuth, half_width_km, &e_left_lat, &e_left_lon);
+	calculate_endpoint(end_lat, end_lon, right_azimuth, half_width_km, &e_right_lat, &e_right_lon);
+	calculate_endpoint(start_lat, start_lon, right_azimuth, half_width_km, &s_right_lat, &s_right_lon);
+	memset(out_area, 0, sizeof(area_information));
+	out_area->area_code = (unsigned int)(uav_index + 9);
+	out_area->area_type = 2;
+	out_area->area_source = 3;
+	out_area->area_shape = 2;
+	out_area->area_platform_num = 1;
+	out_area->drone_numbe = (unsigned int)(uav_index + 1);
+	out_area->upper_height_limit_valid_bit = 1;
+	out_area->lower_height_limit_valid_bit = 1;
+	out_area->upper_height_limit = (p_plan->mission_height > 0) ? (float)p_plan->mission_height : 1200.0f;
+	out_area->lower_height_limit = 1.0f;
+	out_area->polygonals.point_number = 4;
+	out_area->polygonals.point_coordinates[0].latitude = s_left_lat;
+	out_area->polygonals.point_coordinates[0].longitude = s_left_lon;
+	out_area->polygonals.point_coordinates[1].latitude = e_left_lat;
+	out_area->polygonals.point_coordinates[1].longitude = e_left_lon;
+	out_area->polygonals.point_coordinates[2].latitude = e_right_lat;
+	out_area->polygonals.point_coordinates[2].longitude = e_right_lon;
+	out_area->polygonals.point_coordinates[3].latitude = s_right_lat;
+	out_area->polygonals.point_coordinates[3].longitude = s_right_lon;
+	return 1;
+}
+
+static int build_bdfx_single_air_area(unsigned int plan, int uav_index, double half_width_km, area_information *out_area)
+{
+	if (out_area == NULL || uav_index < 0 || uav_index >= UAV_MAX_NUM)
 	{
 		return 0;
 	}
@@ -17504,3 +17601,5 @@ int getUavCurrentTask(int drone_index)
 	int type = CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[drone_index].task_sequence_informations[global_stage - 1].type;
 	return type;
 }
+
+
