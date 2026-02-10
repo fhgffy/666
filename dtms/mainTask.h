@@ -267,7 +267,7 @@ void single_uav_lhcs(unsigned short uav_index);//领航参数
 void single_uav_pxlh(unsigned short uav_index);//盘旋领航
 void single_uav_XT();//悬停注入
 void cover_inject(int uav_index);//覆盖注入
-void edit_uav_route(int i);//单无人机航线修改
+int edit_uav_route(int i);//单无人机航线修改
 
 void uav_hx();//无人机航线查询
 void uav_simulation(); // 无人机飞仿控制

@@ -4038,10 +4038,12 @@ void route_change(int i)
 	BLK_CCC_OFP_024 uav;
 	static unsigned int plan = 0;
 	static unsigned int id = 0;
+	static unsigned char route_edit_ready = 0;
 	// DPU_DTMS 无人机航路修改保存
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_10.niConnectionId,DDSTables.DPU2_CCC_10.niConnectionId,&uav,sizeof uav);
 	if(enRetCode == 0)
-	{
+{
+		route_edit_ready = 1;
 		plan = (uav.program_number) % 3;
 		id = (uav.individual_drone_routing_programs.drone_serial_number - 1);
 		unsigned int index = uav.individual_drone_routing_programs.planning_informations.packet_id *25;
@@ -4055,7 +4057,7 @@ void route_change(int i)
 		Send_Message(DDSTables.CCC_DPU_11.niConnectionId,0,&transaction_id, &uav, &message_type_id, data_length, &enRetCode);
 	}
 	//接收完修改信息后发送到CTAS重新生成空域
-	if(i == 2 && plan != 0)
+	if(i == 2 && route_edit_ready == 1)
 	{
 		//发送修改无人机的所有航线到CTAS
 		for(unsigned char j = 0 ;j < blk_ccc_ofp_024_cunchu[plan][id].individual_drone_routing_programs.planning_informations.total_packet ; j++)
@@ -4074,6 +4076,7 @@ void route_change(int i)
 		//清空变量
 		plan = 0;
 		id = 0;
+		route_edit_ready = 0;
 	}
 }
 //发送无人机单任务到辅助决策，生成空域
@@ -5897,28 +5900,48 @@ void single_uav_plan()
 	//单无人机编辑
 	if(single_uav_flag == 22)
 	{
-		//修改单无人机任务航线
-		//编辑状态发送,航线编辑中
-		send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,1,NULL);
-		for(int i = 0 ; i < 3 ; i ++)
+		static unsigned int single_edit_wait_cnt = 0;
+		int edit_ok = 0;
+		if(single_edit_wait_cnt == 0)
 		{
-			//存储有人机，无人机航线
-			edit_uav_route(i);
+			send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,1,NULL);
 		}
-		//编辑状态发送,航线编辑完成
-		send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,2,NULL);
-		single_uav_flag = 0;
+		for(int i = 0 ; i < 20 ; i ++)
+		{
+			if(edit_uav_route(i % 3) == 1)
+			{
+				edit_ok = 1;
+			}
+		}
+		if(edit_ok == 1)
+		{
+			send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,2,NULL);
+			single_uav_flag = 0;
+			single_edit_wait_cnt = 0;
+		}
+		else
+		{
+			single_edit_wait_cnt++;
+			if(single_edit_wait_cnt > 100)
+			{
+				send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,2,NULL);
+				single_uav_flag = 0;
+				single_edit_wait_cnt = 0;
+			}
+		}
 	}
 }
-void edit_uav_route(int i)
+int edit_uav_route(int i)
 {
 	BLK_CCC_OFP_024 uav;
 	static unsigned int id = 0;
 	static unsigned int uav_id = 0;
+	int recv_ok = 0;
 	// DPU_DTMS 无人机航路修改保存
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_10.niConnectionId,DDSTables.DPU2_CCC_10.niConnectionId,&uav,sizeof uav);
 	if(enRetCode == 0)
 	{
+		recv_ok = 1;
 		uav_id = uav.individual_drone_routing_programs.drone_num;
 		id = (uav.individual_drone_routing_programs.drone_serial_number - 1);
 		unsigned int index = uav.individual_drone_routing_programs.planning_informations.packet_id *25;
@@ -5958,6 +5981,7 @@ void edit_uav_route(int i)
 		//清空变量
 		uav_id = 0;
 	}
+	return recv_ok;
 }
 //覆盖注入航线
 void cover_inject(int uav_index)
@@ -6067,7 +6091,7 @@ void single_uav_BDFX()
 	}
 
 	//机场点赋值
-	if(hx_point == 0 || hx_point == 6)
+	if(hx_point == 0 || hx_point == 8)
 	{
 		//高度速度
 		temp.height = 160 / gaodu_scale;
@@ -6080,7 +6104,7 @@ void single_uav_BDFX()
 		temp.tezhenzi[0] = 0x07;
 		cnt_0x30--;
 	}
-	else if(hx_point == 5)
+	else if(hx_point == 7)
 	{
 		//高度速度
 		temp.height = 360 / gaodu_scale;
@@ -6101,7 +6125,7 @@ void single_uav_BDFX()
 		temp.lon = last_second.lon / lon_scale;
 		cnt_0x30--;
 	}
-	else if(hx_point == 7)
+	else if(hx_point == 9)
 	{
 		//发送完毕退出装订
 		hx_point = 0;
@@ -6142,14 +6166,14 @@ void single_uav_BDFX()
 			temp.team_id = 2;//队形
 			temp.task_type = 0x02;//队形变换点
 		}
-		else if(hx_point == 3)
+		else if(hx_point == 3 || hx_point == 4 || hx_point == 5)
 		{
 			//第四个航点 中点与解散点之间的点 20251115new
 			temp.tezhenzi[0] = 0;
 			temp.group_id = 5;//群组
 			temp.team_id = 2;//队形
 		}
-		else if(hx_point == 4)
+		else if(hx_point == 6)
 		{
 			//第五个航点
 			temp.tezhenzi[0] = 0x02;

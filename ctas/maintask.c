@@ -6671,11 +6671,6 @@ void BDFX_init(SGeo UAV_aircraft, SGeo goal_point ,unsigned int uav_index)
 {
 	SGeo route_point[10];//生成的航线点集合
 	unsigned short point_num = 0;//航线点数量
-	//加入目标终点，解散点
-	route_point[3].Lon = goal_point.Lon;
-	route_point[3].Lat = goal_point.Lat;
-	point_num++;
-
 	double distance, bearing;
 	calculate_distance_bearing(UAV_aircraft, goal_point, &distance, &bearing);
 
@@ -6683,12 +6678,31 @@ void BDFX_init(SGeo UAV_aircraft, SGeo goal_point ,unsigned int uav_index)
 	route_point[0] = calculate_new_coordinate(UAV_aircraft, 1.5, bearing);
 	point_num++;
 
-	// 计算中点，队形变换点
-	route_point[1] = calculate_new_coordinate(UAV_aircraft,distance/2, bearing);
+	// 单机编队航点结构与双机编队对齐：共6点（集结-过顶-保持-中点-保持-解散）
+	double remain_distance = distance - 1.5;
+	if(remain_distance < 0)
+	{
+		remain_distance = 0;
+	}
+
+	// 第二个点：过顶点（剩余航段的1/10处）
+	route_point[1] = calculate_new_coordinate(route_point[0], remain_distance / 10, bearing);
 	point_num++;
 
-	// 计算解算点前的点 20251115new，一般点
-	route_point[2] = calculate_new_coordinate(UAV_aircraft,distance-2, bearing);
+	// 第三个点：队形保持点（剩余航段的3/10处）
+	route_point[2] = calculate_new_coordinate(route_point[0], remain_distance * 3 / 10, bearing);
+	point_num++;
+
+	// 第四个点：中点（剩余航段的1/2处）
+	route_point[3] = calculate_new_coordinate(route_point[0], remain_distance / 2, bearing);
+	point_num++;
+
+	// 第五个点：队形保持点（剩余航段的7/8处）
+	route_point[4] = calculate_new_coordinate(route_point[0], remain_distance * 7 / 8, bearing);
+	point_num++;
+
+	// 第六个点：解散点
+	route_point[5] = goal_point;
 	point_num++;
 
 	//赋值航路信息
@@ -6728,7 +6742,7 @@ void BDFX_init(SGeo UAV_aircraft, SGeo goal_point ,unsigned int uav_index)
 
 		}
 		//解散点
-		if(i == 3)
+		if(i == 5)
 		{
 			//航路点待机时间/圈数/循环次数
 			CTAS_DTMS_data_UAVRoute.individual_drone_routing_programs[uav_index].planning_informations[1].planning_information_waypoint_informations[i].standby_time_lapsNumber_cycleNumber
