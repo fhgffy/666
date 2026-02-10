@@ -702,6 +702,29 @@ void BDFX_rtn()
 			CCC_DPU_data_6_Ofp[plan].plan_release_mode = 1;
 			//存入单无人机航线
 			memcpy(&blk_ccc_ofp_024_cunchu[plan][uav_index],&blk_ccc_ofp_024_single[uav_index],sizeof(BLK_CCC_OFP_024_cunchu));
+			int points_number =
+					blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.waypoints_number;
+			int max_points = (int)(sizeof(uav_route[uav_index].waypoint) / sizeof(uav_route[uav_index].waypoint[0]));
+			if(points_number <= 0)
+			{
+				uav_route[uav_index].tasking = 0;
+			}
+			else
+			{
+				if(points_number > max_points)
+				{
+					points_number = max_points;
+				}
+				uav_route[uav_index].tasking = 1;
+				uav_route[uav_index].task_type =
+					blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.mission_type;
+				uav_route[uav_index].task_id =
+					blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.subtask_ID_number;
+				uav_route[uav_index].hull_number = points_number + 3;
+				memcpy(&uav_route[uav_index].waypoint[0],
+						&blk_ccc_ofp_024_cunchu[plan][uav_index].individual_drone_routing_programs.planning_informations.planning_information_waypoint_informations[0],
+						sizeof(planning_information_waypoint_information) * points_number);
+			}
 			// 发送单无人机务运行分配结果
 			blk_ccc_ofp_019.plan_release_mode = 1;            //已发布
 			send_blk_ccc_ofp_021();
