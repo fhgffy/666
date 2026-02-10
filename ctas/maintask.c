@@ -956,6 +956,7 @@ void mannedAircraftRoutesGeneration(){
 		//subtask:浮标侦收
 		else if(information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[i].sequence_type==1) {
 			OutBuoyMonitorAirway outBuoyMonitorAirway;
+			char has_monitor_route = 0;
 			//找出浮标侦听区域对应的浮标布阵子任务ID
 			unsigned int ID = 0;
 			for(int j = 0;j < information_on_the_results_of_taskings.formation_synergy_mission_programs[0].number_of_subtasks;j++){
@@ -968,6 +969,8 @@ void mannedAircraftRoutesGeneration(){
 			for(int j = 0;j < CTAS_DTMS_data_mannedRoute.buoy_deployment_points.subtasks_number;j++){
 				if(ID == CTAS_DTMS_data_mannedRoute.buoy_deployment_points.buoy_manned_computer_tasks[j].subtask_ID_number){
 					outBuoyMonitorAirway = buyo_monitor_way_generation(CTAS_DTMS_data_mannedRoute.buoy_deployment_points.buoy_manned_computer_tasks[j],manned_position);
+					has_monitor_route = 1;
+					break;
 				}
 			}
 
@@ -981,12 +984,23 @@ void mannedAircraftRoutesGeneration(){
 					information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[i].subtask_ID_number;
 			CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].task_type =
 					information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[i].sequence_type;
-			CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoints_number =
-					outBuoyMonitorAirway.sum;
-			for(int j=0;j<outBuoyMonitorAirway.sum;j++){
-				CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].longitude = outBuoyMonitorAirway.awpA[j].longitude;
-				CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].latitude = outBuoyMonitorAirway.awpA[j].latitude;
-				CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].height = outBuoyMonitorAirway.alt;
+			if(has_monitor_route){
+				CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoints_number =
+						outBuoyMonitorAirway.sum;
+				for(int j=0;j<outBuoyMonitorAirway.sum;j++){
+					CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].longitude = outBuoyMonitorAirway.awpA[j].longitude;
+					CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].latitude = outBuoyMonitorAirway.awpA[j].latitude;
+					CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].height = outBuoyMonitorAirway.alt;
+				}
+			}else{
+				OutSearchRadarPhoto outSearchRadarPhoto;
+				outSearchRadarPhoto = commonRouteGeneration(area,manned_position,6000);
+				CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoints_number =
+						outSearchRadarPhoto.sumAwp;
+				for(int j=0;j<outSearchRadarPhoto.sumAwp;j++){
+					CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].longitude = outSearchRadarPhoto.awpA[j].longitude;
+					CTAS_DTMS_data_mannedRoute.common_carrier_routes.manned_computer_tasks[manned_subtask_id_common].waypoint_informations[j].latitude = outSearchRadarPhoto.awpA[j].latitude;
+				}
 			}
 
 			//有人机航路---无长度
@@ -3976,6 +3990,440 @@ void eighthStrategy__missionDistributeInformation(){
 
 }
 
+static area_information build_area_from_region_info(const region_info *region, unsigned int area_code)
+{
+	area_information area;
+	memset(&area, 0, sizeof(area_information));
+	if(region == NULL) {
+		return area;
+	}
+
+	area.area_code = area_code;
+	area.area_type = region->reg_type;
+	area.area_source = region->reg_sour;
+	area.area_shape = region->reg_shape;
+	area.area_platform_num = 0;
+	area.drone_numbe = region->kongyu_belong_to_uav_id;
+	area.upper_height_limit_valid_bit = region->reg_top_of_hei_valid;
+	area.lower_height_limit_valid_bit = region->reg_down_of_hei_valid;
+	area.upper_height_limit = region->top_of_hei;
+	area.lower_height_limit = region->down_of_hei;
+
+	if(region->reg_shape == 1) {
+		area.cycles.longitude = region->reg_circle.center_lon_lat.longitude;
+		area.cycles.latitude = region->reg_circle.center_lon_lat.latitude;
+		area.cycles.radius = region->reg_circle.radious;
+	} else if(region->reg_shape == 2) {
+		unsigned short point_num = region->reg_ploygen.point_num;
+		if(point_num > 10) {
+			point_num = 10;
+		}
+		area.polygonals.point_number = point_num;
+		for(int i = 0; i < point_num; i++) {
+			area.polygonals.point_coordinates[i].longitude = region->reg_ploygen.points_lon_lat[i].longitude;
+			area.polygonals.point_coordinates[i].latitude = region->reg_ploygen.points_lon_lat[i].latitude;
+		}
+	}
+
+	return area;
+}
+
+static GeoLibDas move_geo_by_bearing_km(GeoLibDas origin, double bearing_deg, double distance_km)
+{
+	GeoLibDas output = origin;
+	double bearing_rad = bearing_deg * M_PI / 180.0;
+	double lat1 = origin.latitude * M_PI / 180.0;
+	double lon1 = origin.longitude * M_PI / 180.0;
+	double angular_distance = distance_km / 6371.0;
+
+	double sin_lat1 = sin(lat1);
+	double cos_lat1 = cos(lat1);
+	double sin_ad = sin(angular_distance);
+	double cos_ad = cos(angular_distance);
+
+	double lat2 = asin(sin_lat1 * cos_ad + cos_lat1 * sin_ad * cos(bearing_rad));
+	double lon2 = lon1 + atan2(sin(bearing_rad) * sin_ad * cos_lat1,
+			cos_ad - sin_lat1 * sin(lat2));
+
+	output.latitude = lat2 * 180.0 / M_PI;
+	output.longitude = lon2 * 180.0 / M_PI;
+	while(output.longitude > 180.0) {
+		output.longitude -= 360.0;
+	}
+	while(output.longitude < -180.0) {
+		output.longitude += 360.0;
+	}
+	return output;
+}
+
+static area_information build_listen_area_for_ninth_strategy(const area_information *task_area, unsigned int area_code)
+{
+	area_information listen_area;
+	memset(&listen_area, 0, sizeof(area_information));
+	if(task_area == NULL) {
+		return listen_area;
+	}
+
+	listen_area.area_code = area_code;
+	listen_area.area_type = task_area->area_type;
+	listen_area.area_source = task_area->area_source;
+	listen_area.area_shape = 2;
+	listen_area.area_platform_num = task_area->area_platform_num;
+	listen_area.drone_numbe = task_area->drone_numbe;
+	listen_area.upper_height_limit_valid_bit = task_area->upper_height_limit_valid_bit;
+	listen_area.lower_height_limit_valid_bit = task_area->lower_height_limit_valid_bit;
+	listen_area.upper_height_limit = task_area->upper_height_limit;
+	listen_area.lower_height_limit = task_area->lower_height_limit;
+	listen_area.polygonals.point_number = 4;
+
+	GeoLibDas center;
+	double half_ew_km = 0.0;
+	double half_ns_km = 0.0;
+
+	if(task_area->area_shape == 1) {
+		center.longitude = task_area->cycles.longitude;
+		center.latitude = task_area->cycles.latitude;
+		half_ew_km = task_area->cycles.radius;
+		half_ns_km = task_area->cycles.radius;
+	} else {
+		double min_lat = task_area->polygonals.point_coordinates[0].latitude;
+		double max_lat = task_area->polygonals.point_coordinates[0].latitude;
+		double min_lon = task_area->polygonals.point_coordinates[0].longitude;
+		double max_lon = task_area->polygonals.point_coordinates[0].longitude;
+		for(int i = 1; i < task_area->polygonals.point_number; i++) {
+			double lat = task_area->polygonals.point_coordinates[i].latitude;
+			double lon = task_area->polygonals.point_coordinates[i].longitude;
+			if(lat < min_lat) min_lat = lat;
+			if(lat > max_lat) max_lat = lat;
+			if(lon < min_lon) min_lon = lon;
+			if(lon > max_lon) max_lon = lon;
+		}
+
+		center.latitude = (min_lat + max_lat) / 2.0;
+		center.longitude = (min_lon + max_lon) / 2.0;
+		half_ew_km = calculate_distances(center.latitude, min_lon, center.latitude, max_lon) / 2.0;
+		half_ns_km = calculate_distances(min_lat, center.longitude, max_lat, center.longitude) / 2.0;
+	}
+
+	if(half_ew_km < 0.1) half_ew_km = 0.1;
+	if(half_ns_km < 0.1) half_ns_km = 0.1;
+
+	double course = calculate_angle(integrated_postures.latitude, integrated_postures.longitude,
+			center.latitude, center.longitude);
+	double move_bearing = 180.0;
+	double edge_half_km = half_ns_km;
+
+	// 与需求图伪代码一致：按象限取监听区偏置方向与参考边半长
+	if(course >= 45.0 && course < 135.0) {
+		move_bearing = 90.0;
+		edge_half_km = half_ew_km;
+	} else if(course >= 135.0 && course < 225.0) {
+		move_bearing = 180.0;
+		edge_half_km = half_ns_km;
+	} else if(course >= 225.0 && course < 315.0) {
+		move_bearing = 270.0;
+		edge_half_km = half_ew_km;
+	} else {
+		move_bearing = 180.0;
+		edge_half_km = half_ns_km;
+	}
+
+	const double listen_half_side_km = 2.5;
+	const double safe_delta_km = 1.0;
+	GeoLibDas listen_center = move_geo_by_bearing_km(center, move_bearing, edge_half_km + listen_half_side_km + safe_delta_km);
+	double corner_distance_km = listen_half_side_km * sqrt(2.0);
+
+	GeoLibDas corner_point = move_geo_by_bearing_km(listen_center, 315.0, corner_distance_km);
+	listen_area.polygonals.point_coordinates[0].longitude = corner_point.longitude;
+	listen_area.polygonals.point_coordinates[0].latitude = corner_point.latitude;
+	corner_point = move_geo_by_bearing_km(listen_center, 45.0, corner_distance_km);
+	listen_area.polygonals.point_coordinates[1].longitude = corner_point.longitude;
+	listen_area.polygonals.point_coordinates[1].latitude = corner_point.latitude;
+	corner_point = move_geo_by_bearing_km(listen_center, 135.0, corner_distance_km);
+	listen_area.polygonals.point_coordinates[2].longitude = corner_point.longitude;
+	listen_area.polygonals.point_coordinates[2].latitude = corner_point.latitude;
+	corner_point = move_geo_by_bearing_km(listen_center, 225.0, corner_distance_km);
+	listen_area.polygonals.point_coordinates[3].longitude = corner_point.longitude;
+	listen_area.polygonals.point_coordinates[3].latitude = corner_point.latitude;
+
+	return listen_area;
+}
+
+static void copy_area_points_to_taskarea_division(const area_information *area, SubdomainCoordinate dst[4])
+{
+	if(area == NULL || dst == NULL) {
+		return;
+	}
+
+	if(area->area_shape == 1) {
+		const double earth_r_km = 6371.0;
+		double center_lat = area->cycles.latitude;
+		double center_lon = area->cycles.longitude;
+		double radius_km = area->cycles.radius;
+		double delta_lat = (radius_km / earth_r_km) * (180.0 / M_PI);
+		double lat_rad = center_lat * M_PI / 180.0;
+		double cos_lat = cos(lat_rad);
+		double delta_lon = 0.0;
+		if(fabs(cos_lat) < 1e-9) {
+			delta_lon = 180.0;
+		} else {
+			delta_lon = ((radius_km / earth_r_km) * (180.0 / M_PI)) / cos_lat;
+		}
+
+		double lat_min = center_lat - delta_lat;
+		double lat_max = center_lat + delta_lat;
+		double lon_min = center_lon - delta_lon;
+		double lon_max = center_lon + delta_lon;
+		if(lat_min < -90.0) lat_min = -90.0;
+		if(lat_max > 90.0) lat_max = 90.0;
+		lon_min = fmod(lon_min + 180.0, 360.0) - 180.0;
+		lon_max = fmod(lon_max + 180.0, 360.0) - 180.0;
+
+		double lon_a = lon_min;
+		double lon_b = lon_max;
+		if(lon_a > lon_b) {
+			lon_a = -180.0;
+			lon_b = 180.0;
+		}
+
+		// 顺序与task_area_division保持一致
+		dst[0].Index_Lat = lat_min; dst[0].Index_Lon = lon_a;
+		dst[1].Index_Lat = lat_min; dst[1].Index_Lon = lon_b;
+		dst[2].Index_Lat = lat_max; dst[2].Index_Lon = lon_b;
+		dst[3].Index_Lat = lat_max; dst[3].Index_Lon = lon_a;
+		return;
+	}
+
+	int point_num = area->polygonals.point_number;
+	if(point_num <= 0) {
+		for(int i = 0; i < 4; i++) {
+			dst[i].Index_Lon = 0.0;
+			dst[i].Index_Lat = 0.0;
+		}
+		return;
+	}
+
+	for(int i = 0; i < 4; i++) {
+		int idx = (i < point_num) ? i : (point_num - 1);
+		dst[i].Index_Lon = area->polygonals.point_coordinates[idx].longitude;
+		dst[i].Index_Lat = area->polygonals.point_coordinates[idx].latitude;
+	}
+}
+
+static void fill_taskarea_division_for_ninth_strategy(unsigned int task_area_id)
+{
+	memset(&taskarea_division, 0, sizeof(BLK_CCC_OFP_005));
+	unsigned short area_num = area_sky_informations.area_number;
+	if(area_num > 6) {
+		area_num = 6;
+	}
+
+	taskarea_division.task_are = 1;
+	taskarea_division.task_are_hf2[0].Task_Are_ID = task_area_id;
+	taskarea_division.task_are_hf2[0].task_are_hf_num = (unsigned char)area_num;
+
+	for(int i = 0; i < area_num; i++) {
+		taskarea_division.task_are_hf2[0].signal_FC00[i].Task_Are_ID =
+				area_sky_informations.area_informations[i].area_code;
+		copy_area_points_to_taskarea_division(&area_sky_informations.area_informations[i],
+				taskarea_division.task_are_hf2[0].signal_FC00[i].signal_FC00);
+	}
+}
+
+static int find_closest_area_index_for_uav(const GeoLibDas *uav_position, int area_limit, const int used_flags[8])
+{
+	if(uav_position == NULL) {
+		return -1;
+	}
+	if(area_limit > 8) {
+		area_limit = 8;
+	}
+	double min_dist = DBL_MAX;
+	int min_index = -1;
+	for(int i = 0; i < area_limit; i++) {
+		if(used_flags != NULL && used_flags[i]) {
+			continue;
+		}
+		if(area_sky_informations.area_informations[i].area_code == 0) {
+			continue;
+		}
+		double dist = minDistance(*uav_position, area_sky_informations.area_informations[i]);
+		if(dist < min_dist) {
+			min_dist = dist;
+			min_index = i;
+		}
+	}
+	return min_index;
+}
+
+/*
+ * 战术九
+ * 有人机布阵后无人机进区搜索
+ */
+void ninthStrategy()
+{
+	ninthStrategy_missionDistributeInformation();
+}
+
+void ninthStrategy_missionDistributeInformation()
+{
+	information_on_the_results_of_taskings.tasking_release = 2;
+	information_on_the_results_of_taskings.manual_modification = 2;
+	information_on_the_results_of_taskings.emphasize_planning = 2;
+	information_on_the_results_of_taskings.modification_method = 0;
+	information_on_the_results_of_taskings.program_attributes = 0;
+
+	int drone_num = drone_state_informations.drone_number;
+	if(drone_num <= 0) {
+		return;
+	}
+	if(drone_num > 4) {
+		drone_num = 4;
+	}
+	information_on_the_results_of_taskings.number_of_mission_platforms = drone_num + 1;
+
+	area_information task_area;
+	memset(&task_area, 0, sizeof(area_information));
+	unsigned int src_task_area_id = 1;
+	if(blk_dtms_ctas_001.task_reg_num > 0) {
+		src_task_area_id = blk_dtms_ctas_001.region_infos[0].reg_id;
+		task_area = build_area_from_region_info(&blk_dtms_ctas_001.region_infos[0], (unsigned int)(drone_num + 1));
+	} else if(area_sky_informations.area_number > 0) {
+		task_area = area_sky_informations.area_informations[0];
+		src_task_area_id = task_area.area_code;
+		task_area.area_code = (unsigned int)(drone_num + 1);
+	}
+	if(task_area.area_shape == 0) {
+		return;
+	}
+
+	area_information stage2_areas[4];
+	memset(stage2_areas, 0, sizeof(stage2_areas));
+	int stage2_area_num = 0;
+	if(blk_dtms_ctas_001.task_reg_num > 0) {
+		region_info split_region = blk_dtms_ctas_001.region_infos[0];
+		task_area_division(&split_region, drone_num);
+		stage2_area_num = area_sky_informations.area_number;
+		if(stage2_area_num > drone_num) {
+			stage2_area_num = drone_num;
+		}
+		for(int i = 0; i < stage2_area_num; i++) {
+			stage2_areas[i] = area_sky_informations.area_informations[i];
+		}
+	} else {
+		for(int i = 0; i < drone_num && i < area_sky_informations.area_number; i++) {
+			stage2_areas[i] = area_sky_informations.area_informations[i];
+			stage2_area_num++;
+		}
+	}
+	if(stage2_area_num <= 0) {
+		stage2_area_num = drone_num;
+		for(int i = 0; i < stage2_area_num; i++) {
+			stage2_areas[i] = task_area;
+		}
+	}
+	for(int i = 0; i < stage2_area_num; i++) {
+		stage2_areas[i].area_code = (unsigned int)(i + 1);
+	}
+
+	task_area.area_code = (unsigned int)(stage2_area_num + 1);
+	area_information listen_area = build_listen_area_for_ninth_strategy(&task_area, (unsigned int)(stage2_area_num + 2));
+
+	memset(&area_sky_informations, 0, sizeof(area_sky_information));
+	area_sky_informations.area_number = (unsigned short)(stage2_area_num + 2);
+	for(int i = 0; i < stage2_area_num; i++) {
+		area_sky_informations.area_informations[i] = stage2_areas[i];
+	}
+	area_sky_informations.area_informations[stage2_area_num] = task_area;
+	area_sky_informations.area_informations[stage2_area_num + 1] = listen_area;
+
+	global_mission_planning_commandss.area_point_num = area_sky_informations.area_number;
+	for(int i = 0; i < global_mission_planning_commandss.area_point_num && i < 8; i++) {
+		global_mission_planning_commandss.area_point_number[i] =
+				area_sky_informations.area_informations[i].area_code;
+	}
+	fill_taskarea_division_for_ninth_strategy(src_task_area_id);
+
+	// 有人机：阶段1布阵，阶段2监听
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].platform_model = 1;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].platform_serial_number = 0;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].platform_number = MANNED_ID;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].number_of_subtasks = 2;
+
+	for(int stage = 0; stage < 2; stage++) {
+		task_sequence_information *task = &information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[stage];
+		task->subtask_ID_number = (unsigned int)(stage + 1);
+		task->modify = 0;
+		task->type_of_mission_point_area = 3;
+		task->completion_time_valid_Bits = 1;
+		task->task_height_effective_position = 1;
+		task->task_completion_time = 20;
+		task->mission_height = 1000;
+		task->presence_of_fixed_point_arrays = 0;
+	}
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].sequence_type = 3;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].target_number = task_area.area_code;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].availability_of_routes = 0;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].presence_of_buoy_array = 1;
+
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].sequence_type = 1;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].target_number = listen_area.area_code;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].availability_of_routes = 1;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].presence_of_buoy_array = 0;
+
+	// 无人机：阶段1盘旋等待，阶段2进区搜索
+	int area_used[8] = {0,0,0,0,0,0,0,0};
+	for(int i = 1; i <= drone_num; i++) {
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].platform_model = 2;
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].platform_serial_number =
+				drone_state_informations.drone_specific_informations[i - 1].platform_serial_num;
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].platform_number =
+				drone_state_informations.drone_specific_informations[i - 1].platform_num;
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].number_of_subtasks = 2;
+
+		GeoLibDas uav_pos;
+		uav_pos.longitude = integrated_postures.integrated_posture_drone_informations[i - 1].drone_longitude_and_latitude.longitude;
+		uav_pos.latitude = integrated_postures.integrated_posture_drone_informations[i - 1].drone_longitude_and_latitude.latitude;
+
+		int area_index = find_closest_area_index_for_uav(&uav_pos, stage2_area_num, area_used);
+		if(area_index < 0) {
+			area_index = find_closest_area_index_for_uav(&uav_pos, stage2_area_num, NULL);
+		}
+
+		unsigned int target_area_code = area_sky_informations.area_informations[(i - 1) % stage2_area_num].area_code;
+		if(area_index >= 0) {
+			target_area_code = area_sky_informations.area_informations[area_index].area_code;
+			area_used[area_index] = 1;
+		}
+
+		for(int stage = 0; stage < 2; stage++) {
+			task_sequence_information *task = &information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[stage];
+			task->subtask_ID_number = (unsigned int)(stage + 1);
+			task->modify = 0;
+			task->type_of_mission_point_area = 3;
+			task->target_number = target_area_code;
+			task->completion_time_valid_Bits = 1;
+			task->task_height_effective_position = 1;
+			task->task_completion_time = 20;
+			task->mission_height = 1000;
+			task->presence_of_buoy_array = 0;
+			task->presence_of_fixed_point_arrays = 0;
+		}
+
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[0].sequence_type = 14;
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[0].availability_of_routes = 0;
+
+		if(integrated_postures.integrated_posture_drone_informations[i - 1].ct == 0) {
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[1].sequence_type = 7;
+		} else {
+			information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[1].sequence_type = 5;
+		}
+		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[1].availability_of_routes = 1;
+	}
+
+	uav_time_range_calc();
+}
+
 void yinzhaoRecommend()
 {
 	//战术1
@@ -4159,30 +4607,36 @@ void yinzhaoRecommend()
  * */
 void strategyRecommend(){
 	StrategySelect strategySelect_mid;//中间变量，计算每个战术战法的值
+	char use_only_ninth_strategy = (global_mission_planning_commandss.tactical_warfare_options == 9);
+
+	if(use_only_ninth_strategy){
+		ninthStrategy();
+		init_strategy_select(9);
+	}
 
 	//战术1
-//	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
-//			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法1的条件
+	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法1的条件
 //		//调用战术战法1
-//		firstStrategy();
-//		init_strategy_select(1);
-//	}
+		firstStrategy();
+		init_strategy_select(1);
+	}
 	//战术2
-	    if(integrated_postures.drone_num == 2 &&
-	            area_sky_informations.area_number <= 2){//判断是否满足战术战法2的条件
+//	    if(integrated_postures.drone_num == 2 &&
+//	            area_sky_informations.area_number <= 2){//判断是否满足战术战法2的条件
 	        //调用战术战法2
-	        secondStrategy();
-	        init_strategy_select(2);
-	    }
+//	        secondStrategy();
+//	        init_strategy_select(2);
+//	    }
 	//战术3
-	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&// 一控四：修改无人机数量判断条件
+	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&// 一控四：修改无人机数量判断条件
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法3的条件
 		//调用战术战法3
 		thirdStrategy();
 		init_strategy_select(3);
 	}
 	//战术4
-	if(integrated_postures.drone_num == 2 &&
+	if(!use_only_ninth_strategy && integrated_postures.drone_num == 2 &&
 			area_sky_informations.area_number <= 3){//判断是否满足战术战法4的条件
 		//调用战术战法4
 		fourthStrategy();
@@ -4196,14 +4650,14 @@ void strategyRecommend(){
 	//        init_strategy_select(5);
 	//    }
 	//战术6
-	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法6的条件
 		//调用战术战法6
 		sixthStrategy();
 		init_strategy_select(6);
 	}
 	//战术7
-	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法7的条件
 		//调用战术战法7
 		seventhStrategy();
@@ -4211,7 +4665,7 @@ void strategyRecommend(){
 	}
 
 	//战术8 20250907new
-	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法8的条件
 		//调用战术战法8
 		eighthStrategy();
@@ -4246,6 +4700,9 @@ void strategyRecommend(){
 		case 8:
 			eighthStrategy();
 			break;
+		case 9:
+			ninthStrategy();
+			break;
 		default:
 			information_on_the_results_of_taskings.program_attributes = 0;//如果出错,则此方案作废
 			break;
@@ -4255,7 +4712,9 @@ void strategyRecommend(){
 		//将任务发送标志位和航线发送标志位等都设置为发送状态，也即是值设为1
 		information_on_the_results_of_taskings.program_attributes = 1;
 		//无人机任务区分派
-		uav_dispatch();
+		if(minTimeStrategySelect.strategyNo != 9){
+			uav_dispatch();
+		}
 
 		renwu_guihua_flag = 1;
 		buoy_suspended_flag = 1;
@@ -4293,6 +4752,9 @@ void strategyRecommend(){
 		case 8:
 			eighthStrategy();
 			break;
+		case 9:
+			ninthStrategy();
+			break;
 		default:
 			information_on_the_results_of_taskings.program_attributes = 0;//如果出错,则此方案作废
 			break;
@@ -4301,7 +4763,9 @@ void strategyRecommend(){
 		Select_NO[1] = minUAVStrategySelect.strategyNo;
 		information_on_the_results_of_taskings.program_attributes = 2;
 		//无人机任务区分派
-		uav_dispatch();
+		if(minUAVStrategySelect.strategyNo != 9){
+			uav_dispatch();
+		}
 		renwu_guihua_flag = 1;
 		buoy_suspended_flag = 1;
 		wurenji_hangxian_flag = 1;
@@ -4338,13 +4802,18 @@ void strategyRecommend(){
 		case 8:
 			eighthStrategy();
 			break;
+		case 9:
+			ninthStrategy();
+			break;
 		default:
 			information_on_the_results_of_taskings.program_attributes = 0;//如果出错,则此方案作废
 			break;
 		}
 		information_on_the_results_of_taskings.program_attributes = 3;
 		//无人机任务区分派
-		uav_dispatch();
+		if(minMannedTask.strategyNo != 9){
+			uav_dispatch();
+		}
 		renwu_guihua_flag = 1;
 		buoy_suspended_flag = 1;
 		wurenji_hangxian_flag = 1;
@@ -4365,7 +4834,8 @@ void init_strategy_select(int strategyNo){
 	}
 
 	//过滤已选择的战法
-	if(Select_NO[0] == strategyNo || Select_NO[1] == strategyNo)
+	if(global_mission_planning_commandss.tactical_warfare_options != 9 &&
+			(Select_NO[0] == strategyNo || Select_NO[1] == strategyNo))
 	{
 		return;
 	}
@@ -4666,9 +5136,10 @@ void formulate_moduel()
 	 * */
 	if(fangan_send_flag > 0)
 	{
+		char use_only_ninth_strategy = (global_mission_planning_commandss.tactical_warfare_options == 9);
 		if(blk_dtms_ctas_001.task_type == 0)
 		{
-			if(fangan_send_flag == 1)
+			if(fangan_send_flag == 1 && !use_only_ninth_strategy)
 			{
 				memset(&information_on_the_results_of_taskings,0,sizeof(Information_the_results_of_tasking));
 				//重新划分任务区
@@ -4685,7 +5156,7 @@ void formulate_moduel()
 		}
 		else if(blk_dtms_ctas_001.task_type == 1)
 		{
-			if(fangan_send_flag == 1)
+			if(fangan_send_flag == 1 && !use_only_ninth_strategy)
 			{
 				memset(&information_on_the_results_of_taskings,0,sizeof(Information_the_results_of_tasking));
 				//有人机最少方案
@@ -8718,12 +9189,14 @@ void init_blk_dtms_ctas_005()
 		}
 	}
 
-	//应召反潜，没有任务区划分信息
-	if(blk_dtms_ctas_001.task_type == 1)
+	//应召反潜且非战法9，没有任务区划分信息
+	if(blk_dtms_ctas_001.task_type == 1 &&
+			global_mission_planning_commandss.tactical_warfare_options != 9)
 	{
 		yinzhao_point_init();
 	}
-	else if(information_on_the_results_of_taskings.program_attributes != 3)
+	else if(global_mission_planning_commandss.tactical_warfare_options != 9 &&
+			information_on_the_results_of_taskings.program_attributes != 3)
 	{
 		//任务区划分赋值
 		area_sky_informations.area_number = blk_dtms_ctas_005.blk_ccc_ofp_005.task_are_hf2[0].task_are_hf_num;
@@ -11646,5 +12119,3 @@ void uav_area_distribute_stage1_proc(int stage, int uav,  char area_used[8])
 	}
 
 }
-
-

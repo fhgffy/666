@@ -102,6 +102,10 @@ void seventhStrategy__missionDistributeInformation();
 void eighthStrategy();
 void eighthStrategy__missionDistributeInformation();
 
+//战术九
+void ninthStrategy();
+void ninthStrategy_missionDistributeInformation();
+
 //方案推荐模块
 void strategyRecommend();
 void yinzhaoRecommend();//应召推荐
