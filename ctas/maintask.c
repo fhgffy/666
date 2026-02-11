@@ -2218,6 +2218,7 @@ void UAVRouteGeneration(){
 			    Geo points[8];
 			    int k = 0, idx = 0;
 			    int valid_shape = 0;
+			    int use_strategy9_custom_wait_point = 0;
 
 			    // =========================
 			    // 2) 获取参考位置（默认：用 UAV_position，符合“起始位置最近”口径）
@@ -2305,53 +2306,141 @@ void UAVRouteGeneration(){
 			        rawMinLon = droneLon; rawMaxLon = droneLon;
 			    }
 
+			    // 战法9阶段1双机盘旋点：位于监听区对边两侧，且在主任务区外约2km
+			    if (global_mission_planning_commandss.tactical_warfare_options == 9 &&
+			            integrated_postures.drone_num == 2 &&
+			            j == 0 &&
+			            information_on_the_results_of_taskings.formation_synergy_mission_programs[0].number_of_subtasks >= 2)
+			    {
+			        unsigned int main_area_code =
+			        		information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].target_number;
+			        unsigned int listen_area_code =
+			        		information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].target_number;
+			        area_information listen_area_tmp;
+			        memset(&listen_area_tmp, 0, sizeof(area_information));
+			        char found_main_area = 0;
+			        char listen_shape_ok = 0;
+
+			        for (int area_idx = 0; area_idx < area_sky_informations.area_number; area_idx++)
+			        {
+			        	if(area_sky_informations.area_informations[area_idx].area_code == main_area_code) {
+			        		found_main_area = 1;
+			        	}
+			        	else if(area_sky_informations.area_informations[area_idx].area_code == listen_area_code) {
+			        		listen_area_tmp = area_sky_informations.area_informations[area_idx];
+			        	}
+			        }
+
+			        double listen_min_lat = 0.0, listen_max_lat = 0.0;
+			        double listen_min_lon = 0.0, listen_max_lon = 0.0;
+			        if(listen_area_tmp.area_shape == 1) {
+			        	double listen_delta_lat = (double)(listen_area_tmp.cycles.radius) / meters_per_deg_lat;
+			        	listen_min_lat = listen_area_tmp.cycles.latitude - listen_delta_lat;
+			        	listen_max_lat = listen_area_tmp.cycles.latitude + listen_delta_lat;
+			        	double listen_cos = cos(listen_area_tmp.cycles.latitude * (3.14159265358979323846 / 180.0));
+			        	if (listen_cos < 0) listen_cos = -listen_cos;
+			        	if (listen_cos < 0.01) listen_cos = 0.01;
+			        	double listen_delta_lon = (double)(listen_area_tmp.cycles.radius) / (meters_per_deg_lat * listen_cos);
+			        	listen_min_lon = listen_area_tmp.cycles.longitude - listen_delta_lon;
+			        	listen_max_lon = listen_area_tmp.cycles.longitude + listen_delta_lon;
+			        	listen_shape_ok = 1;
+			        }
+			        else if(listen_area_tmp.area_shape == 2 && listen_area_tmp.polygonals.point_number > 0) {
+			        	listen_min_lat = listen_area_tmp.polygonals.point_coordinates[0].latitude;
+			        	listen_max_lat = listen_min_lat;
+			        	listen_min_lon = listen_area_tmp.polygonals.point_coordinates[0].longitude;
+			        	listen_max_lon = listen_min_lon;
+			        	for (int lp = 1; lp < listen_area_tmp.polygonals.point_number; lp++) {
+			        		double llat = listen_area_tmp.polygonals.point_coordinates[lp].latitude;
+			        		double llon = listen_area_tmp.polygonals.point_coordinates[lp].longitude;
+			        		if(llat < listen_min_lat) listen_min_lat = llat;
+			        		if(llat > listen_max_lat) listen_max_lat = llat;
+			        		if(llon < listen_min_lon) listen_min_lon = llon;
+			        		if(llon > listen_max_lon) listen_max_lon = llon;
+			        	}
+			        	listen_shape_ok = 1;
+			        }
+
+			        if(found_main_area && listen_shape_ok)
+			        {
+			        	double main_center_lat = (rawMinLat + rawMaxLat) * 0.5;
+			        	double main_center_lon = (rawMinLon + rawMaxLon) * 0.5;
+			        	double listen_center_lat = (listen_min_lat + listen_max_lat) * 0.5;
+			        	double listen_center_lon = (listen_min_lon + listen_max_lon) * 0.5;
+
+			        	double lat_offset_2km = 2000.0 / meters_per_deg_lat;
+			        	double main_cos = cos(main_center_lat * (3.14159265358979323846 / 180.0));
+			        	if (main_cos < 0) main_cos = -main_cos;
+			        	if (main_cos < 0.01) main_cos = 0.01;
+			        	double lon_offset_2km = 2000.0 / (meters_per_deg_lat * main_cos);
+
+			        	if (fabs(listen_center_lon - main_center_lon) >= fabs(listen_center_lat - main_center_lat))
+			        	{
+			        		// 监听区在东西向：盘旋点取主任务区对边（西/东）外侧2km，沿南北两端分布
+			        		closestLon = (listen_center_lon >= main_center_lon) ? (rawMinLon - lon_offset_2km) : (rawMaxLon + lon_offset_2km);
+			        		closestLat = (i == 0) ? rawMinLat : rawMaxLat;
+			        	}
+			        	else
+			        	{
+			        		// 监听区在南北向：盘旋点取主任务区对边（南/北）外侧2km，沿东西两端分布
+			        		closestLat = (listen_center_lat >= main_center_lat) ? (rawMinLat - lat_offset_2km) : (rawMaxLat + lat_offset_2km);
+			        		closestLon = (i == 0) ? rawMinLon : rawMaxLon;
+			        	}
+
+			        	use_strategy9_custom_wait_point = 1;
+			        }
+			    }
+
 			    // =========================
 			    // 4) 外扩 5km
 			    // =========================
-			    expand_deg_lat = expand_meters / meters_per_deg_lat;
-			    finalMaxLat = rawMaxLat + expand_deg_lat;
-			    finalMinLat = rawMinLat - expand_deg_lat;
-
-			    avg_lat_rad = (rawMinLat + rawMaxLat) * 0.5 * (3.14159265358979323846 / 180.0);
-			    cos_val = cos(avg_lat_rad);
-			    if (cos_val < 0) cos_val = -cos_val;
-			    if (cos_val < 0.01) cos_val = 0.01;
-
-			    expand_deg_lon = expand_meters / (meters_per_deg_lat * cos_val);
-			    finalMaxLon = rawMaxLon + expand_deg_lon;
-			    finalMinLon = rawMinLon - expand_deg_lon;
-
-			    // =========================
-			    // 5) 生成 8 个候选点（左下、右下、左上、右上、左中、右中、下中、上中）
-			    // =========================
-			    points[0].latitude = finalMinLat; points[0].longitude = finalMinLon; // 左下
-			    points[1].latitude = finalMinLat; points[1].longitude = finalMaxLon; // 右下
-			    points[2].latitude = finalMaxLat; points[2].longitude = finalMinLon; // 左上
-			    points[3].latitude = finalMaxLat; points[3].longitude = finalMaxLon; // 右上
-			    points[4].latitude = (finalMinLat + finalMaxLat) / 2.0; points[4].longitude = finalMinLon; // 左中
-			    points[5].latitude = (finalMinLat + finalMaxLat) / 2.0; points[5].longitude = finalMaxLon; // 右中
-			    points[6].latitude = finalMinLat; points[6].longitude = (finalMinLon + finalMaxLon) / 2.0; // 下中
-			    points[7].latitude = finalMaxLat; points[7].longitude = (finalMinLon + finalMaxLon) / 2.0; // 上中
-
-			    // =========================
-			    // 6) 选最近点（默认：不看占用，纯几何最近）
-			    // =========================
-			    closestLat = points[0].latitude;
-			    closestLon = points[0].longitude;
-
-			    for (idx = 0; idx < 8; idx++)
+			    if(!use_strategy9_custom_wait_point)
 			    {
-			        // 如需启用占用判定，打开下面这行，并同时启用上面的 pts_occupancy 定义与清零
-			        // if (j < 16 && pts_occupancy[j][idx] == 1) continue;
+			    	expand_deg_lat = expand_meters / meters_per_deg_lat;
+			    	finalMaxLat = rawMaxLat + expand_deg_lat;
+			    	finalMinLat = rawMinLat - expand_deg_lat;
 
-			        double d = calculate_distances(droneLat, droneLon, points[idx].latitude, points[idx].longitude);
-			        if (minDistance < 0 || d < minDistance)
-			        {
-			            minDistance = d;
-			            closestLat = points[idx].latitude;
-			            closestLon = points[idx].longitude;
-			            selected_idx = idx;
-			        }
+			    	avg_lat_rad = (rawMinLat + rawMaxLat) * 0.5 * (3.14159265358979323846 / 180.0);
+			    	cos_val = cos(avg_lat_rad);
+			    	if (cos_val < 0) cos_val = -cos_val;
+			    	if (cos_val < 0.01) cos_val = 0.01;
+
+			    	expand_deg_lon = expand_meters / (meters_per_deg_lat * cos_val);
+			    	finalMaxLon = rawMaxLon + expand_deg_lon;
+			    	finalMinLon = rawMinLon - expand_deg_lon;
+
+			    	// =========================
+			    	// 5) 生成 8 个候选点（左下、右下、左上、右上、左中、右中、下中、上中）
+			    	// =========================
+			    	points[0].latitude = finalMinLat; points[0].longitude = finalMinLon; // 左下
+			    	points[1].latitude = finalMinLat; points[1].longitude = finalMaxLon; // 右下
+			    	points[2].latitude = finalMaxLat; points[2].longitude = finalMinLon; // 左上
+			    	points[3].latitude = finalMaxLat; points[3].longitude = finalMaxLon; // 右上
+			    	points[4].latitude = (finalMinLat + finalMaxLat) / 2.0; points[4].longitude = finalMinLon; // 左中
+			    	points[5].latitude = (finalMinLat + finalMaxLat) / 2.0; points[5].longitude = finalMaxLon; // 右中
+			    	points[6].latitude = finalMinLat; points[6].longitude = (finalMinLon + finalMaxLon) / 2.0; // 下中
+			    	points[7].latitude = finalMaxLat; points[7].longitude = (finalMinLon + finalMaxLon) / 2.0; // 上中
+
+			    	// =========================
+			    	// 6) 选最近点（默认：不看占用，纯几何最近）
+			    	// =========================
+			    	closestLat = points[0].latitude;
+			    	closestLon = points[0].longitude;
+
+			    	for (idx = 0; idx < 8; idx++)
+			    	{
+			    		// 如需启用占用判定，打开下面这行，并同时启用上面的 pts_occupancy 定义与清零
+			    		// if (j < 16 && pts_occupancy[j][idx] == 1) continue;
+
+			    		double d = calculate_distances(droneLat, droneLon, points[idx].latitude, points[idx].longitude);
+			    		if (minDistance < 0 || d < minDistance)
+			    		{
+			    			minDistance = d;
+			    			closestLat = points[idx].latitude;
+			    			closestLon = points[idx].longitude;
+			    			selected_idx = idx;
+			    		}
+			    	}
 			    }
 
 			    // 如需标记占用，打开下面这行，并同时启用 pts_occupancy
@@ -4363,7 +4452,7 @@ void ninthStrategy_missionDistributeInformation()
 	}
 	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].sequence_type = 3;
 	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].target_number = task_area.area_code;
-	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].availability_of_routes = 0;
+	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].availability_of_routes = 1;
 	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].presence_of_buoy_array = 1;
 
 	information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].sequence_type = 1;
@@ -4373,6 +4462,7 @@ void ninthStrategy_missionDistributeInformation()
 
 	// 无人机：阶段1盘旋等待，阶段2进区搜索
 	int area_used[8] = {0,0,0,0,0,0,0,0};
+	unsigned int stage1_area_code = task_area.area_code;
 	for(int i = 1; i <= drone_num; i++) {
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].platform_model = 2;
 		information_on_the_results_of_taskings.formation_synergy_mission_programs[i].platform_serial_number =
@@ -4401,7 +4491,7 @@ void ninthStrategy_missionDistributeInformation()
 			task->subtask_ID_number = (unsigned int)(stage + 1);
 			task->modify = 0;
 			task->type_of_mission_point_area = 3;
-			task->target_number = target_area_code;
+			task->target_number = (stage == 0) ? stage1_area_code : target_area_code;
 			task->completion_time_valid_Bits = 1;
 			task->task_height_effective_position = 1;
 			task->task_completion_time = 20;
@@ -5422,7 +5512,10 @@ void signal_moduel()
 		if(blk_dtms_ctas_002.target_type == 1)//任务区
 		{
 			//任务区划分
-			single_area_division();
+			if(global_mission_planning_commandss.tactical_warfare_options != 9)
+			{
+				single_area_division();
+			}
 			//浮标帧收
 			if(blk_dtms_ctas_002.task_type == 1)
 			{
