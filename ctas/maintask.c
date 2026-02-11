@@ -8750,7 +8750,8 @@ void calc_air_area(int stage)
 		{
 			//生成矩形空域
 			double square[4][2];
-			generateSquare(points[i+1][0].lon,points[i+1][0].lat,4000.0,square);
+			// 使用当前平台对应航点，避免空域与下一个平台错位
+			generateSquare(points[i][0].lon,points[i][0].lat,4000.0,square);
 			for(int k = 0 ; k < 4; k ++)
 			{
 				tmp.vertexA[k].longitude = square[k][0];
