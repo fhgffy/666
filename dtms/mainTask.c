@@ -1064,7 +1064,6 @@ static int build_bdfx_double_air_area(unsigned int plan, int uav_index, double h
 	out_area->polygonals.point_coordinates[3].longitude = s_right_lon;
 	return 1;
 }
-
 static int build_bdfx_single_air_area(unsigned int plan, int uav_index, double half_width_km, area_information *out_area)
 {
 	if (out_area == NULL || uav_index < 0 || uav_index >= UAV_MAX_NUM)
@@ -4065,7 +4064,7 @@ void route_change(int i)
 	// DPU_DTMS 无人机航路修改保存
 	recv_dpu1_dpu2(DDSTables.DPU_CCC_10.niConnectionId,DDSTables.DPU2_CCC_10.niConnectionId,&uav,sizeof uav);
 	if(enRetCode == 0)
-{
+	{
 		route_edit_ready = 1;
 		plan = (uav.program_number) % 3;
 		id = (uav.individual_drone_routing_programs.drone_serial_number - 1);
@@ -5927,10 +5926,11 @@ void single_uav_plan()
 		int edit_ok = 0;
 		if(single_edit_wait_cnt == 0)
 		{
-			send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,1,NULL);
+		send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,1,NULL);
 		}
 		for(int i = 0 ; i < 20 ; i ++)
 		{
+			//存储有人机，无人机航线
 			if(edit_uav_route(i % 3) == 1)
 			{
 				edit_ok = 1;
@@ -5938,8 +5938,8 @@ void single_uav_plan()
 		}
 		if(edit_ok == 1)
 		{
-			send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,2,NULL);
-			single_uav_flag = 0;
+		send_blk_ccc_ofp_020(DPU_CCC_data_5.program_number,1,2,NULL);
+		single_uav_flag = 0;
 			single_edit_wait_cnt = 0;
 		}
 		else
@@ -13348,28 +13348,32 @@ void send_uav_photoelectric_video_ctrl_feedback()
 
 
 	// 视频源类型（0H=NA;1H=有人机视频;2H=无人机1视频;3H=无人机2视频;4H=无人机3视频;5H=无人机4视频）
-	for(int i = 0 ; i < UAV_MAX_NUM ; i ++)
+	int feedback_index = DPU_CCC_data_14.video_source_type - 2;
+	if(feedback_index >= 0 && feedback_index < UAV_MAX_NUM)
 	{
-		if(i != (DPU_CCC_data_14.video_source_type-2))
-		{
-			continue;
-		}
-		CCC_DPU_data_22[i].video_source_type = DPU_CCC_data_14.video_source_type;
+		CCC_DPU_data_22[feedback_index].video_source_type = DPU_CCC_data_14.video_source_type;
 
-
-		align_send_information(&CCC_DPU_data_22[i], sizeof(DPU_guangdina_video), 0);
+		align_send_information(&CCC_DPU_data_22[feedback_index], sizeof(DPU_guangdina_video), 0);
 		Send_Message(DDSTables.CCC_DPU_22.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 
-		//发送给pad new20250620
 		Send_Message(DDSTables.CCC_PAD_042.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
 
-
-		// 给任务系统发送光电视频控制反馈
 		Send_Message(DDSTables.CCC_DPM_13.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
 		//printf("|DTMS|ESO rad[%d]\n",CCC_DPU_data_22.video_param_setting_feedbacks.ir_pwr_fb);
-
 	}
+	else
+	{
+		DPU_guangdina_video no_uav_feedback;
+		memset(&no_uav_feedback,0,sizeof(no_uav_feedback));
+		no_uav_feedback.video_source_type = DPU_CCC_data_14.video_source_type;
 
+		align_send_information(&no_uav_feedback, sizeof(DPU_guangdina_video), 0);
+		Send_Message(DDSTables.CCC_DPU_22.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+
+		Send_Message(DDSTables.CCC_PAD_042.niConnectionId,0,&transaction_id, send_array.dataA,&message_type_id, data_length, &enRetCode);
+
+		Send_Message(DDSTables.CCC_DPM_13.niConnectionId, 0, &transaction_id, send_array.dataA, &message_type_id, data_length, &enRetCode);
+	}
 
 	//	//    CCC_DPU_data_22.video_param_setting_feedbacks.type 在kkl_ccc返回状态信息处解析时已赋值
 	//	// 当控制指令是0（NA）时，反馈指令保持不变反馈。
@@ -13499,7 +13503,10 @@ void init_drone_information_Azhen(int uav_index)
 				else if (lock_param == 0x04)
 				{
 					// 后向锁定 0x47
-					CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.zhiling_data = 0x47;
+					//					CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.zhiling_data = 0x47;
+										CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.zhiling_class = 0x20;
+										CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.guangdian_control_mingling = 0x30;
+//										CCC_UAV_Azhens[uav_index].guangdiankongzhizhilings.zhiling_data = 0x30;
 				}
 				else if (lock_param == 0x05)
 				{
@@ -17648,5 +17655,3 @@ int getUavCurrentTask(int drone_index)
 	int type = CCC_DPU_data_6_Ofp[plan].formation_synergy_mission_programs[drone_index].task_sequence_informations[global_stage - 1].type;
 	return type;
 }
-
-
