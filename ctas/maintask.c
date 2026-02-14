@@ -1610,6 +1610,66 @@ static GeoLibDas getNearestPolygonVertexForUav(GeoLibDas uavPosition, area_infor
 	return nearestVertex;
 }
 
+/*
+ * 计算点到线段的最近点
+ */
+static GeoLibDas getNearestPointOnSegment(GeoLibDas p, GeoLibDas a, GeoLibDas b)
+{
+    double ap_lon = p.longitude - a.longitude;
+    double ap_lat = p.latitude - a.latitude;
+    double ab_lon = b.longitude - a.longitude;
+    double ab_lat = b.latitude - a.latitude;
+
+    double ab2 = ab_lon * ab_lon + ab_lat * ab_lat;
+    if (ab2 < 1e-12) return a;
+
+    double t = (ap_lon * ab_lon + ap_lat * ab_lat) / ab2;
+    if (t < 0.0) t = 0.0;
+    else if (t > 1.0) t = 1.0;
+
+    GeoLibDas result;
+    result.longitude = a.longitude + t * ab_lon;
+    result.latitude = a.latitude + t * ab_lat;
+    return result;
+}
+
+/*
+ * 计算点到多边形边界的最近点
+ */
+static GeoLibDas getNearestPointOnPolygonBoundary(GeoLibDas target, area_information area)
+{
+    GeoLibDas bestPoint = target;
+    double minDist = DBL_MAX;
+
+    if (area.area_shape != 2 || area.polygonals.point_number < 3)
+    {
+        return getNearestPolygonVertexForUav(target, area);
+    }
+
+    for (int i = 0; i < area.polygonals.point_number; i++)
+    {
+        GeoLibDas p1 = {
+            area.polygonals.point_coordinates[i].longitude,
+            area.polygonals.point_coordinates[i].latitude
+        };
+        GeoLibDas p2 = {
+            area.polygonals.point_coordinates[(i + 1) % area.polygonals.point_number].longitude,
+            area.polygonals.point_coordinates[(i + 1) % area.polygonals.point_number].latitude
+        };
+
+        GeoLibDas closestOnSeg = getNearestPointOnSegment(target, p1, p2);
+        double dist = getDistanceGeoLibDas(&target, &closestOnSeg);
+
+        if (dist < minDist)
+        {
+            minDist = dist;
+            bestPoint = closestOnSeg;
+        }
+    }
+
+    return bestPoint;
+}
+
 static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information areaA[2], GeoLibDas inPointA[2])
 {
 	if(areaA[0].area_shape != 2 || areaA[1].area_shape != 2) return;
@@ -1852,6 +1912,114 @@ static void optimizeDualUavInPoints(GeoLibDas uavPositionA[2], area_information 
 	}
 }
 
+static int is_strategy9_plan_layout_from_result(const Information_the_results_of_tasking *task_result)
+{
+	int drone_count = 0;
+	unsigned int main_area_code = 0;
+	if(task_result == NULL)
+	{
+		return 0;
+	}
+	if(task_result->number_of_mission_platforms < 2)
+	{
+		return 0;
+	}
+	if(task_result->formation_synergy_mission_programs[0].number_of_subtasks < 2)
+	{
+		return 0;
+	}
+	if(task_result->formation_synergy_mission_programs[0].task_sequence_informations[0].sequence_type != 3 ||
+			task_result->formation_synergy_mission_programs[0].task_sequence_informations[1].sequence_type != 1)
+	{
+		return 0;
+	}
+	main_area_code = task_result->formation_synergy_mission_programs[0].task_sequence_informations[0].target_number;
+	if(main_area_code == 0)
+	{
+		return 0;
+	}
+
+	drone_count = task_result->number_of_mission_platforms - 1;
+	if(drone_count < 1)
+	{
+		return 0;
+	}
+	if(drone_count > 4)
+	{
+		drone_count = 4;
+	}
+
+	for(int i = 1; i <= drone_count; i++)
+	{
+		if(task_result->formation_synergy_mission_programs[i].number_of_subtasks < 2)
+		{
+			return 0;
+		}
+		if(task_result->formation_synergy_mission_programs[i].task_sequence_informations[0].sequence_type != 14)
+		{
+			return 0;
+		}
+		if(task_result->formation_synergy_mission_programs[i].task_sequence_informations[0].target_number != main_area_code)
+		{
+			return 0;
+		}
+		if(task_result->formation_synergy_mission_programs[i].task_sequence_informations[1].sequence_type != 5 &&
+				task_result->formation_synergy_mission_programs[i].task_sequence_informations[1].sequence_type != 7)
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+static int get_area_bounds_for_strategy9_entry(const area_information *area,
+		double *min_lat, double *max_lat, double *min_lon, double *max_lon)
+{
+	const double meters_per_deg_lat = 111320.0;
+	if(area == NULL || min_lat == NULL || max_lat == NULL || min_lon == NULL || max_lon == NULL)
+	{
+		return 0;
+	}
+
+	if(area->area_shape == 1)
+	{
+		double radius_m = (double)(area->cycles.radius);
+		double delta_lat = radius_m / meters_per_deg_lat;
+		double cos_val = cos(area->cycles.latitude * (3.14159265358979323846 / 180.0));
+		if(cos_val < 0) cos_val = -cos_val;
+		if(cos_val < 0.01) cos_val = 0.01;
+		double delta_lon = radius_m / (meters_per_deg_lat * cos_val);
+
+		*min_lat = area->cycles.latitude - delta_lat;
+		*max_lat = area->cycles.latitude + delta_lat;
+		*min_lon = area->cycles.longitude - delta_lon;
+		*max_lon = area->cycles.longitude + delta_lon;
+		return 1;
+	}
+
+	if(area->area_shape == 2 && area->polygonals.point_number > 0)
+	{
+		*min_lat = area->polygonals.point_coordinates[0].latitude;
+		*max_lat = *min_lat;
+		*min_lon = area->polygonals.point_coordinates[0].longitude;
+		*max_lon = *min_lon;
+
+		for(int i = 1; i < area->polygonals.point_number; i++)
+		{
+			double lat = area->polygonals.point_coordinates[i].latitude;
+			double lon = area->polygonals.point_coordinates[i].longitude;
+			if(lat < *min_lat) *min_lat = lat;
+			if(lat > *max_lat) *max_lat = lat;
+			if(lon < *min_lon) *min_lon = lon;
+			if(lon > *max_lon) *max_lon = lon;
+		}
+		return 1;
+	}
+
+	return 0;
+}
+
 void setZoneInPoint(GeoLibDas *inPoint)
 {
 	int droneNum = integrated_postures.drone_num;
@@ -1881,6 +2049,119 @@ void setZoneInPoint(GeoLibDas *inPoint)
 			}
 			if(hasArea[i]) break;
 		}
+	}
+
+	int use_strategy9_same_side_midpoint = 0;
+	int entry_use_lon_side = 0;
+	int entry_use_min_side = 0;
+	if(droneNum == 2 && hasArea[0] && hasArea[1] &&
+			is_strategy9_plan_layout_from_result(&information_on_the_results_of_taskings))
+	{
+		area_information main_area_tmp;
+		area_information listen_area_tmp;
+		memset(&main_area_tmp, 0, sizeof(area_information));
+		memset(&listen_area_tmp, 0, sizeof(area_information));
+		char found_main = 0;
+		char found_listen = 0;
+
+		unsigned int main_area_code =
+				information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].target_number;
+		unsigned int listen_area_code =
+				information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].target_number;
+
+		for(int k = 0; k < area_sky_informations.area_number; k++)
+		{
+			if(area_sky_informations.area_informations[k].area_code == main_area_code)
+			{
+				main_area_tmp = area_sky_informations.area_informations[k];
+				found_main = 1;
+			}
+			else if(area_sky_informations.area_informations[k].area_code == listen_area_code)
+			{
+				listen_area_tmp = area_sky_informations.area_informations[k];
+				found_listen = 1;
+			}
+		}
+
+		if(found_main && found_listen)
+		{
+			double main_min_lat = 0.0, main_max_lat = 0.0, main_min_lon = 0.0, main_max_lon = 0.0;
+			double listen_min_lat = 0.0, listen_max_lat = 0.0, listen_min_lon = 0.0, listen_max_lon = 0.0;
+			if(get_area_bounds_for_strategy9_entry(&main_area_tmp, &main_min_lat, &main_max_lat, &main_min_lon, &main_max_lon) &&
+					get_area_bounds_for_strategy9_entry(&listen_area_tmp, &listen_min_lat, &listen_max_lat, &listen_min_lon, &listen_max_lon))
+			{
+				double main_center_lat = (main_min_lat + main_max_lat) * 0.5;
+				double main_center_lon = (main_min_lon + main_max_lon) * 0.5;
+				double listen_center_lat = (listen_min_lat + listen_max_lat) * 0.5;
+				double listen_center_lon = (listen_min_lon + listen_max_lon) * 0.5;
+
+				double delta_ns_km = calculate_distances(main_center_lat, main_center_lon, listen_center_lat, main_center_lon);
+				double delta_ew_km = calculate_distances(main_center_lat, main_center_lon, main_center_lat, listen_center_lon);
+
+				if(delta_ew_km >= delta_ns_km)
+				{
+					// Listen Area is East/West. Enter from North or South (Perpendicular).
+                    // Determine strict same-side based on proximity.
+                    double cost_north = 0, cost_south = 0;
+                    for(int u = 0; u < droneNum; u++) {
+                         // Approx: North edge is max_lat, South edge is min_lat
+                         double uav_lat = integrated_postures.integrated_posture_drone_informations[u].drone_longitude_and_latitude.latitude;
+                         double uav_lon = integrated_postures.integrated_posture_drone_informations[u].drone_longitude_and_latitude.longitude;
+                         cost_north += calculate_distances(uav_lat, uav_lon, main_max_lat, uav_lon);
+                         cost_south += calculate_distances(uav_lat, uav_lon, main_min_lat, uav_lon);
+                    }
+
+                    entry_use_lon_side = 0; // Target N/S edges (Latitude constant)
+					entry_use_min_side = (cost_south < cost_north) ? 1 : 0; // 1: Min(South), 0: Max(North)
+				}
+				else
+				{
+					// Listen Area is North/South. Enter from East or West (Perpendicular).
+                    double cost_east = 0, cost_west = 0;
+                    for(int u = 0; u < droneNum; u++) {
+                         double uav_lat = integrated_postures.integrated_posture_drone_informations[u].drone_longitude_and_latitude.latitude;
+                         double uav_lon = integrated_postures.integrated_posture_drone_informations[u].drone_longitude_and_latitude.longitude;
+                         cost_east += calculate_distances(uav_lat, uav_lon, uav_lat, main_max_lon);
+                         cost_west += calculate_distances(uav_lat, uav_lon, uav_lat, main_min_lon);
+                    }
+
+					entry_use_lon_side = 1; // Target E/W edges (Longitude constant)
+					entry_use_min_side = (cost_west < cost_east) ? 1 : 0; // 1: Min(West), 0: Max(East)
+				}
+				use_strategy9_same_side_midpoint = 1;
+			}
+		}
+	}
+
+	if(use_strategy9_same_side_midpoint)
+	{
+		for(int i = 0; i < droneNum; i++)
+		{
+			if(hasArea[i])
+			{
+				double area_min_lat = 0.0, area_max_lat = 0.0, area_min_lon = 0.0, area_max_lon = 0.0;
+				if(get_area_bounds_for_strategy9_entry(&areaA[i], &area_min_lat, &area_max_lat, &area_min_lon, &area_max_lon))
+				{
+					if(entry_use_lon_side)
+					{
+						inPoint[i].longitude = entry_use_min_side ? area_min_lon : area_max_lon;
+						inPoint[i].latitude = (area_min_lat + area_max_lat) * 0.5;
+					}
+					else
+					{
+						inPoint[i].longitude = (area_min_lon + area_max_lon) * 0.5;
+						inPoint[i].latitude = entry_use_min_side ? area_min_lat : area_max_lat;
+					}
+					// Snap to actual polygon boundary to avoid "off-area" points causing hangs or bad routes
+					inPoint[i] = getNearestPointOnPolygonBoundary(inPoint[i], areaA[i]);
+				}
+				else
+				{
+					inPoint[i] = getNearestPolygonVertexForUav(uavPositionA[i], areaA[i]);
+				}
+			}
+		}
+		return;
 	}
 
 	for(int i = 0; i < droneNum; i++) {
@@ -2306,11 +2587,13 @@ void UAVRouteGeneration(){
 			        rawMinLon = droneLon; rawMaxLon = droneLon;
 			    }
 
-			    // 战法9阶段1双机盘旋点：位于监听区对边两侧，且在主任务区外约2km
-			    if (global_mission_planning_commandss.tactical_warfare_options == 9 &&
-			            integrated_postures.drone_num == 2 &&
+			    // 战法9阶段1双机盘旋点：取主任务区对边外2km，且两机分别与侧边两端对齐
+			    if (integrated_postures.drone_num == 2 &&
 			            j == 0 &&
-			            information_on_the_results_of_taskings.formation_synergy_mission_programs[0].number_of_subtasks >= 2)
+			            information_on_the_results_of_taskings.formation_synergy_mission_programs[0].number_of_subtasks >= 2 &&
+			            information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].sequence_type == 3 &&
+			            information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[1].sequence_type == 1 &&
+			            information_on_the_results_of_taskings.formation_synergy_mission_programs[i + 1].task_sequence_informations[0].sequence_type == 14)
 			    {
 			        unsigned int main_area_code =
 			        		information_on_the_results_of_taskings.formation_synergy_mission_programs[0].task_sequence_informations[0].target_number;
@@ -2374,17 +2657,54 @@ void UAVRouteGeneration(){
 			        	if (main_cos < 0.01) main_cos = 0.01;
 			        	double lon_offset_2km = 2000.0 / (meters_per_deg_lat * main_cos);
 
-			        	if (fabs(listen_center_lon - main_center_lon) >= fabs(listen_center_lat - main_center_lat))
+			        	double delta_ns_km = calculate_distances(main_center_lat, main_center_lon, listen_center_lat, main_center_lon);
+			        	double delta_ew_km = calculate_distances(main_center_lat, main_center_lon, main_center_lat, listen_center_lon);
+			        	double uav0_lat = integrated_postures.integrated_posture_drone_informations[0].drone_longitude_and_latitude.latitude;
+			        	double uav0_lon = integrated_postures.integrated_posture_drone_informations[0].drone_longitude_and_latitude.longitude;
+			        	double uav1_lat = integrated_postures.integrated_posture_drone_informations[1].drone_longitude_and_latitude.latitude;
+			        	double uav1_lon = integrated_postures.integrated_posture_drone_informations[1].drone_longitude_and_latitude.longitude;
+
+			        	if (delta_ew_km >= delta_ns_km)
 			        	{
-			        		// 监听区在东西向：盘旋点取主任务区对边（西/东）外侧2km，沿南北两端分布
-			        		closestLon = (listen_center_lon >= main_center_lon) ? (rawMinLon - lon_offset_2km) : (rawMaxLon + lon_offset_2km);
-			        		closestLat = (i == 0) ? rawMinLat : rawMaxLat;
+			        		// 监听区在东西向：盘旋点取主任务区对边（西/东）外侧2km，双机贴南北边
+			        		double side_lon = (listen_center_lon >= main_center_lon) ? (rawMinLon - lon_offset_2km) : (rawMaxLon + lon_offset_2km);
+			        		double side_lat_a = rawMinLat;
+			        		double side_lat_b = rawMaxLat;
+			        		double cost_ab = calculate_distances(uav0_lat, uav0_lon, side_lat_a, side_lon) +
+			        					calculate_distances(uav1_lat, uav1_lon, side_lat_b, side_lon);
+			        		double cost_ba = calculate_distances(uav0_lat, uav0_lon, side_lat_b, side_lon) +
+			        					calculate_distances(uav1_lat, uav1_lon, side_lat_a, side_lon);
+
+			        		closestLon = side_lon;
+			        		if ((cost_ab <= cost_ba && i == 0) || (cost_ab > cost_ba && i == 1))
+			        		{
+			        			closestLat = side_lat_a;
+			        		}
+			        		else
+			        		{
+			        			closestLat = side_lat_b;
+			        		}
 			        	}
 			        	else
 			        	{
-			        		// 监听区在南北向：盘旋点取主任务区对边（南/北）外侧2km，沿东西两端分布
-			        		closestLat = (listen_center_lat >= main_center_lat) ? (rawMinLat - lat_offset_2km) : (rawMaxLat + lat_offset_2km);
-			        		closestLon = (i == 0) ? rawMinLon : rawMaxLon;
+			        		// 监听区在南北向：盘旋点取主任务区对边（南/北）外侧2km，双机贴东西边
+			        		double side_lat = (listen_center_lat >= main_center_lat) ? (rawMinLat - lat_offset_2km) : (rawMaxLat + lat_offset_2km);
+			        		double side_lon_a = rawMinLon;
+			        		double side_lon_b = rawMaxLon;
+			        		double cost_ab = calculate_distances(uav0_lat, uav0_lon, side_lat, side_lon_a) +
+			        					calculate_distances(uav1_lat, uav1_lon, side_lat, side_lon_b);
+			        		double cost_ba = calculate_distances(uav0_lat, uav0_lon, side_lat, side_lon_b) +
+			        					calculate_distances(uav1_lat, uav1_lon, side_lat, side_lon_a);
+
+			        		closestLat = side_lat;
+			        		if ((cost_ab <= cost_ba && i == 0) || (cost_ab > cost_ba && i == 1))
+			        		{
+			        			closestLon = side_lon_a;
+			        		}
+			        		else
+			        		{
+			        			closestLon = side_lon_b;
+			        		}
 			        	}
 
 			        	use_strategy9_custom_wait_point = 1;
@@ -4697,15 +5017,30 @@ void yinzhaoRecommend()
  * */
 void strategyRecommend(){
 	StrategySelect strategySelect_mid;//中间变量，计算每个战术战法的值
-	char use_only_ninth_strategy = (global_mission_planning_commandss.tactical_warfare_options == 9);
-
-	if(use_only_ninth_strategy){
+	//战法9固定在方案1（仅检查反潜）
+	if(global_mission_planning_commandss.mission_type == 0 && fangan_send_flag == 3){
+		memset(&information_on_the_results_of_taskings,0,sizeof(Information_the_results_of_tasking));
 		ninthStrategy();
-		init_strategy_select(9);
+		Select_NO[0] = 9;
+		information_on_the_results_of_taskings.program_attributes = 1;
+		renwu_guihua_flag = 1;
+		buoy_suspended_flag = 1;
+		wurenji_hangxian_flag = 1;
+		memset(&minTimeStrategySelect,0,sizeof(StrategySelect));
+		memset(&minUAVStrategySelect,0,sizeof(StrategySelect));
+		memset(&minMannedTask,0,sizeof(StrategySelect));
+		return;
+	}
+	//战法9已固定在方案1，方案2/3恢复原始输入态后按老逻辑比较
+	if(global_mission_planning_commandss.mission_type == 0 &&
+			(fangan_send_flag == 2 || fangan_send_flag == 1) &&
+			Select_NO[0] == 9)
+	{
+		init_zhanshutuijians();
 	}
 
 	//战术1
-	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法1的条件
 //		//调用战术战法1
 		firstStrategy();
@@ -4719,14 +5054,14 @@ void strategyRecommend(){
 //	        init_strategy_select(2);
 //	    }
 	//战术3
-	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&// 一控四：修改无人机数量判断条件
+	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&// 一控四：修改无人机数量判断条件
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法3的条件
 		//调用战术战法3
 		thirdStrategy();
 		init_strategy_select(3);
 	}
 	//战术4
-	if(!use_only_ninth_strategy && integrated_postures.drone_num == 2 &&
+	if(integrated_postures.drone_num == 2 &&
 			area_sky_informations.area_number <= 3){//判断是否满足战术战法4的条件
 		//调用战术战法4
 		fourthStrategy();
@@ -4740,14 +5075,14 @@ void strategyRecommend(){
 	//        init_strategy_select(5);
 	//    }
 	//战术6
-	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法6的条件
 		//调用战术战法6
 		sixthStrategy();
 		init_strategy_select(6);
 	}
 	//战术7
-	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法7的条件
 		//调用战术战法7
 		seventhStrategy();
@@ -4755,7 +5090,7 @@ void strategyRecommend(){
 	}
 
 	//战术8 20250907new
-	if(!use_only_ninth_strategy && integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
+	if(integrated_postures.drone_num >= 1 && integrated_postures.drone_num <= 4 &&
 			area_sky_informations.area_number <= integrated_postures.drone_num + 1){//判断是否满足战术战法8的条件
 		//调用战术战法8
 		eighthStrategy();
@@ -4924,8 +5259,7 @@ void init_strategy_select(int strategyNo){
 	}
 
 	//过滤已选择的战法
-	if(global_mission_planning_commandss.tactical_warfare_options != 9 &&
-			(Select_NO[0] == strategyNo || Select_NO[1] == strategyNo))
+	if(Select_NO[0] == strategyNo || Select_NO[1] == strategyNo)
 	{
 		return;
 	}
@@ -9448,8 +9782,36 @@ void init_blk_dtms_ctas_005()
 		}
 	}
 
+	char is_strategy9_layout = is_strategy9_plan_layout_from_result(&information_on_the_results_of_taskings);
+	if(is_strategy9_layout)
+	{
+		// 战法9固定在方案1后，不再依赖 tactical_warfare_options；航线阶段按005回灌任务区
+		unsigned short area_num_005 = blk_dtms_ctas_005.blk_ccc_ofp_005.task_are_hf2[0].task_are_hf_num;
+		if(area_num_005 > 0)
+		{
+			area_sky_informations.area_number = area_num_005;
+			if(area_sky_informations.area_number > 8)
+			{
+				area_sky_informations.area_number = 8;
+			}
+			for(int i = 0; i < area_sky_informations.area_number ; i ++)
+			{
+				area_sky_informations.area_informations[i].area_shape = 2;//区域形状
+				area_sky_informations.area_informations[i].polygonals.point_number = 4;
+				area_sky_informations.area_informations[i].area_code = i + 1;//区域编号
+
+				for(int j = 0 ; j < 4 ; j ++)
+				{
+					area_sky_informations.area_informations[i].polygonals.point_coordinates[j].latitude =
+							blk_dtms_ctas_005.blk_ccc_ofp_005.task_are_hf2[0].signal_FC00[i].signal_FC00[j].Index_Lat;
+					area_sky_informations.area_informations[i].polygonals.point_coordinates[j].longitude =
+							blk_dtms_ctas_005.blk_ccc_ofp_005.task_are_hf2[0].signal_FC00[i].signal_FC00[j].Index_Lon;
+				}
+			}
+		}
+	}
 	//应召反潜且非战法9，没有任务区划分信息
-	if(blk_dtms_ctas_001.task_type == 1 &&
+	else if(blk_dtms_ctas_001.task_type == 1 &&
 			global_mission_planning_commandss.tactical_warfare_options != 9)
 	{
 		yinzhao_point_init();
@@ -12026,11 +12388,27 @@ void send_blk_ctas_dtms_008()
 	}
 }
 
+static int calc_strategy9_total_time(const int manned_stage_time[8], const int uav_stage_max_time[8], int old_total_time)
+{
+	if(manned_stage_time == NULL || uav_stage_max_time == NULL)
+	{
+		return old_total_time;
+	}
+	// 战法9：阶段1按有人机时间，阶段2按无人机时间
+	if(manned_stage_time[0] > 0 && uav_stage_max_time[1] > 0)
+	{
+		return manned_stage_time[0] + uav_stage_max_time[1];
+	}
+	return old_total_time;
+}
+
 void uav_time_range_calc()
 {
 	//方案预估时长
 	int longest_time = 0;
 	int total_time[5] = {0,0,0,0,0};
+	int manned_stage_time[8] = {0,0,0,0,0,0,0,0};
+	int uav_stage_max_time[8] = {0,0,0,0,0,0,0,0};
 	int max_time = 0;
 	//20260122有人机方案时间，航程计算
 	{
@@ -12044,6 +12422,7 @@ void uav_time_range_calc()
 		//遍历有人机任务
 		for(int j = 0;j < information_on_the_results_of_taskings.formation_synergy_mission_programs[i].number_of_subtasks;j++)
 				{
+					int temp_time_before_stage = temp_time;
 					int task_type = information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[j].sequence_type;
 					//1.寻找任务区域并计算面积，中心点距离
 					double dist = 0;
@@ -12127,6 +12506,10 @@ void uav_time_range_calc()
 					//累加时间
 					double segment_time = flight_time+task_op_time;
 					temp_time += segment_time;
+					if(j < 8)
+					{
+						manned_stage_time[j] = temp_time - temp_time_before_stage;
+					}
 
 					//结果回填
 					if(segment_time>0){
@@ -12146,6 +12529,7 @@ void uav_time_range_calc()
 		int temp_time = 0;
 		for(int j = 0;j < information_on_the_results_of_taskings.formation_synergy_mission_programs[i].number_of_subtasks;j++)
 		{
+			int temp_time_before_stage = temp_time;
 
 			//无人机速度单位m/s
 			float speed = 0;
@@ -12251,6 +12635,15 @@ void uav_time_range_calc()
 				information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[j].task_completion_time = ((3*3*6 - 1) *1000) / speed /60.0;//同一统一分钟单位
 				information_on_the_results_of_taskings.formation_synergy_mission_programs[i].task_sequence_informations[j].mission_height = blk_dtms_ctas_010[i-1].CTGZ;
 			}
+
+			if(j < 8)
+			{
+				int stage_time = temp_time - temp_time_before_stage;
+				if(stage_time > uav_stage_max_time[j])
+				{
+					uav_stage_max_time[j] = stage_time;
+				}
+			}
 		}
 		if(temp_time > longest_time)
 			longest_time = temp_time;
@@ -12260,6 +12653,11 @@ void uav_time_range_calc()
 	if(total_time[0]>longest_time)
 		longest_time = total_time[0];
 	information_on_the_results_of_taskings.total_program_time = longest_time;
+	if(is_strategy9_plan_layout_from_result(&information_on_the_results_of_taskings))
+	{
+		information_on_the_results_of_taskings.total_program_time =
+				calc_strategy9_total_time(manned_stage_time, uav_stage_max_time, information_on_the_results_of_taskings.total_program_time);
+	}
 	//航程,全部无人机的航程
 	for(int i = 1 ; i <= drone_state_informations.drone_number ; i ++)
 	{
